@@ -1,0 +1,132 @@
+/****************************************************************************
+ |  (C) Copyright 2008 Novell, Inc. All Rights Reserved.
+ |
+ |  GPLv2: This program is free software; you can redistribute it
+ |  and/or modify it under the terms of version 2 of the GNU General
+ |  Public License as published by the Free Software Foundation.
+ |
+ |  This program is distributed in the hope that it will be useful,
+ |  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ |  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ |  GNU General Public License for more details.
+ +-------------------------------------------------------------------------*/
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+#include <stddef.h>
+#include <stdio.h>
+#include <string.h>
+#include <errno.h>
+
+//#include <dirent.h>
+#include <unistd.h>
+#include <linux/types.h>
+#include <linux/dirent.h>
+#include <linux/unistd.h>
+
+/*
+ * NAME
+ *        getdents - get directory entries
+ * 
+ * SYNOPSIS
+ *        #include <unistd.h>
+ *        #include <linux/types.h>
+ *        #include <linux/dirent.h>
+ *        #include <linux/unistd.h>
+ * 
+ *        _syscall3(int, getdents, uint, fd, struct dirent *, dirp, uint, count);
+ * 
+ *        int getdents(unsigned int fd, struct dirent *dirp, unsigned int count);
+ * 
+ * DESCRIPTION
+ *        getdents  reads  several dirent structures from the directory pointed
+ *        at by fd into the memory area pointed to by dirp.  The parameter
+ *        count is the size of the memory area.
+ * 
+ *        The dirent structure is declared as follows:
+ * 
+ *               struct dirent
+ *               {
+ *                   long  d_ino;                // inode number
+ *                   off_t d_off;                // offset to next dirent
+ *                   unsigned short d_reclen;    // length of this dirent
+ *                   char d_name [NAME_MAX+1];   // file name (null-terminated)
+ *               }
+ * 
+ *        d_ino  is  an inode number.  d_off is the distance from the start
+ *        of the directory to the start of the next dirent.  d_reclen is the
+ *        size of this entire dirent.  d_name is a null-terminated file name.
+ * 
+ * RETURN VALUE
+ *        On  success, the number of bytes read is returned.  On end of
+ *        directory, 0 is returned.  On error, -1 is returned, and errno
+ *        is set appropriately.
+ */
+
+enum { BUF_SZ = 4096 };
+
+long long prDents (char *buf, int numBytes)
+{
+	struct dirent64	*d = NULL;
+	int	i;
+
+	for (i = 0; i < numBytes; i += d->d_reclen) {
+		d = (struct dirent64 *)&buf[i];
+		printf("  %10qx %10qx %5x %s\n",
+			d->d_ino, d->d_off, d->d_type, d->d_name);
+	}
+	return d ? d->d_off : 0;
+}
+
+static inline _syscall3(int, getdents64, uint, fd, struct dirent64 *, buf, uint, count);
+int doGetdents (char *name)	// Need to test getdirentries too.
+{
+	int		fd;
+	int		rc;
+	char		buf[BUF_SZ];
+	struct dirent64	*d = (struct dirent64 *)buf;
+	__s64		offset;
+
+	printf("%s:\n", name);
+
+	for (offset = 0;; offset = d->d_off) {
+		fd = open(name, O_RDONLY);
+		if (fd == -1) {
+			rc = errno;
+			fprintf(stderr, "open:%s %s\n", name, strerror(errno));
+			return rc;
+		}
+		lseek(fd, offset, 0);
+		rc = getdents64(fd, d, sizeof(buf));
+printf("offset=%llx rc=%d\n", offset, rc);
+		close(fd);
+		if (rc == 0) break;
+		if (rc == -1) {
+			rc = errno;
+			fprintf(stderr, "open:%s %s\n", name, strerror(errno));
+			close(fd);
+			return rc;
+		}
+		prDents(buf, rc);
+	}
+	return 0;
+}
+
+int main (int argc, char *argv[])
+{
+	int		i;
+	int		rc;
+
+	if (argc == 1) {
+		rc = doGetdents(".");
+		return rc;
+	}
+	for (i = 1; i < argc; ++i) {
+		rc = doGetdents(argv[i]);
+		if (rc != 0) return rc;
+	}
+	return 0;
+}

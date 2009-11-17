@@ -1,0 +1,1536 @@
+/****************************************************************************
+ |  (C) Copyright 2008 Novell, Inc. All Rights Reserved.
+ |
+ |  GPLv2: This program is free software; you can redistribute it
+ |  and/or modify it under the terms of version 2 of the GNU General
+ |  Public License as published by the Free Software Foundation.
+ |
+ |  This program is distributed in the hope that it will be useful,
+ |  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ |  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ |  GNU General Public License for more details.
+ +-------------------------------------------------------------------------*/
+
+#include <linux/kernel.h>
+#include <linux/module.h>
+#include <linux/init.h>
+#include <linux/fs.h>
+#include <linux/buffer_head.h>
+#include <linux/pagemap.h>
+#include <linux/mpage.h>
+#include <linux/statfs.h>
+#include <linux/utsname.h>
+#include <linux/version.h>
+
+#include <style.h>
+#include <tau/msg.h>
+#include <tau/fsmsg.h>
+#include <tau/switchboard.h>
+#include <tau/debug.h>
+#include <tau/disk.h>
+#include <sage.h>
+#include <tau_blk.h>
+#include <tau_fs.h>
+#include <util.h>
+
+#define PRpage(_x_)	tau_pr_page(__func__, __LINE__, _x_)
+#define PRinode(_x_)	tau_pr_inode(__func__, __LINE__, _x_)
+
+struct {	// These shouldn't be atomic types because it is not worth it
+	unint	buf_alloc;
+	unint	buf_free;
+	unint	inode_alloc;
+	unint	inode_free;
+} Tau_inst;
+
+creator_s	*Fs;
+unint		Sw_fs;
+
+void tau_pr_page (const char *fn, unsigned line, struct page *p)
+{
+	tau_pr(fn, line, "page %p=%lx\n", p, p->flags);
+}
+
+void tau_pr_inode (const char *fn, unsigned line, struct inode *inode)
+{
+	tau_pr(fn, line, "inode %p=%lx %lx %p\n",
+		inode, inode->i_ino, inode->i_state, inode->i_mapping);
+}
+
+/* Convert file size in bytes to size in pages */
+static inline unsigned long dir_pages (struct inode *inode)
+{
+	return (inode->i_size + PAGE_CACHE_SIZE-1) >> PAGE_CACHE_SHIFT;
+}
+
+static inline void zero_page (struct page *page)
+{
+	// Do I need to map page? Not on 64 bit.
+	memset(page_address(page), 0, PAGE_CACHE_SIZE);
+}
+
+static inline tree_s *tree (struct inode *directory)
+{
+	return &tau_info(directory)->ti_tree;
+}
+
+static struct inode_operations tau_file_inode_operations;
+static struct inode_operations tau_dir_inode_operations;
+
+u64 tau_alloc_block (struct super_block *sb, unint num_blocks)
+{
+	tau_super_info_s	*si = sb->s_fs_info;
+	tau_super_block_s	*tsb = si->si_block;
+	u64			pblk;
+ENTER;
+	set_page_dirty(si->si_page);
+PRx(si->si_page->flags);
+	pblk = tsb->sb_nextblock;
+	tsb->sb_nextblock += num_blocks;
+	qRet(pblk);	
+}
+
+void tau_free_block (struct super_block *sb, u64 blkno)
+{
+ENTER;
+vRet;
+}
+
+/**************************************************************************/
+static kmem_cache_t *Tau_buf_cachep;
+
+static inline buf_s *tau_alloc_buf (void)
+{
+	buf_s	*buf;
+ENTER;
+	buf = kmem_cache_alloc(Tau_buf_cachep, SLAB_KERNEL);
+	if (!buf) return NULL;
+
+	++Tau_inst.buf_alloc;
+	pRet(  buf );
+}
+
+static void tau_destroy_buf (buf_s *buf)
+{
+ENTER;
+	assert(buf);
+	if (buf) kmem_cache_free(Tau_buf_cachep, buf);
+	++Tau_inst.buf_free;
+vRet;
+}
+
+enum { NUM_PAGES = 1024 };
+struct page	*Mypages[NUM_PAGES];
+struct page	**Next_mypage = Mypages;
+
+void dump_pages (void)
+{
+	struct page	**pp;
+	struct page	*p;
+
+	for (pp = Mypages; pp < Next_mypage; pp++) {
+		p = *pp;
+		printk(KERN_INFO "page %p %d %lx\n",
+			p, p->_count.counter, p->flags);
+	}
+}
+
+static void add_page (struct page *page)
+{
+	if (Next_mypage == &Mypages[NUM_PAGES]) return;
+
+	*Next_mypage++ = page;
+}
+
+static void del_page (struct page *page)
+{
+	struct page	**pp;
+
+	for (pp = Mypages; pp < Next_mypage; pp++) {
+		if (*pp == page) {
+			*pp = *--Next_mypage;
+			return;
+		}
+	}
+}
+
+buf_s *tau_assign_buf (struct page *page)
+{
+	buf_s	*buf;
+ENTER;
+	buf = tau_alloc_buf();
+	if (!buf) {
+		pRet( NULL );
+	}
+	add_page(page);
+	SetPagePrivate(page);
+	page->private = (addr)buf;
+	buf->b_page = page;
+	pRet(  buf );
+}
+
+void tau_remove_buf (struct page *page)
+{
+	buf_s   *buf = (buf_s *)page->private;
+ENTER;
+	del_page(page);
+	ClearPagePrivate(page);
+	page->private = 0;
+	assert(buf);
+	tau_destroy_buf(buf);
+vRet;
+}
+
+static void tau_buf_init_once (
+	void		*b,
+	kmem_cache_t	*cachep,
+	unsigned long	flags)
+{
+	buf_s	*buf = b;
+//ENTER;
+	buf->b_blknum = 0;
+	buf->b_magic = BUF_MAGIC;
+// Fill in rest of fields including agent
+}
+
+static int init_tau_buf_cache (void)
+{
+ENTER;
+	Tau_buf_cachep = kmem_cache_create("tau_buf_cache",
+				sizeof(buf_s),
+				0, SLAB_HWCACHE_ALIGN|SLAB_RECLAIM_ACCOUNT,
+				tau_buf_init_once, NULL);
+	if (Tau_buf_cachep == NULL) {
+		return -ENOMEM;
+	}
+	iRet( 0 );
+}
+
+static void destroy_tau_buf_cache (void)
+{
+ENTER;
+	if (Tau_inst.buf_alloc != Tau_inst.buf_free) {
+		printk(KERN_INFO "destroy_tau_buf_cache: alloc=%ld free=%ld\n",
+			Tau_inst.buf_alloc, Tau_inst.buf_free);
+	}
+	if (kmem_cache_destroy(Tau_buf_cachep)) {
+		printk(KERN_INFO "destroy_tau_buf_cache: not all structures were freed\n");
+	}
+vRet;
+}
+
+/**************************************************************************/
+static kmem_cache_t *Tau_inode_cachep;
+
+static struct inode *tau_alloc_inode (struct super_block *sb)
+{
+	tau_inode_info_s	*tinfo;
+ENTER;
+	tinfo = kmem_cache_alloc(Tau_inode_cachep, SLAB_KERNEL);
+	if (!tinfo) pRet( NULL );
+
+	++Tau_inst.inode_alloc;
+	pRet( &tinfo->ti_vfs_inode );
+}
+
+static void tau_destroy_inode (struct inode *inode)
+{
+	tau_inode_info_s	*tinfo = tau_info(inode);
+ENTER;
+	assert(inode);
+	kmem_cache_free(Tau_inode_cachep, tinfo);
+	++Tau_inst.inode_free;
+vRet;
+}
+
+static void tau_inode_init_once (
+	void		*t,
+	kmem_cache_t	*cachep,
+	unsigned long	flags)
+{
+	tau_inode_info_s	*tinfo = t;
+ENTER;
+	if ((flags & (SLAB_CTOR_VERIFY|SLAB_CTOR_CONSTRUCTOR))
+			== SLAB_CTOR_CONSTRUCTOR) {
+		inode_init_once( &tinfo->ti_vfs_inode);
+	}
+vRet;
+}
+
+static int init_tau_inode_cache (void)
+{
+ENTER;
+	Tau_inode_cachep = kmem_cache_create("tau_inode_cache",
+				sizeof(tau_inode_info_s),
+				0, SLAB_HWCACHE_ALIGN|SLAB_RECLAIM_ACCOUNT,
+				tau_inode_init_once, NULL);
+	if (Tau_inode_cachep == NULL) {
+		iRet( -ENOMEM );
+	}
+	iRet( 0 );
+}
+
+static void destroy_tnode_cache (void)
+{
+ENTER;
+	if (Tau_inst.inode_alloc != Tau_inst.inode_free) {
+		printk(KERN_INFO "destroy_tnode_cache: alloc=%ld free=%ld\n",
+			Tau_inst.inode_alloc, Tau_inst.inode_free);
+	}
+	if (kmem_cache_destroy(Tau_inode_cachep)) {
+		printk(KERN_INFO "destroy_tnode_cache: not all structures were freed\n");
+	}
+vRet;
+}
+/**************************************************************************/
+
+void tau_put_page (struct page *page)
+{
+ENTER;
+	if (!page) vRet;
+
+	kunmap(page);
+	page_cache_release(page);
+vRet;
+}
+
+int tau_zero_new_page (struct inode *inode, struct page *page)
+{
+ENTER;
+	kmap(page);	// need a matching unmap
+	zero_page(page);
+	SetPageUptodate(page);
+	ClearPageLocked(page);
+	iRet(0);
+}
+
+struct page *tau_new_page (struct inode *dir, u64 blkno)
+{
+	struct address_space	*mapping = dir->i_mapping;
+	tau_inode_info_s	*tinfo = tau_info(dir);
+	struct page		*page;
+	buf_s			*buf;
+	u64			pblk;
+	u64			extent;
+ENTER;
+	page = read_cache_page(mapping, blkno,
+			(filler_t*)tau_zero_new_page, NULL);
+	if (IS_ERR(page)) pRet(page);
+
+	assert(!page->private);
+
+	pblk = tau_alloc_block(dir->i_sb, TAU_ALU);
+	if (!pblk) {
+		tau_put_page(page);
+		pRet(ERR_PTR(-ENOSPC));
+	}
+	extent = page->index / TAU_ALU;
+	tinfo->ti_extent[extent].e_start  = pblk;
+	tinfo->ti_extent[extent].e_length = TAU_ALU;
+	mark_inode_dirty(dir);
+
+	buf = tau_assign_buf(page);
+	if (!buf) {
+		tau_put_page(page);
+		pRet(ERR_PTR(-ENOMEM));
+	}
+	buf->b_blknum = pblk;
+
+	wait_on_page_locked(page); //TODO:why this instead of page_lock?
+					// wait_on_page_locked does NOT
+					// get a lock, it just waits for
+					// the unlock.  lock_page, waits
+					// for and locks the page.
+	// Page mapped in tau_zero_new_page
+	if (!PageUptodate(page)) goto fail;
+	if (!PageChecked(page)) {
+		SetPageChecked(page);
+	}
+	if (PageError(page)) goto fail;
+	pRet(page);
+fail:
+	tau_put_page(page);
+	pRet(ERR_PTR(-EIO));
+}
+
+struct page *tau_get_page (struct inode *inode, u64 blkno)
+{
+	struct address_space	*mapping = inode->i_mapping;
+	struct page		*page;
+ENTER;
+	page = read_cache_page(mapping, blkno,
+			(filler_t*)mapping->a_ops->readpage, NULL);
+	if (!IS_ERR(page)) {
+		wait_on_page_locked(page);
+		kmap(page);
+		if (!PageUptodate(page)) goto fail;
+		if (!PageChecked(page)) {
+			SetPageChecked(page);
+		}
+		if (PageError(page)) goto fail;
+	}
+	pRet(page);
+fail:
+	tau_put_page(page);
+	pRet(ERR_PTR(-EIO));
+}
+
+static int tau_writepage (struct page *page, struct writeback_control *wbc)
+{
+ENTER;
+	iRet(tau_flush_page(page));
+}
+
+static int tau_super_readpage (struct file *file, struct page *page)
+{	// Where do I get <file> from? It is NULL
+	// With a simple if test, I could merge this by
+	// just seeing if the inode was the superblock inode
+	// Will keep separate for now.
+ENTER;
+	assert(file == NULL);
+	tau_fill_page(page, page->index);
+	iRet(0);	
+}
+
+static int tau_readpage (struct file *file, struct page *page)
+{
+	struct inode		*inode = page->mapping->host;
+	tau_inode_info_s	*tinfo = tau_info(inode);
+	u64			pblk;
+	u64			extent;
+	u64			offset;
+ENTER;
+dump_stack();
+	extent = page->index / TAU_ALU;
+	offset = page->index % TAU_ALU;
+	if (extent >= TAU_NUM_EXTENTS) {
+		iRet(-EFBIG);
+	}
+	pblk = tinfo->ti_extent[extent].e_start;
+	if (pblk) {
+		tau_fill_page(page, pblk + offset);
+		// return unlocked
+	} else {
+		zero_page(page);
+	}
+	iRet(0);	
+}
+
+#if 0
+static int tau_readpages (
+	struct file		*file,
+	struct address_space	*mapping,
+	struct list_head	*pages,
+	unsigned		nr_pages)
+{
+// mpage_readpages calls do_mpage_readpage, which expects get_block which
+// usese buffer headers. If we don't supply this interface, we'll have to
+// do our own readahead.
+// Looks like some readahead is being done but it is different
+ENTER;
+	iRet(mpage_readpages(mapping, pages, nr_pages, NULL));
+}
+#endif
+
+//XXX: in version 2.6.25, prepare_write and commit_write are replaced
+//XXX: by write_begin and write_end.  See //lwn.net/Articles/254856	
+static int tau_prepare_write (
+	struct file	*file,
+	struct page	*page,
+	unsigned	from,	// XXX: from/to tells me which bytes
+				// are going to be written. I can then
+				// determine if we need to read the block
+				// in and which bytes to zero.
+	unsigned	to)
+{
+	struct inode		*inode = page->mapping->host;
+	tau_inode_info_s	*tinfo = tau_info(inode);
+	u64			extent;
+	u64			offset;
+	u64			pblk;
+	buf_s	*buf;
+ENTER;
+	if (PageMappedToDisk(page)) iRet(0);
+
+	extent = page->index / TAU_ALU;
+	offset = page->index % TAU_ALU;
+	if (extent >= TAU_NUM_EXTENTS) {
+		iRet(-EFBIG);
+	}
+	kmap(page);
+	pblk = tinfo->ti_extent[extent].e_start;
+	//XXX: truncate, didn't happen in this system
+	if (pblk) {
+		SetPageMappedToDisk(page);
+		tau_fill_page(page, pblk+offset);
+		lock_page(page);
+	} else {
+		pblk = tau_alloc_block(inode->i_sb, TAU_ALU);
+		if (!pblk) iRet(-ENOSPC);
+		tinfo->ti_extent[extent].e_start  = pblk;
+		tinfo->ti_extent[extent].e_length = TAU_ALU;
+		mark_inode_dirty(inode);
+		zero_page(page);
+
+		assert(!page->private);
+		buf = tau_assign_buf(page);
+		if (!buf) {
+			kunmap(page);
+			iRet(-ENOMEM);
+		}
+		buf->b_blknum = pblk+offset;
+
+		SetPageMappedToDisk(page);
+		SetPageUptodate(page);
+
+ 		set_page_dirty(page);
+	}
+	kunmap(page);
+	iRet(0);	
+}
+
+static int tau_writepages (
+	struct address_space		*mapping,
+	struct writeback_control	*wbc)
+{
+ENTER;
+	iRet(mpage_writepages(mapping, wbc, NULL));
+}
+
+static int tau_invalidatepage (struct page *page, unsigned long offset)
+{
+ENTER;
+	tau_remove_buf(page);
+	iRet(1);// return 0 if we don't release it
+}
+
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,6))
+	static int tau_releasepage (struct page *page, int gfp_mask)
+#else
+	static int tau_releasepage (struct page *page, gfp_t gfp_mask)
+#endif
+{
+ENTER;
+	tau_remove_buf(page);
+
+	iRet(1);// return 0 if we don't release it
+		// NSS uses a pointer in Buffer_s to
+		// determine if it can release it.
+}
+
+struct address_space_operations tau_aops = {
+	.readpage	= tau_readpage,
+//	.readpages	= tau_readpages,
+	.writepage	= tau_writepage,
+	.sync_page	= block_sync_page,
+	.prepare_write	= tau_prepare_write,
+	.commit_write	= nobh_commit_write,
+	.invalidatepage = tau_invalidatepage,
+	.releasepage    = tau_releasepage,
+	.writepages	= tau_writepages,
+	.set_page_dirty = __set_page_dirty_nobuffers,
+};
+
+struct address_space_operations tau_super_aops = {
+	.readpage	= tau_super_readpage,
+//	.readpages	= tau_readpages,
+	.writepage	= tau_writepage,
+	.sync_page	= block_sync_page,
+	.prepare_write	= tau_prepare_write,
+	.commit_write	= nobh_commit_write,
+	.invalidatepage = tau_invalidatepage,
+	.releasepage    = tau_releasepage,
+	.writepages	= tau_writepages,
+	.set_page_dirty = __set_page_dirty_nobuffers,
+};
+
+static int tau_readdir (struct file *fp, void *dirent, filldir_t filldir)
+{
+	struct dentry 	*dentry = fp->f_dentry;
+	struct inode	*inode  = dentry->d_inode;
+	loff_t	pos = fp->f_pos;
+	u64	ino;
+	int	done;
+	u8	name[TAU_FILE_NAME_LEN+1];
+	int	rc;
+ENTER;
+	if (pos == 0) {
+		done = filldir(dirent, ".", sizeof(".")-1,
+				0,
+				fp->f_dentry->d_inode->i_ino,
+				DT_DIR);
+		if (done) iRet(0);
+		++pos;
+	}
+	if (pos == 1) {	// XXX: this could cause problem with hashing
+			// even 0 could cause proble - maybe should use
+			// negative numbers or 0x0000007f and 0x0000007e
+		done = filldir(dirent, "..", sizeof("..")-1,
+				1,
+				fp->f_dentry->d_parent->d_inode->i_ino,
+				DT_DIR);
+		if (done) {
+			goto exit;
+		}
+		++pos;
+	}
+	for (;;) {
+		rc = tau_next_dir(tree(inode), pos, &pos, name, &ino);
+		if (rc) break;
+		done = filldir(dirent, name, strlen(name), ino, pos, 0);
+		if (done) break;
+	}
+exit:
+	fp->f_pos = pos;
+	iRet(0);
+}
+
+static int tau_release_file (struct inode *inode, struct file *filp)
+{
+ENTER;
+	iRet(0);
+}
+
+static int tau_sync_file (
+	struct file     *file,
+	struct dentry   *dentry,
+	int             datasync)
+{
+ENTER;
+iRet(0);
+}
+
+struct file_operations tau_file_operations = {
+	.llseek		= generic_file_llseek,
+	.read		= generic_file_read,
+	.write		= generic_file_write,
+	.aio_read	= generic_file_aio_read,
+	.aio_write	= generic_file_aio_write,
+	.readdir	= tau_readdir,
+//	.ioctl		= tau_ioctl,
+	.mmap		= generic_file_mmap,
+	.open		= generic_file_open,
+	.release	= tau_release_file,
+	.fsync		= tau_sync_file,
+	.readv		= generic_file_readv,
+	.writev		= generic_file_writev,
+	.sendfile	= generic_file_sendfile,
+};
+
+static void fill_super_inode (struct super_block *sb, struct inode *inode)
+{
+	tau_inode_info_s	*tinfo;
+ENTER;
+	assert(inode->i_ino == TAU_SUPER_INO);
+
+	inode->i_blocks  = 0;
+	inode->i_mode    = S_IFDIR;
+	inode->i_uid     = 0;
+	inode->i_gid     = 0;
+	inode->i_atime = inode->i_mtime = inode->i_ctime = CURRENT_TIME;
+	inode->i_size    = 0;
+	inode->i_sb      = sb;
+	inode->i_rdev    = sb->s_dev;
+	inode->i_blkbits = TAU_BLK_SHIFT;
+	inode->i_blksize = TAU_BLK_SIZE;
+	inode->i_op      = &tau_dir_inode_operations;
+	inode->i_fop     = &tau_file_operations;
+	inode->i_mapping->a_ops = &tau_super_aops;
+		/*
+		 * Handle tau's part of the inode
+		 */
+	tinfo = tau_info(inode);
+	init_tree( &tinfo->ti_tree, NULL, 0);
+	zero(tinfo->ti_extent);
+	strcpy(tinfo->ti_name, "<superblock>");
+
+//	insert_inode_hash(inode);
+vRet;
+}
+
+static void fill_inode (struct super_block *sb, struct inode *inode)
+{
+ENTER;
+	inode->i_sb      = sb;
+	inode->i_rdev    = sb->s_dev;
+	inode->i_blkbits = TAU_BLK_SHIFT;
+	inode->i_blksize = TAU_BLK_SIZE;
+	if (S_ISREG(inode->i_mode)) {
+		inode->i_op  = &tau_file_inode_operations;
+		inode->i_fop = &tau_file_operations;
+	} else if (S_ISDIR(inode->i_mode)) {
+		inode->i_op  = &tau_dir_inode_operations;
+		inode->i_fop = &tau_file_operations;
+	} else {
+		printk(KERN_ERR "Not ready for this mode %o\n", inode->i_mode);
+	}
+	if (inode->i_mapping) {
+		inode->i_mapping->a_ops = &tau_aops;
+	}
+vRet;
+}
+
+static struct inode *tau_new_inode (
+	struct super_block	*sb,
+	struct dentry		*dentry,
+	int			mode)
+{
+	struct inode		*inode;
+	tau_inode_info_s	*tinfo;
+	ino_t			ino = 0;
+ENTER;
+	ino = tau_alloc_block(sb, 1);
+	if (ino == 0) pRet(ERR_PTR(-ENOSPC));
+
+	inode = new_inode(sb);
+	if (inode == NULL) {
+		goto error;
+	}
+	inode->i_ino     = ino;
+	inode->i_blocks  = 0;
+	inode->i_mode    = mode;
+	inode->i_uid     = current->fsuid;
+	inode->i_gid     = current->fsgid;
+	inode->i_atime = inode->i_mtime = inode->i_ctime = CURRENT_TIME;
+	inode->i_size    = 0;
+	fill_inode(sb, inode);
+		/*
+		 * Handle tau's part of the inode
+		 */
+	tinfo = tau_info(inode);
+	init_tree( &tinfo->ti_tree, &Tau_dir_species, 0);
+	zero(tinfo->ti_extent);
+	strcpy(tinfo->ti_name, dentry->d_name.name);
+
+	insert_inode_hash(inode);
+	mark_inode_dirty(inode);
+
+	pRet(inode);
+error:
+	if (ino) tau_free_block(sb, ino);
+	if (inode) {
+		make_bad_inode(inode);
+		iput(inode);
+	} else {
+		pRet(ERR_PTR(-ENOMEM));
+	}
+	pRet(ERR_PTR(-EINVAL));
+}
+
+static int tau_mknod (
+	struct inode	*dir,
+	struct dentry	*dentry,
+	int		mode,
+	dev_t		dev)
+{
+	struct inode	*inode;
+	int	rc;
+ENTER;
+	tau_logbegin(dir);
+	inode = tau_new_inode(dir->i_sb, dentry, mode);
+	if (IS_ERR(inode)) {
+		rc = PTR_ERR(inode);
+		goto exit;
+	}
+	if (!inode) {
+		rc = -ENOSPC;
+		goto exit;
+	}
+	d_instantiate(dentry, inode);
+
+	rc = tau_insert_dir(tree(dir), inode->i_ino, dentry->d_name.name);
+exit:
+	tau_logend(dir);
+	iRet(rc);
+}
+
+static int tau_mkdir (
+	struct inode	*dir,
+	struct dentry	*dentry,
+	int		mode)
+{
+ENTER;
+	iRet(tau_mknod(dir, dentry, mode | S_IFDIR, 0));
+}
+
+static int tau_create (
+	struct inode		*dir,
+	struct dentry		*dentry,
+	int			mode,
+	struct nameidata	*nd)
+{
+ENTER;
+	iRet(tau_mknod(dir, dentry, mode | S_IFREG, 0));
+}
+
+static struct dentry *tau_lookup (
+	struct inode		*parent,
+	struct dentry		*dentry,
+	struct nameidata	*nd)
+{
+	struct super_block	*sb = parent->i_sb;
+	struct inode		*inode;
+	u64	ino;
+ENTER;
+	ino = tau_find_dir(tree(parent), dentry->d_name.name);
+	if (!ino) pRet(NULL);
+
+	inode = iget(sb, ino);
+	if (!inode) pRet(NULL);
+
+	pRet(d_splice_alias(inode, dentry));
+}
+
+static int tau_unlink (
+	struct inode		*dir,
+	struct dentry		*dentry)
+{
+	struct inode		*inode = dentry->d_inode;
+	int	rc;
+ENTER;
+	tau_logbegin(dir);
+	rc = tau_delete_dir(tree(dir), dentry->d_name.name);
+	if (!rc) goto exit;
+
+	dir->i_mtime = CURRENT_TIME;
+	if (inode) --inode->i_nlink;
+exit:
+	tau_logend(dir);
+iRet(rc);
+}
+
+static struct inode_operations tau_dir_inode_operations = {
+	.create = tau_create,
+	.lookup = tau_lookup,
+	.mkdir  = tau_mkdir,
+	.mknod  = tau_mknod,
+	.unlink = tau_unlink,
+};
+
+static struct inode_operations tau_file_inode_operations = {
+	.lookup = tau_lookup,
+};
+
+
+static void tau_read_inode (struct inode *inode)
+{
+	struct super_block	*sb = inode->i_sb;
+ENTER;
+	if (inode->i_ino == TAU_SUPER_INO) {
+		fill_super_inode(sb, inode);
+		vRet;
+	}
+	bug("shouldn't get here");
+vRet;
+}
+
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,6))
+	static void tau_write_inode (struct inode *inode, int wait)
+#else
+	static int tau_write_inode (struct inode *inode, int wait)
+#endif
+{
+	tau_inode_info_s	*tinfo = tau_info(inode);
+	tau_inode_s		*iraw;
+	buf_s			*buf;
+	int			rc = 0;
+ENTER;
+	tau_logbegin(inode);
+	buf = tau_bget(inode, inode->i_ino);
+	if (!buf) {
+		printk(KERN_ERR "tau_write_inode err reading inode=%ld\n",
+				inode->i_ino);
+		goto error;
+	}
+	iraw = (tau_inode_s *)tau_bdata(buf);
+
+	iraw->h_magic  = TAU_MAGIC_INODE;
+	iraw->t_ino    = inode->i_ino;
+	iraw->t_blocks = inode->i_blocks;
+	iraw->t_mode   = inode->i_mode;
+	iraw->t_uid    = inode->i_uid;
+	iraw->t_gid    = inode->i_gid;
+	iraw->t_atime  = inode->i_atime;
+	iraw->t_mtime  = inode->i_mtime;
+	iraw->t_ctime  = inode->i_ctime;
+	iraw->t_size   = inode->i_size;
+		/*
+		 * Handle tau's part of the inode
+		 */
+	iraw->t_btree_root = tinfo->ti_tree.t_root;
+	memcpy(iraw->t_extent, tinfo->ti_extent, sizeof(iraw->t_extent));
+	strcpy(iraw->t_name, tinfo->ti_name);
+
+	tau_bdirty(buf);
+	tau_bput(buf);
+exit:
+	tau_logend(inode);
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,6))
+	vRet;
+#else
+	iRet(rc);
+#endif
+error:
+	if (buf) tau_bput(buf);
+	rc = -EIO;
+	goto exit;
+	//make_bad_inode(inode);
+}
+
+static void tau_clear_inode (struct inode *inode)
+{
+//	tau_inode_info_s	*tinfo = tau_info(inode);
+ENTER;
+vRet;
+}
+
+static void tau_put_super (struct super_block *sb)
+{
+	tau_super_info_s	*si = sb->s_fs_info;
+	struct inode		*isuper = si->si_isuper;
+ENTER;
+	tau_put_page(si->si_page);
+	truncate_inode_pages( &isuper->i_data, 0);
+	sb->s_fs_info = NULL;
+	kfree(si);	
+vRet;	
+}
+
+#if (LINUX_VERSION_CODE > KERNEL_VERSION(2,6,16))
+static int tau_statfs (struct dentry *dentry, struct kstatfs *statfs)
+{
+	struct super_block *sb = dentry->d_sb;
+#elif ((LINUX_VERSION_CODE == KERNEL_VERSION(2,6,16)) && (EXTRAVERSION > 56))
+static int tau_statfs (struct dentry *dentry, struct kstatfs *statfs)
+{
+	struct super_block *sb = dentry->d_sb;
+#else
+static int tau_statfs (struct super_block *sb, struct kstatfs *statfs)
+{
+#endif
+	tau_super_info_s	*si = sb->s_fs_info;
+	tau_super_block_s	*tsb = si->si_block;
+ENTER;
+	statfs->f_type    = sb->s_magic;
+	statfs->f_bsize   = sb->s_blocksize;
+	statfs->f_blocks  = tsb->sb_numblocks;
+	statfs->f_bfree   = tsb->sb_numblocks - tsb->sb_nextblock;
+	statfs->f_bavail  = statfs->f_bfree;
+	statfs->f_files   = 0;
+	statfs->f_ffree   = 0;
+	statfs->f_fsid.val[0] = sb->s_dev;	// See comments in "man statfs"
+	statfs->f_fsid.val[1] = 0;
+	statfs->f_namelen = TAU_FILE_NAME_LEN;
+	statfs->f_frsize  = 0;	// Don't know what this is for.
+	iRet( 0 );
+}
+
+static void tau_put_inode (struct inode *inode)
+{
+ENTER;
+PRx(inode->i_ino);
+vRet;
+}
+
+static struct super_operations tau_sops = {
+	.alloc_inode	= tau_alloc_inode,
+	.destroy_inode	= tau_destroy_inode,
+	.read_inode	= tau_read_inode,
+	.write_inode	= tau_write_inode,
+	.put_inode	= tau_put_inode,
+//	.delete_inode	= tau_delete_inode,
+	.put_super	= tau_put_super,
+//	.write_super	= tau_write_super,
+	.statfs		= tau_statfs,
+//	.remount_fs	= tau_remount,
+	.clear_inode	= tau_clear_inode,
+};
+
+static	ki_t make_gate (
+	void		*tag,
+	unsigned	type,
+	u64		*id)
+{
+	msg_s	msg;
+	int	rc;
+
+	msg.q.q_tag  = tag;
+	msg.q.q_type = type;
+	rc = create_gate_tau(Fs, &msg);
+	if (rc) {
+		printk("fs make_gate: create_gate_tau failed %d\n", rc);
+		return 0;
+	}
+	if (id) {
+		*id = msg.cr_id;
+	}
+	return msg.q.q_passed_key;
+}
+
+static void file_destroyed (void *msg)
+{
+	msg_s			*m = msg;
+	file_s			*file = m->q.q_tag;
+ENTER;
+PRp(file);
+	free_tau(file);
+vRet;
+}
+
+static void ino_write (void *msg)
+{
+#if 1
+ENTER;
+vRet;
+#else
+	msg_s			*m = msg;
+	file_s			*file = m->q.q_tag;
+	tau_inode_info_s	*tinfo = file->f_tinfo;
+	struct inode		*inode = &tinfo->ti_vfs_inode;
+
+static int raw_write_inode (struct inode *inode, int wait)
+{
+	tau_inode_info_s	*tinfo = tau_info(inode);
+	tau_inode_s		*iraw;
+	buf_s			*buf;
+	int			rc = 0;
+ENTER;
+// we have inode, move this up.
+	tau_logbegin(inode);
+	buf = tau_bget(inode, inode->i_ino);
+	if (!buf) {
+		printk(KERN_ERR "tau_write_inode err reading inode=%ld\n",
+				inode->i_ino);
+		goto error;
+	}
+	iraw = (tau_inode_s *)tau_bdata(buf);
+
+	iraw->h_magic  = TAU_MAGIC_INODE;
+	iraw->t_ino    = inode->i_ino;
+	iraw->t_blocks = inode->i_blocks;
+	iraw->t_mode   = inode->i_mode;
+	iraw->t_uid    = inode->i_uid;
+	iraw->t_gid    = inode->i_gid;
+	iraw->t_atime  = inode->i_atime;
+	iraw->t_mtime  = inode->i_mtime;
+	iraw->t_ctime  = inode->i_ctime;
+	iraw->t_size   = inode->i_size;
+		/*
+		 * Handle tau's part of the inode
+		 */
+	iraw->t_btree_root = tinfo->ti_tree.t_root;
+	memcpy(iraw->t_extent, tinfo->ti_extent, sizeof(iraw->t_extent));
+	strcpy(iraw->t_name, tinfo->ti_name);
+
+	tau_bdirty(buf);
+	tau_bput(buf);
+exit:
+	tau_logend(inode);
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,6))
+	vRet;
+#else
+	iRet(rc);
+#endif
+error:
+	if (buf) tau_bput(buf);
+	rc = -EIO;
+	goto exit;
+	//make_bad_inode(inode);
+}
+#endif
+}
+
+static void file_read (void *msg)
+{
+ENTER;
+vRet;
+}
+
+static void file_write (void *msg)
+{
+ENTER;
+vRet;
+}
+
+static void *alloc_dir_list (void)
+{
+	dir_list_s	*dl;
+FN;
+	dl = (dir_list_s *)__get_free_page(GFP_KERNEL | __GFP_HIGHMEM);
+	if (!dl) {
+		eprintk("no memory");
+	}
+	dl->dl_next = 0;
+	return dl;
+}
+
+/*XXX:static*/ void free_dir_list (void *dl)
+{
+FN;
+	free_page((addr)dl);
+}
+
+static int fill_dir_list (
+	dir_list_s	*dl,
+	char		*name,
+	u64		ino,
+	u64		pos,
+	u8		type)
+{
+	unint	size;
+	unint	i;
+
+	size = strlen(name) + 1;
+	size += sizeof(ino);
+	size += sizeof(pos);
+	//size += sizeof(d->d_type);
+
+	if (size > DIR_LIST_LIMIT - dl->dl_next) return 0;
+
+	i = dl->dl_next;
+	dl->dl_next += size;
+	PACK(dl->dl_list, ino, i);
+	PACK(dl->dl_list, pos, i);
+	//PACK(dl->dl_list, d->d_type, i);
+	strcpy( &dl->dl_list[i], name);
+	return size;
+}
+
+static void file_readdir (void *msg)
+{
+	fsmsg_s		*m = msg;
+	file_s		*file = m->q.q_tag;
+	unint		reply_key = m->q.q_passed_key;
+	dir_list_s	*dl;
+	unint		size;
+	u8		name[TAU_FILE_NAME_LEN+1];
+	u64		pos;
+	u64		ino;
+	int		rc;
+ENTER;
+	dl = alloc_dir_list();
+	if (!dl) {
+		destroy_key_tau(Fs, reply_key);
+		vRet;
+	}
+	pos = m->rd_cookie;
+	for (;;) {
+		rc = tau_next_dir( &file->f_tree, pos, &pos, name, &ino);
+		if (rc) break;
+		size = fill_dir_list(dl, name, ino, pos, 0);//XXX: need to set type
+		if (!size) break;
+	}
+	rc = write_data_tau(Fs, reply_key, dl, sizeof(*dl), 0);
+	if (rc) {
+		eprintk("write_data_tau failed %d", rc);
+		destroy_key_tau(Fs, reply_key);
+		vRet;
+	}
+	m->rd_cookie = pos;
+	rc = send_tau(Fs, reply_key, m);
+	if (rc) {
+		eprintk("send_tau failed %d", rc);
+		destroy_key_tau(Fs, reply_key);
+		vRet;
+	}
+vRet;
+}
+
+file_type_s	File_type = { { FILE_LAST, file_destroyed },
+					ino_write,
+					file_read,
+					file_write,
+					file_readdir};		
+
+static void ino_open (void *msg)
+{
+	fsmsg_s			*m = msg;
+	tau_super_info_s	*si = m->q.q_tag;
+	struct inode		*isuper = si->si_isuper;
+	tau_inode_s		*iraw;
+	buf_s			*buf = NULL;
+
+	ki_t			reply_key = m->q.q_passed_key;
+	file_s			*file;
+	ki_t			key = 0;
+	int			rc;
+ENTER;
+	file = zalloc_tau(sizeof(file_s));
+	if (!file) goto error;
+PRp(file);
+	file->f_type  = &File_type.tf_tag;
+	file->f_super = si;
+
+	buf = tau_bget(isuper, m->fs_inode.fs_ino);
+	if (!buf) {
+		eprintk("tau_bget err reading inode=%lld",
+				m->fs_inode.fs_ino);
+		goto error;
+	}
+	iraw = (tau_inode_s *)tau_bdata(buf);
+	if ((iraw->t_ino != m->fs_inode.fs_ino)
+	 && (iraw->h_magic != TAU_MAGIC_INODE))
+	{
+		eprintk("corrupt inode=%lld\n", m->fs_inode.fs_ino);
+		goto error;
+	}
+	file->f_raw = *iraw;
+	init_tree( &file->f_tree, &Tau_dir_species, iraw->t_btree_root);
+
+	key = make_gate(file, RESOURCE | PASS_REPLY, &file->f_gate);
+	if (!key) goto error;
+
+	m->q.q_passed_key = key;
+	m->fs_inode.fs_ino    = iraw->t_ino;
+	m->fs_inode.fs_size   = iraw->t_size;
+	m->fs_inode.fs_blocks = iraw->t_blocks;
+	m->fs_inode.fs_mode   = iraw->t_mode;
+	m->fs_inode.fs_uid    = iraw->t_uid;
+	m->fs_inode.fs_gid    = iraw->t_gid;
+	m->fs_inode.fs_atime  = iraw->t_atime.tv_sec;
+	m->fs_inode.fs_mtime  = iraw->t_mtime.tv_sec;
+	m->fs_inode.fs_ctime  = iraw->t_ctime.tv_sec;
+	tau_bput(buf); buf = NULL;
+	rc = send_key_tau(Fs, reply_key, m);
+	if (rc) {
+		eprintk("send_key_tau %d", rc);
+		goto error;
+	}
+	vRet;
+error:
+	destroy_key_tau(Fs, reply_key);
+	if (key) {
+		destroy_key_tau(Fs, key);
+	} else {
+		if (file) free_tau(file);
+		if (buf) tau_bput(buf);
+
+	}
+	vRet;
+}
+
+vol_type_s	Vol_type = { { INO_LAST, 0 },
+			.tv_ino_open = ino_open };
+	
+static int post_volume (tau_super_info_s *si)
+{
+	ki_t	key = 0;
+	int	rc = 0;
+ENTER;
+
+	si->si_type = &Vol_type.tv_tag;
+
+	key = make_gate(si, REQUEST | PASS_REPLY, &si->si_gate_id);
+	if (!key) goto error;
+
+	rc = sw_post(Fs, Sw_fs, si->si_vol_name, key);
+	if (rc) goto error;
+
+	iRet(0);
+error:
+	printk(KERN_INFO "fs failed initialization for volume %s: %d\n",
+		si->si_vol_name, rc);
+	if (key) {
+		destroy_key_tau(Fs, key);
+	}
+	iRet(rc);
+}
+
+static void tau_get_options (char *data, tau_super_info_s *si)
+{
+	char	*cp = data;
+	char	*v;
+	int	c;
+
+	// skip spaces
+	while (*cp == ' ') {
+		++cp;
+	}
+	// Get volume name
+	v = si->si_vol_name;
+	for (c = *cp; c!=' ' && c!='\n' && c!='\0'; c = *++cp) {
+		*v++ = c;
+	}
+	*v = '\0';
+}
+
+#if 0
+static int tau_new_bag (struct super_block *sb)
+{
+	return 0;
+}
+
+static int tau_member (struct super_block *sb)
+{
+	return 0;
+}
+#endif
+
+static int tau_fill_super (
+	struct super_block	*sb,
+	void			*data,		/* Command line */
+	int			isSilent)
+{
+	struct block_device	*dev    = sb->s_bdev;
+	struct inode		*isuper = NULL;
+	tau_super_info_s	*si     = NULL;
+	tau_super_block_s	*tsb;
+	struct page		*page;
+	unint			sectorSize;
+	int			rc = 0;
+ENTER;
+	sectorSize = sb_min_blocksize(sb, BLOCK_SIZE);
+	if (sectorSize > TAU_BLK_SIZE) {
+		// Not going to deal with mongo sectors today
+		iRet(-EMEDIUMTYPE);
+	}
+	set_blocksize(dev, TAU_BLK_SIZE);
+
+	sb->s_blocksize	     = TAU_BLK_SIZE;
+	sb->s_blocksize_bits = TAU_BLK_SHIFT;
+	sb->s_maxbytes	     = TAU_MAX_FILE_SIZE;
+	sb->s_magic	     = (__u32)TAU_MAGIC_SUPER;
+	sb->s_op             = &tau_sops;
+	sb->s_export_op      = NULL;//&tau_export_ops;// I think this is for NFS
+
+	si = kmalloc(sizeof(tau_super_info_s), GFP_KERNEL);
+	if (si == NULL) {
+		rc = -ENOMEM;
+		goto error;
+	}
+	si->si_sb = sb;
+	sb->s_fs_info = si;
+	tau_get_options(data, si);
+
+	isuper = iget(sb, TAU_SUPER_INO);	//XXX: check error
+	si->si_isuper = isuper;
+
+	page = tau_get_page(isuper, TAU_SUPER_BLK);
+	if (IS_ERR(page)) {
+		rc = PTR_ERR(page);
+		printk(KERN_ERR "tau: couldn't read super block %d\n", rc);
+		goto error;
+	}
+	tsb = (tau_super_block_s *)page_address(page);
+	// XXX: need to make sure page gets cleaned up on error
+	if (tsb->h_magic != TAU_MAGIC_SUPER) {
+		printk(KERN_ERR "tau: bad magic %u!=%u\n",
+					TAU_MAGIC_SUPER,
+					tsb->h_magic);
+		goto error;
+	}
+	si->si_page   = page;
+	si->si_block  = tsb;	// Need to save page - unmap it ?
+
+	tau_loginit( &si->si_log);
+
+	sb->s_root = d_alloc_root(isuper);
+	if (!sb->s_root) {
+		eprintk("get root inode failed\n");
+		goto error;
+	}
+	rc = post_volume(si);
+	if (rc) goto error;
+exit:
+	iRet(rc);
+
+error:
+	if (rc == 0) rc = -EIO;
+	if (sb->s_root) {
+		dput(sb->s_root);
+		sb->s_root = NULL;
+	} else if (isuper) {
+		iput(isuper);
+	}
+	if (si) {
+		kfree(si);
+		sb->s_fs_info = NULL;
+	}
+	goto exit;
+}
+
+static struct super_block *tau_get_sb (
+	struct file_system_type	*fs_type,
+	int			flags,
+	const char		*dev_name,
+	void			*data)
+{
+ENTER;
+	pRet( get_sb_bdev(fs_type, flags, dev_name, data, tau_fill_super) );
+}
+
+static struct file_system_type tau_fs_type = {
+	.owner    = THIS_MODULE,
+	.name     = "tau",
+	.get_sb   = tau_get_sb,
+	.kill_sb  = kill_block_super,
+	.fs_flags = FS_REQUIRES_DEV,
+};
+
+static void fs_receive (int rc, void *msg)
+{
+	struct object_s {
+		type_s	*obj_type;
+	} *obj;
+	msg_s	*m = msg;
+	type_s	*type;
+ENTER;
+	printk(KERN_INFO "received a message, need to handle it\n");
+
+	obj  = m->q.q_tag;
+	type = obj->obj_type;
+	if (!rc) {
+		if (m->m_method < type->ty_num_methods) {
+			type->ty_method[m->m_method](m);
+			vRet;
+		}
+		printk(KERN_INFO "bad method %u >= %u\n",
+			m->m_method, type->ty_num_methods);
+		if (m->q.q_passed_key) {
+			destroy_key_tau(Fs, m->q.q_passed_key);
+		}
+		vRet;	
+	}
+	if (rc == DESTROYED) {
+		type->ty_destroy(m);
+		vRet;
+	}
+	printk(KERN_INFO "fs_receive err = %d\n", rc);
+vRet;
+}
+
+guid_t	Fm_guid;
+
+static void fm_who_am_i (void *msg);
+static void fm_next_bag (void *msg);
+struct fm_type_s {
+	type_s		fmt_tag;
+	method_f	fmt_methods[FM_NUM];
+} Fm_type = { { FM_NUM, NULL }, {
+	fm_who_am_i,
+	fm_next_bag }
+};
+
+struct fm_s {
+	struct fm_type_s	*fm_type;
+} Fm = { &Fm_type };
+
+static void fm_who_am_i (void *msg)
+{
+	fsmsg_s	*m = msg;
+	unint	reply = m->q.q_passed_key;
+	int	rc;
+ENTER;
+	strncpy(m->fm_name, system_utsname.nodename, TAU_NAME);
+	memcpy(m->fm_guid, Fm_guid, sizeof(guid_t));
+	rc = send_tau(Fs, reply, m);
+	if (rc) {
+		eprintk("send_tau error=%d", rc);
+		destroy_key_tau(Fs, reply);
+	}
+vRet;
+}
+
+static void fm_next_bag (void *msg)
+{
+	fsmsg_s	*m = msg;
+	unint	reply = m->q.q_passed_key;
+	int	rc;
+ENTER;
+	strncpy(m->fm_name, system_utsname.nodename, TAU_NAME);
+	memcpy(m->fm_guid, Fm_guid, sizeof(guid_t));
+	rc = send_tau(Fs, reply, m);
+	if (rc) {
+		eprintk("send_tau error=%d", rc);
+		destroy_key_tau(Fs, reply);
+	}
+vRet;
+}
+	
+
+static int start_msg (void)
+{
+	int	rc;
+	ki_t	key;
+FN;
+	Fs = init_msg_tau("fs", fs_receive);
+	if (!Fs) return -1;
+
+	Sw_fs = sw_register(Fs, "fs");
+	if (!Sw_fs) return -1;
+
+	key = make_gate( &Fm, REQUEST | PASS_REPLY, NULL);
+	if (!key) return -1;
+
+	rc = sw_post(Fs, Sw_fs, "fm", key);
+	if (rc) return rc;
+
+	return 0;
+}
+
+static void stop_msg (void)
+{
+FN;
+	if (Fs) die_tau(Fs);
+	Fs = NULL;
+}
+
+static void tau_cleanup (void)
+{
+	stop_msg();
+	if (Tau_inode_cachep) destroy_tnode_cache();
+	if (Tau_buf_cachep) destroy_tau_buf_cache();
+	tau_stop_log();
+}
+
+static int tau_init (void)
+{
+	int	rc;
+
+#if 1
+	Tau_debug_is_on = 1;
+	Tau_debug_func  = 1;
+#else
+	Tau_debug_is_on = 0;
+	Tau_debug_func  = 0;
+#endif
+
+ENTER;
+	guid_generate_tau(Fm_guid);
+
+	rc = init_tau_buf_cache();
+	if (rc) goto error;
+
+	rc = init_tau_inode_cache();
+	if (rc) goto error;
+
+	rc = tau_start_log();
+	if (rc) goto error;
+
+	rc = start_msg();
+	if (rc) goto error;
+
+	rc = register_filesystem( &tau_fs_type);
+	if (rc) goto error;
+
+	iRet(0);
+error:
+	printk(KERN_INFO "tau error=%d\n", rc);
+	tau_cleanup();
+	iRet(rc);	
+}
+
+static void tau_exit (void)
+{
+	unregister_filesystem( &tau_fs_type);
+	tau_cleanup();
+	printk(KERN_INFO "tau un-loaded\n");
+}
+
+MODULE_AUTHOR("Paul Taysom");
+MODULE_DESCRIPTION("tau file system");
+MODULE_LICENSE("GPL");
+
+module_init(tau_init)
+module_exit(tau_exit)
+

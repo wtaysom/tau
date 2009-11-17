@@ -1,0 +1,7 @@
+##kernel=`uname -srp | sed '-es/ /_/g'`
+##arch=`uname -i | sed '-es/^.*-.*-//g'`
+##insmod /mnt/taysom/pj/tau.pj/tools.t/mdb.d/kmdb.k/.$kernel/kmdb.ko
+##/mnt/taysom/pj/tau.pj/tools.t/mdb.d/.$arch/mdb
+modprobe kmdb
+mdb
+rmmod kmdb

@@ -1,0 +1,67 @@
+#
+############################################################################
+# (C) Copyright 2008 Novell, Inc. All Rights Reserved.
+#
+#  GPLv2: This program is free software; you can redistribute it
+#  and/or modify it under the terms of version 2 of the GNU General
+#  Public License as published by the Free Software Foundation.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+############################################################################
+
+cd ~/tau.pj/tau.t
+
+export DEBUG=off
+replicas=2
+
+guid=5777c645-2bc6-44a1-af6a-54a0c2c2d53c
+#if [ $1 ]
+#then
+#	guid=$1
+#else
+#	guid=`uuidgen`
+#	echo guid=$guid
+#fi
+
+name=`uname -n`
+case $name in
+	cobra)	dev=/dev/hda4
+		;;
+	toad)	dev=/dev/hda4
+		;;
+	oak)	dev=/dev/sda4
+		;;
+	mamba)	dev=/dev/sda4
+		;;
+	asp)	dev=/dev/hda4
+		;;
+	*)	echo "Don't have a test device for $name"
+		exit 1
+		;;
+esac
+
+mstart || exit 1
+
+modprobe taufs || exit 1
+
+mkfs.bag -u $guid $dev || exit 1
+
+sleep 1	# give time for things to get started
+VOL=tau
+mkdir -p /mnt/tau /mnt/.tau
+mount -t tau $dev /mnt/.tau
+
+#if [ ! $1 ]
+if [ $name = mamba ]
+then
+	echo -n "Wait for others: "
+	read
+	mkfs.vol -r $replicas -u $guid
+fi
+
+echo -n "ready for mount: "
+read
+mount -t kache $VOL /mnt/tau -o vol=$VOL,guid=$guid

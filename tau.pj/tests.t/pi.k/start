@@ -1,0 +1,35 @@
+#
+############################################################################
+# (C) Copyright 2008 Novell, Inc. All Rights Reserved.
+#
+#  GPLv2: This program is free software; you can redistribute it
+#  and/or modify it under the terms of version 2 of the GNU General
+#  Public License as published by the Free Software Foundation.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+############################################################################
+
+case `uname -n` in
+	cobra)	dev=/dev/hde4
+		;;
+	mamba)	dev=/dev/sda4
+		;;
+	oak)	dev=/dev/sda4
+		;;
+esac
+
+mkfs.pi $dev || exit 1
+
+# Build the .ko for this machine
+make || exit 1
+make install || exit 1
+
+# Invoke insmod with all arguments we were passed
+# and use a pathname, as newer modutils don't look in . by default
+/sbin/insmod -f /lib/modules/`uname -r`/extra/pi.ko $* || exit 1
+
+sleep 1	# give time for things to get started
+mount -t pi $dev /mnt/pi

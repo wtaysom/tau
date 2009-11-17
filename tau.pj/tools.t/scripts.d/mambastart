@@ -1,0 +1,20 @@
+# Build the .ko for this machine
+#make || exit 1
+#make install || exit 1
+
+cd tau
+make || exit 1
+make install || exit 1
+
+cd ../mkfs.tau
+make || exit 1
+make install || exit 1
+
+cd ..
+
+/sbin/insmod -f /lib/modules/`uname -r`/extra/tau.ko $* || exit 1
+
+sleep 1	# give time for things to get started
+
+mkfs.tau /dev/sda3
+mount -t tau /dev/sda3 /mnt/tau

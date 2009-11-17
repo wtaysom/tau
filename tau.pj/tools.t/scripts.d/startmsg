@@ -1,0 +1,12 @@
+# Build the .ko for this machine
+make || exit 1
+make install || exit 1
+
+# Invoke insmod with all arguments we were passed
+# and use a pathname, as newer modutils don't look in . by default
+#/sbin/insmod -f ./kmsg/kmsg.ko $* || exit 1
+/sbin/insmod -f /lib/modules/`uname -r`/extra/kmsg.ko $* || exit 1
+#/sbin/insmod -f /lib/modules/`uname -r`/extra/tau.ko $* || exit 1
+
+sleep 1	# give time for things to get started
+~/playbin/sw #&

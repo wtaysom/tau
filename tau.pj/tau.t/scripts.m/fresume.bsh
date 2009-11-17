@@ -1,0 +1,40 @@
+#
+############################################################################
+# (C) Copyright 2008 Novell, Inc. All Rights Reserved.
+#
+#  GPLv2: This program is free software; you can redistribute it
+#  and/or modify it under the terms of version 2 of the GNU General
+#  Public License as published by the Free Software Foundation.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+############################################################################
+
+name=`uname -n`
+case $name in
+	cobra)	dev=/dev/hda4
+		;;
+	toad)	dev=/dev/hda4
+		;;
+	oak)	dev=/dev/sda4
+		;;
+	mamba)	dev=/dev/sda4
+		;;
+	*)	echo "Don't have a test device for $name"
+		exit 1
+		;;
+esac
+
+mstart || exit 1
+
+modprobe taufs || exit 1
+
+##mkfs.tau $dev || exit 1
+
+sleep 1	# give time for things to get started
+VOL=tau
+mkdir -p /mnt/tau /mnt/.tau
+mount -t tau $dev /mnt/.tau -o $VOL
+mount -t kache $VOL /mnt/tau -o $VOL

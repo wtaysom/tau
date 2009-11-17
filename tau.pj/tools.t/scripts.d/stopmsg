@@ -1,0 +1,4 @@
+##umount /tmp/msg
+rm -f /dev/msg
+#rmmod tau
+rmmod kmsg

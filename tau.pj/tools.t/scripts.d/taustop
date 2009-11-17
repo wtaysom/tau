@@ -1,0 +1,2 @@
+umount /mnt/tau
+rmmod tau
