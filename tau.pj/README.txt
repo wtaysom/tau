@@ -24,17 +24,17 @@ Suffix conventions:
 
 Directories:
 	.pj  project
-	.t   sub tree - for now, restricted to childrent of .pj
+	.t   sub tree - for now, restricted to children of .pj
 	.b   library
 	.d   normal process
 	.m   multiple apps
 	.k   kernel module
 Files:
-	.c   c file
+	.c   C file
 	.h   header file
-	.c.h A c source file treated like a header
+	.c.h a C source file treated like a header
 		to handle files shared between
 		kernel and user space.
-	.txt Text files like this one
-	.mk  Included makefiles
-	.sh  Shell script
+	.txt text files like this one
+	.mk  included makefiles
+	.sh  shell script
