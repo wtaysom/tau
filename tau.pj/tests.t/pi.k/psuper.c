@@ -31,6 +31,8 @@ extern u8 Taysom;
 #define PRpage(_x_)	pi_pr_page(__func__, __LINE__, _x_)
 #define PRinode(_x_)	pi_pr_inode(__func__, __LINE__, _x_)
 
+static struct inode *pi_iget (struct super_block *sb, u64 ino);
+
 struct {
 	unint	buf_alloc;	// Should be atomic types
 	unint	buf_free;
@@ -658,7 +660,7 @@ FN;
 		for (; offset < PI_INOS_PER_BLK; offset++, pos++) {
 			ino = ilist[offset];
 			if (!ino) continue;
-			inode = iget(sb, ino);
+			inode = pi_iget(sb, ino);
 			if (inode == NULL) goto exit;
 
 			tnode = pi_inode(inode);
@@ -685,8 +687,8 @@ PRinode(inode);
 }
 struct file_operations pi_file_operations = {
 	.llseek		= generic_file_llseek,
-	.read		= generic_file_read,
-	.write		= generic_file_write,
+	.read		= do_sync_read,
+	.write		= do_sync_write,
 	.aio_read	= generic_file_aio_read,
 	.aio_write	= generic_file_aio_write,
 	.readdir	= pi_readdir,
@@ -695,9 +697,6 @@ struct file_operations pi_file_operations = {
 	.open		= generic_file_open,
 	.release	= pi_release_file,
 //	.fsync		= pi_sync_file,
-	.readv		= generic_file_readv,
-	.writev		= generic_file_writev,
-	.sendfile	= generic_file_sendfile,
 };
 
 static void fill_super_inode (struct super_block *sb, struct inode *inode)
@@ -708,14 +707,13 @@ FN;
 
 	inode->i_blocks  = 0;
 	inode->i_mode    = S_IFDIR;
-	inode->i_uid     = current->fsuid;
-	inode->i_gid     = current->fsgid;
+	inode->i_uid     = current_fsuid();
+	inode->i_gid     = current_fsgid();
 	inode->i_atime = inode->i_mtime = inode->i_ctime = CURRENT_TIME;
 	inode->i_size    = 0;
 	inode->i_sb      = sb;
 	inode->i_rdev    = sb->s_dev;
 	inode->i_blkbits = PI_BLK_SHIFT;
-	inode->i_blksize = PI_BLK_SIZE;
 	inode->i_op      = &pi_dir_inode_operations;
 	inode->i_fop     = &pi_file_operations;
 	inode->i_mapping->a_ops = &pi_super_aops;
@@ -757,7 +755,6 @@ FN;
 	inode->i_sb      = sb;
 	inode->i_rdev    = sb->s_dev;
 	inode->i_blkbits = PI_BLK_SHIFT;
-	inode->i_blksize = PI_BLK_SIZE;
 	if (S_ISREG(inode->i_mode)) {
 		inode->i_op  = &pi_file_inode_operations;
 		inode->i_fop = &pi_file_operations;
@@ -796,7 +793,7 @@ FN;
 	pnode = pi_inode(inode);
 	time = CURRENT_TIME;
 	init_pnode(pnode, sb, (char *)dentry->d_name.name,
-			ino, mode, current->fsuid,  current->fsgid,
+			ino, mode, current_fsuid(),  current_fsgid(),
 			0, 0, time, time, time);
 
 	insert_inode_hash(inode);
@@ -879,7 +876,7 @@ FN;
 			ino = ilist[offset];
 			if (!ino) continue;
 
-			inode = iget(sb, ino);
+			inode = pi_iget(sb, ino);
 			if (inode == NULL) goto exit;
 
 			tnode = pi_inode(inode);
@@ -952,6 +949,20 @@ error:
 	make_bad_inode(inode);
 }
 
+static struct inode *pi_iget (struct super_block *sb, u64 ino)
+{
+	struct inode	*inode;
+
+	inode = iget_locked(sb, ino);
+	if (!inode) return ERR_PTR(-ENOMEM);
+
+	if (!(inode->i_state & I_NEW)) return inode;
+
+	pi_read_inode(inode);
+
+	return inode;
+}
+
 static int pi_write_inode (struct inode *inode, int wait)
 {
 	struct super_block	*sb = inode->i_sb;
@@ -1001,12 +1012,6 @@ FN;
 PRinode(inode);
 }
 
-static void pi_put_inode (struct inode *inode)
-{
-FN;
-PRinode(inode);
-}
-
 static void free_super_inode (struct inode *isuper)
 {
 FN;
@@ -1048,9 +1053,9 @@ FN;
 static struct super_operations pi_sops = {
 	.alloc_inode	= pi_alloc_inode,
 	.destroy_inode	= pi_destroy_inode,
-	.read_inode	= pi_read_inode,
+//	.read_inode	= pi_read_inode,
 	.write_inode	= pi_write_inode,
-	.put_inode	= pi_put_inode,
+//	.put_inode	= pi_put_inode,
 //	.delete_inode	= pi_delete_inode,
 	.put_super	= pi_put_super,
 //	.write_super	= pi_write_super,
@@ -1093,7 +1098,7 @@ FN;
 		goto error;
 	}
 	sb->s_fs_info = si;
-	isuper = iget(sb, PI_SUPER_INO);
+	isuper = pi_iget(sb, PI_SUPER_INO);
 	si->si_isuper = isuper;
 
 	page = pi_get_page(isuper, PI_SUPER_BLK);
@@ -1120,7 +1125,7 @@ FN;
 		goto error;
 	}
 
-	iroot = iget(sb, PI_ROOT_INO);
+	iroot = pi_iget(sb, PI_ROOT_INO);
 	sb->s_root = d_alloc_root(iroot);
 	if (!sb->s_root) {
 		printk(KERN_ERR "pi: get root inode failed\n");
@@ -1151,14 +1156,15 @@ error:
 	goto exit;
 }
 
-static struct super_block *pi_get_sb (
+static int pi_get_sb (
 	struct file_system_type	*fs_type,
 	int			flags,
 	const char		*dev_name,
-	void			*data)
+	void			*data,
+	struct vfsmount		*mnt)
 {
 FN;
-	return get_sb_bdev(fs_type, flags, dev_name, data, pi_fill_super);
+	return get_sb_bdev(fs_type, flags, dev_name, data, pi_fill_super, mnt);
 }
 
 static void pi_kill_super (struct super_block *sb)
