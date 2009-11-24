@@ -30,7 +30,7 @@ typedef struct task_s {
 
 
 bool	Pi_debug_is_on     = 1;
-bool	Pi_debug_func      = 0;
+bool	Pi_debug_func      = 1;
 bool	Pi_debug_filter    = 0;
 bool	Pi_debug_show_only = 0;
 bool	Pi_debug_delay     = 0;

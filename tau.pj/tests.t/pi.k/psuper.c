@@ -316,7 +316,7 @@ FN;
 	kmap(page);	// need a matching unmap
 	zero_page(page);
 	SetPageUptodate(page);
-	//ClearPageLocked(page);
+	unlock_page(page);
 	return 0;
 }
 
@@ -475,12 +475,10 @@ PRx(pblk);	//XXX: truncate, didn't
 PRx(from);
 PRx(to);
 	if (pblk) {
-HERE;
 		SetPageMappedToDisk(page);
 		pi_fill_page(page, pblk+offset);
 		lock_page(page);
 	} else {
-HERE;
 		pblk = pi_alloc_block(inode->i_sb, PI_ALU);
 		if (!pblk) return -ENOSPC;
 		tinfo->ti_extent[extent].e_start  = pblk;
@@ -519,7 +517,7 @@ static int pi_write_begin (
 	u64		index;
 	unint		from;
 	unint		to;
-
+FN;
 	index = pos >> PAGE_CACHE_SHIFT;
 	from = pos & (PAGE_CACHE_SIZE - 1);
 	to = from + len;
@@ -605,11 +603,9 @@ FN;
 	if (IS_ERR(page)) {
 		return PTR_ERR(page);
 	}
-
 	dir->i_size += sizeof(u64);
 	ilist = (u64 *)page_address(page);
 	ilist[offset] = ino;
-
 	set_page_dirty(page);
 
 	//mark_inode_dirty(dir);
@@ -952,13 +948,15 @@ error:
 static struct inode *pi_iget (struct super_block *sb, u64 ino)
 {
 	struct inode	*inode;
-
+FN;
 	inode = iget_locked(sb, ino);
 	if (!inode) return ERR_PTR(-ENOMEM);
 
 	if (!(inode->i_state & I_NEW)) return inode;
 
 	pi_read_inode(inode);
+
+	unlock_new_inode(inode);
 
 	return inode;
 }
@@ -1190,7 +1188,6 @@ static void pi_cleanup (void)
 static int pi_init (void)
 {
 	int	rc;
-
 FN;
 	rc = init_pi_buf_cache();
 	if (rc != 0) {
