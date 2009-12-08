@@ -377,6 +377,7 @@ FN;
 	if (!key) return;
 
 	sw_post("kbicho", key);
+	exit_tau();
 }
 
 void init_bicho (void)

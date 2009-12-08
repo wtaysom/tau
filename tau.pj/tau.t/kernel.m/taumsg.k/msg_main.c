@@ -274,7 +274,7 @@ static void destroy_avatar_pool (void)
 {
 FN;
 	if (Avatar_pool && kmem_cache_destroy(Avatar_pool)) {
-		printk(KERN_INFO "Avatar_pool: not all messages were freed\n");
+		eprintk("not all messages were freed\n");
 	}
 }
 
@@ -390,7 +390,7 @@ static void destroy_msg_pool (void)
 {
 FN;
 	if (Msg_pool && kmem_cache_destroy(Msg_pool)) {
-		printk(KERN_INFO "Msg_pool: not all messages were freed");
+		eprintk("not all messages were freed");
 	}
 }
 
@@ -574,28 +574,37 @@ FN;
 	deliver(mb);
 }
 
-static void local_send (
+static void send_destroyed (
 	datagate_s	*gate,
 	msgbuf_s	*mb)
 {
+	packet_s	*p = &mb->mb_packet;
 	avatar_s	*avatar;
+	avatar_s	*save_avatar;
 FN;
-	mb->mb_packet.pk_sys.q_tag = gate->gt_tag;
+	p->pk_sys.q_tag = gate->gt_tag;
+	p->pk_error = DESTROYED;
 
 // This is where we have to call the gate function
 	// Queue message
 	avatar = gate->gt_avatar;
-
-	enq_dq( &avatar->av_msgq, mb, mb_avatar);
-
-// This may work for destroyed gate - or we just change the type!
-	if ((gate->gt_type & ONCE) || (mb->mb_packet.pk_error == DESTROYED)) {
-		free_gate(gate);
+HERE;
+	if (gate->gt_type & KERNEL_GATE) {
+HERE;
+		save_avatar = peek_avatar();
+		enter_tau(avatar);
+		out_receive(avatar, mb, p->pk_error);
+		UNLOCK_MSG;
+		avatar->av_recvfn(p->pk_error, &p->pk_sys);
+		LOCK_MSG;
+		enter_tau(save_avatar);
+HERE;
 	} else {
-		release_gate(gate);
+HERE;
+		enq_dq( &avatar->av_msgq, mb, mb_avatar);
+		kick(avatar);
 	}
-	// Wake up destination
-	kick(avatar);
+	free_gate(gate);
 }
 
 /*
@@ -637,7 +646,7 @@ FN;
 	}
 	reply->rp_state = REPLY_FINISHED;
 }
-	
+
 void deliver (msgbuf_s *mb)
 {
 	packet_s	*p = &mb->mb_packet;
@@ -1056,13 +1065,7 @@ LABEL(RightType);
 		if (!mb) {
 			return ENOMSGS;
 		}
-		
-		mb->mb_packet.pk_error = DESTROYED;
-		gate->gt_type = ONCE;	// XXX: why am I setting this?
-					// So the right things happen
-					// in local send.
-
-		local_send(gate, mb);
+		send_destroyed(gate, mb);
 	} else {
 LABEL(WrongType);
 		free_gate(gate);
@@ -1252,11 +1255,7 @@ FN;
 		eprintk("Out of message buffers");
 		return 0;
 	}	
-	mb->mb_packet.pk_error = DESTROYED;
-	g->gt_type = ONCE;	// XXX: why am I setting this?
-				// So the right things happen
-				// in local send.
-	local_send(g, mb);
+	send_destroyed(g, mb);
 	return 0;
 }
 

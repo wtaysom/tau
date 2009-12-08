@@ -347,8 +347,8 @@ void destroy_gate_pool (void)
 {
 FN;
 	if (Gate_pool && kmem_cache_destroy(Gate_pool)) {
-		printk(KERN_INFO "gate_pool: not all gates were freed"
-			" created=%llu destroyed=%llu\n",
+		eprintk("not all gates were freed"
+			" created=%llu destroyed=%llu",
 			Inst.gates_created, Inst.gates_destroyed);
 	}
 }

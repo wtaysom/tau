@@ -30,8 +30,8 @@ typedef struct task_s {
 
 
 bool	Tau_debug_is_on     = 1;
-bool	Tau_debug_func      = 1;
-bool	Tau_debug_trace     = 1;
+bool	Tau_debug_func      = 0;
+bool	Tau_debug_trace     = 0;
 bool	Tau_debug_dieing    = 0;
 bool	Tau_debug_filter    = 0;
 bool	Tau_debug_show_only = 0;

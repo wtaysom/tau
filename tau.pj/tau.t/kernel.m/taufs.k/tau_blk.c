@@ -127,11 +127,10 @@ void destroy_tau_buf_cache (void)
 FN;
 	if (!Tau_buf_cachep) return;
 	if (Buf_alloc != Buf_free) {
-		iprintk("alloc=%ld free=%ld",
-			Buf_alloc, Buf_free);
+		eprintk("alloc=%ld free=%ld", Buf_alloc, Buf_free);
 	}
 	if (kmem_cache_destroy(Tau_buf_cachep)) {
-		iprintk("not all structures were freed");
+		eprintk("not all structures were freed");
 	}
 }
 

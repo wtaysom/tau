@@ -699,9 +699,11 @@ FN;
 	rc = sw_post_v(sizeof(shard_name), &shard_name, key);
 	if (rc) goto error;
 
+	exit_tau();
 	return shard;
 error:
 	rmv_shard(shard);
+	exit_tau();
 	return NULL;
 }
 

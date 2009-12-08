@@ -18,6 +18,8 @@
 #include <linux/init.h>
 #include <linux/fs.h>
 #include <linux/miscdevice.h>
+#include <linux/pagemap.h>
+#include <linux/version.h>
 #include <asm/uaccess.h>
 
 #include "mdb_dev.h"
@@ -64,7 +66,13 @@ FN;
 
 	case MDB_PID2TASK:
 		rcu_read_lock();
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,17))
 		mdb.pid_task = (unsigned long)find_task_by_pid(mdb.pid_pid);
+#else
+		//mdb.pid_task = (unsigned long)find_task_by_vpid(mdb.pid_pid);
+		mdb.pid_task = (unsigned long)pid_task(find_get_pid(mdb.pid_pid),
+							PIDTYPE_PID);
+#endif
 		rcu_read_unlock();
 		if (copy_to_user( buf, &mdb, count)) {
 			return -EFAULT;

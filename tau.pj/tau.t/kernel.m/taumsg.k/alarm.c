@@ -210,6 +210,7 @@ FN;
 
 	//XXX: Should just post this one locally.
 	sw_post("alarm", key);
+	exit_tau();
 }
 
 void init_alarm (void)

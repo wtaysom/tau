@@ -218,6 +218,7 @@ FN;
 
 	++Kache_inst.inode_alloc;
 	knode->ki_state = KN_NORMAL;
+dump_stack();
 	return &knode->ki_vfs_inode;
 }
 
@@ -226,16 +227,20 @@ static void close_knode (void *msg)
 	msg_s	*m = msg;
 	knode_s	*knode = m->q.q_tag;
 FN;
+HERE;
 	switch (knode->ki_state) {
 	case KN_NORMAL:
+HERE;
 		destroy_key_tau(knode->ki_key);
 		knode->ki_state = KN_CLOSED;
 		break;
 	case KN_DIEING:
+HERE;
 		kmem_cache_free(Knode_cachep, knode);
 		++Kache_inst.inode_free;
 		break;
 	case KN_CLOSED:
+HERE;
 	default:
 		eprintk("knode bad state = %lld", knode->ki_state);
 		break;
@@ -253,17 +258,21 @@ PRx(inode->i_ino);
 	enter_tau(knode->ki_replica->rp_avatar);
 	switch (knode->ki_state) {
 	case KN_NORMAL:
+HERE;
+		knode->ki_state = KN_DIEING;
 		destroy_gate_tau(knode->ki_keyid);
 		destroy_key_tau(knode->ki_key);
-		knode->ki_state = KN_DIEING;
 		break;
 	case KN_CLOSED:
+HERE;
 		kmem_cache_free(Knode_cachep, knode);
 LABEL(Inode_freed);
 		++Kache_inst.inode_free;
 		break;
 	case KN_DIEING:
+HERE;
 	default:
+HERE;
 		eprintk("knode bad state = %lld", knode->ki_state);
 		break;
 	}
@@ -301,12 +310,13 @@ FN;
 static void destroy_knode_cache (void)
 {
 FN;
+	if (!Knode_cachep) return;
 	if (Kache_inst.inode_alloc != Kache_inst.inode_free) {
-		printk(KERN_INFO "destroy_tnode_cache: alloc=%ld free=%ld\n",
+		eprintk("alloc=%ld free=%ld",
 			Kache_inst.inode_alloc, Kache_inst.inode_free);
 	}
 	if (kmem_cache_destroy(Knode_cachep)) {
-		printk(KERN_INFO "destroy_tnode_cache: not all structures were freed\n");
+		eprintk("not all structures were freed");
 	}
 }
 /**************************************************************************/
@@ -620,14 +630,17 @@ static inline struct timespec itime (u64 secs)
 
 static int register_knode (knode_s *knode)
 {
-	msg_s	m;
-	int	rc;
+	replica_s	*replica = knode->ki_replica;
+	msg_s		m;
+	int		rc;
 FN;
+	enter_tau(replica->rp_avatar);
 	m.q.q_tag  = knode;
 	m.q.q_type = RESOURCE;
 	rc = create_gate_tau( &m);
 	if (rc) {
 		eprintk("create_gate_tau %d", rc);
+		exit_tau();
 		return rc;
 	}
 	knode->ki_keyid = m.cr_id;
@@ -637,6 +650,7 @@ FN;
 		eprintk("send_key_tau %d", rc);
 		destroy_key_tau(m.q.q_passed_key);
 	}
+	exit_tau();
 	return rc;
 }
 
@@ -1311,7 +1325,6 @@ FN;
 
 	v->vol_avatar = init_msg_tau(v->vol_name, vol_receive);
 	if (!v->vol_avatar) goto error;
-	enter_tau(v->vol_avatar);
 
 	rc = sw_register(v->vol_name);
 	if (rc) goto error;
@@ -1404,7 +1417,7 @@ static void kache_exit (void)
 
 	tau_exit();
 	unregister_filesystem( &kache_fs_type);
-	if (Knode_cachep) destroy_knode_cache();
+	destroy_knode_cache();
 }
 
 static int kache_init (void)

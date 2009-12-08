@@ -165,10 +165,12 @@ FN;
 	key = make_gate( &replica->rp_sw_type, REQUEST | PASS_OTHER);
 	rc = sw_request_v(sizeof(shard_name), &shard_name, key);
 	if (rc) goto error;
+	exit_tau();
 
 	return replica;
 error:
 	free_tau(replica);
+	exit_tau();
 	return NULL;
 }
 

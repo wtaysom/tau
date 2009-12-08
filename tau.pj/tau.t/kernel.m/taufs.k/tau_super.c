@@ -374,9 +374,11 @@ FN;
 		eprintk("send_tau %d", rc);
 		goto error;
 	}
+	exit_tau();
 	return;
 error:
 	destroy_key_tau(replykey);
+	exit_tau();
 }
 
 static void ino_open (void *msg)
@@ -697,6 +699,7 @@ FN;
 	if (!Fs_avatar) return -1;
 
 	rc = sw_register("taufs");
+	exit_tau();
 	if (rc) return rc;
 
 	return 0;

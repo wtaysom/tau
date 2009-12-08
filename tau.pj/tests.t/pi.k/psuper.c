@@ -38,7 +38,7 @@ struct {
 	unint	buf_free;
 	unint	inode_alloc;	// Should be atomic types
 	unint	inode_free;
-} Perf_inst;
+} Pi_inst;
 
 void pi_pr_page (const char *fn, unsigned line, struct page *p)
 {
@@ -112,16 +112,16 @@ FN;
 }
 
 /**************************************************************************/
-static struct kmem_cache *Perf_buf_cachep;
+static struct kmem_cache *Pi_buf_cachep;
 
 static inline buf_s *pi_alloc_buf (void)
 {
 	buf_s	*buf;
 FN;
-	buf = kmem_cache_alloc(Perf_buf_cachep, GFP_KERNEL);
+	buf = kmem_cache_alloc(Pi_buf_cachep, GFP_KERNEL);
 	if (!buf) return NULL;
 
-	++Perf_inst.buf_alloc;
+	++Pi_inst.buf_alloc;
 	return buf;
 }
 
@@ -129,8 +129,8 @@ static void pi_destroy_buf (buf_s *buf)
 {
 FN;
 	assert(buf);
-	if (buf) kmem_cache_free(Perf_buf_cachep, buf);
-	++Perf_inst.buf_free;
+	if (buf) kmem_cache_free(Pi_buf_cachep, buf);
+	++Pi_inst.buf_free;
 }
 
 enum { NUM_PAGES = 1024 };
@@ -214,18 +214,18 @@ static int init_pi_buf_cache (void)
 {
 FN;
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,27))
-	Perf_buf_cachep = kmem_cache_create("pi_buf_cache",
+	Pi_buf_cachep = kmem_cache_create("pi_buf_cache",
 				sizeof(buf_s),
 				0, SLAB_HWCACHE_ALIGN|SLAB_RECLAIM_ACCOUNT,
 				pi_buf_init_once, NULL);
 #else
-	Perf_buf_cachep = kmem_cache_create("pi_buf_cache",
+	Pi_buf_cachep = kmem_cache_create("pi_buf_cache",
 				sizeof(buf_s),
 				0, SLAB_HWCACHE_ALIGN|SLAB_RECLAIM_ACCOUNT,
 				pi_buf_init_once);
 #endif
 
-	if (Perf_buf_cachep == NULL) {
+	if (Pi_buf_cachep == NULL) {
 		return -ENOMEM;
 	}
 	return 0;
@@ -234,30 +234,30 @@ FN;
 static void destroy_pi_buf_cache (void)
 {
 FN;
-	if (Perf_inst.buf_alloc != Perf_inst.buf_free) {
-		printk(KERN_INFO "destroy_pi_buf_cache: alloc=%ld free=%ld\n",
-			Perf_inst.buf_alloc, Perf_inst.buf_free);
+	if (Pi_inst.buf_alloc != Pi_inst.buf_free) {
+		eprintk("alloc=%ld free=%ld\n",
+			Pi_inst.buf_alloc, Pi_inst.buf_free);
 	}
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,27))
-	if (kmem_cache_destroy(Perf_buf_cachep)) {
+	if (kmem_cache_destroy(Pi_buf_cachep)) {
 		printk(KERN_INFO "destroy_pi_buf_cache: not all structures were freed\n");
 	}
 #else
-	kmem_cache_destroy(Perf_buf_cachep);
+	kmem_cache_destroy(Pi_buf_cachep);
 #endif
 }
 
 /**************************************************************************/
-static struct kmem_cache *Perf_inode_cachep;
+static struct kmem_cache *Pi_inode_cachep;
 
 static struct inode *pi_alloc_inode (struct super_block *sb)
 {
 	pi_inode_info_s	*tnode;
 FN;
-	tnode = kmem_cache_alloc(Perf_inode_cachep, GFP_KERNEL);
+	tnode = kmem_cache_alloc(Pi_inode_cachep, GFP_KERNEL);
 	if (!tnode) return NULL;
 
-	++Perf_inst.inode_alloc;
+	++Pi_inst.inode_alloc;
 	return &tnode->ti_vfs_inode;
 }
 
@@ -266,8 +266,8 @@ static void pi_destroy_inode (struct inode *inode)
 	pi_inode_info_s	*tnode = pi_inode(inode);
 FN;
 	assert(inode);
-	kmem_cache_free(Perf_inode_cachep, tnode);
-	++Perf_inst.inode_free;
+	kmem_cache_free(Pi_inode_cachep, tnode);
+	++Pi_inst.inode_free;
 }
 
 static void pi_inode_init_once (void *t)
@@ -280,11 +280,11 @@ FN;
 static int init_pi_inode_cache (void)
 {
 FN;
-	Perf_inode_cachep = kmem_cache_create("pi_inode_cache",
+	Pi_inode_cachep = kmem_cache_create("pi_inode_cache",
 				sizeof(pi_inode_info_s),
 				0, SLAB_HWCACHE_ALIGN|SLAB_RECLAIM_ACCOUNT,
 				pi_inode_init_once);
-	if (Perf_inode_cachep == NULL) {
+	if (Pi_inode_cachep == NULL) {
 		return -ENOMEM;
 	}
 	return 0;
@@ -293,11 +293,11 @@ FN;
 static void destroy_tnode_cache (void)
 {
 FN;
-	if (Perf_inst.inode_alloc != Perf_inst.inode_free) {
-		printk(KERN_INFO "destroy_tnode_cache: alloc=%ld free=%ld\n",
-			Perf_inst.inode_alloc, Perf_inst.inode_free);
+	if (Pi_inst.inode_alloc != Pi_inst.inode_free) {
+		eprintk("alloc=%ld free=%ld\n",
+			Pi_inst.inode_alloc, Pi_inst.inode_free);
 	}
-	kmem_cache_destroy(Perf_inode_cachep);
+	kmem_cache_destroy(Pi_inode_cachep);
 }
 /**************************************************************************/
 
@@ -1181,8 +1181,8 @@ static struct file_system_type pi_fs_type = {
 
 static void pi_cleanup (void)
 {
-	if (Perf_inode_cachep) destroy_tnode_cache();
-	if (Perf_buf_cachep) destroy_pi_buf_cache();
+	if (Pi_inode_cachep) destroy_tnode_cache();
+	if (Pi_buf_cachep) destroy_pi_buf_cache();
 }
 
 static int pi_init (void)

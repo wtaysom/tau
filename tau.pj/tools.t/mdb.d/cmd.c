@@ -467,12 +467,12 @@ static void pid (int argc, char *argv[])
 		error();
 		return;
 	}
-	pid = strtoul(argv[2], NULL, 16);
+	pid = strtoul(argv[1], NULL, 0);
 	task = pid2task(pid);
 	if (task) {
 		printf("%lx\n", task);
 	} else {
-		printf("pid %x not found\n", pid);
+		printf("pid %d not found\n", pid);
 	}
 }
 

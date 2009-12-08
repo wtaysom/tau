@@ -16,7 +16,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <setjmp.h>
-#define __USE_ISOC99
+//#define __USE_ISOC99
 #include <ctype.h>
 
 #include <sys/errno.h>
