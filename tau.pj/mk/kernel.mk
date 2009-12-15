@@ -39,22 +39,27 @@ objects := $(sources:.c=.o)
 
 arch    := $(shell uname -i)
 flavor  := $(shell uname -r | sed '-es/^.*-.*-//g')
+kernel  := $(shell uname -r | sed '-es/-$(flavor)//g')
+release := $(shell uname -r)
 srcpath := /usr/src/linux
 sympath := $(srcpath)-obj
-kdir    := $(sympath)/$(arch)/$(flavor)
-release := $(shell uname -r)
+##kdir    := $(sympath)/$(arch)/$(flavor)
+kdir    := $(srcpath)-$(kernel)
 
 kversion     := $(shell rpm -q kernel-source)
 extraversion := $(word 6,$(shell echo $(kversion) | sed '-es/[-\.]/ /g'))
 #extraversion := $(word 4,$(shell uname -r | sed '-es/[-\.]/ /g'))
 
+### This makes sure the kdir path is there. If not, use /usr/src/linux
+### but in that case, you must have built the kernel
 ifneq ($(wildcard $(kdir)), $(kdir))
-	kdir := $srcpath
+	kdir := $(srcpath)
 endif
 
 makefile := $(objdir)/Makefile
 pwd      := $(PWD)/$(objdir)
 
+#### @echo 'EXTRA_CFLAGS += -D_F=\"$$(*F)\"' >>$(makefile)
 default:
 	@mkdir -p $(objdir)
 	@cp -Lup $(sources) $(objdir)

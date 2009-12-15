@@ -223,9 +223,15 @@ enum {
 #endif
 
 #undef WHERE
-#ifdef _F
-	#define WHERE	__FILE__ "<" MAKE_STRING(__LINE__) "> "
-	//#define WHERE	_F "<" MAKE_STRING(__LINE__) "> "
+#ifdef KBUILD_BASENAME
+	#ifdef KBUILD_MODNAME
+		#define WHERE	KBUILD_MODNAME ":" KBUILD_BASENAME \
+				"<" MAKE_STRING(__LINE__) "> "
+	#else
+		#define WHERE	KBUILD_BASENAME "<" MAKE_STRING(__LINE__) "> "
+	#endif
+#elif defined _F
+	#define WHERE	_F "<" MAKE_STRING(__LINE__) "> "
 #else
 	#define WHERE	__FILE__ "<" MAKE_STRING(__LINE__) "> "
 #endif

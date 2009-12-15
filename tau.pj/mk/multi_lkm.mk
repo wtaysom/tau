@@ -23,8 +23,19 @@ obj-m   := $(addsuffix /,$(modules))
 
 objdir  :=.$(subst $(space),$(underscore),$(shell uname -srp))
 pwd     := $(PWD)/$(objdir)
+arch    := $(shell uname -i)
+flavor  := $(shell uname -r | sed '-es/^.*-.*-//g')
+kernel  := $(shell uname -r | sed '-es/-$(flavor)//g')
 release := $(shell uname -r)
-kdir    := /lib/modules/$(release)/build
+srcpath := /usr/src/linux
+kdir    := $(srcpath)-$(kernel)
+##kdir    := /lib/modules/$(release)/build
+
+# Make sure the kdir path is there. If not, use /usr/src/linux
+# but in that case, you must have built the kernel
+ifneq ($(wildcard $(kdir)), $(kdir))
+	kdir := $(srcpath)
+endif
 
 default:
 	@echo $(modules)

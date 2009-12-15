@@ -17,6 +17,6 @@
 #define lowBit(_x)	((_x) & ~((_x) - 1))
 #define highBit(_x)	(1 << ffsBit(_x))
 
-extern unsigned ffsBit(unsigned word);
+extern unsigned ffsBit (unsigned long word);
 
 #endif

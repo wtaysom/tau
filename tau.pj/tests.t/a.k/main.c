@@ -14,6 +14,8 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 
+#include <style.h>
+
 int	A_symbol;
 EXPORT_SYMBOL(A_symbol);
 
@@ -24,6 +26,7 @@ static int a_init (void)
 	A_symbol = 37;
 	printk(KERN_INFO "A_symbol=%d\n", A_symbol);
 
+	printk(KERN_INFO "WHERE=%s\n", WHERE);
 	return 0;
 }
 

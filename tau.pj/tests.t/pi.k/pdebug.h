@@ -20,18 +20,6 @@
 
 #define PI_DEBUG ENABLE
 
-#ifndef MAGIC_STRING
-	#define MAGIC_STRING(_x_)	# _x_
-	#define MAKE_STRING(_x_)	MAGIC_STRING(_x_)
-#endif
-
-#undef WHERE
-#ifdef _F
-	#define WHERE   _F "<" MAKE_STRING(__LINE__) "> "
-#else
-	#define WHERE   __FILE__ "<" MAKE_STRING(__LINE__) "> "
-#endif
-
 #ifdef __KERNEL__
 	#define xprintk(L, fmt, arg...)	\
 		printk(L "pi: " "%s<%d>: " fmt "\n", __func__, __LINE__, ## arg)

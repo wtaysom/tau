@@ -13,14 +13,14 @@
 
 #include "bit.h"
 
-unsigned ffsBit (register unsigned word)
+unsigned ffsBit (register unsigned long word)
 {
 	register unsigned	bit;
-	register unsigned	tmp;
+	register unsigned long	tmp;
 
 	bit = 0;
-	if (sizeof(unsigned) == 8) {
-		tmp = word >> (sizeof(unsigned) * 4);
+	if (sizeof(word) == 8) {
+		tmp = word >> (sizeof(word) * 4);
 		if (tmp) {
 			bit += 32;
 			word = tmp;
@@ -52,7 +52,7 @@ unsigned ffsBit (register unsigned word)
 }
 
 #ifdef TESTBIT
-unsigned simpleFindHighBit (unsigned x)
+unsigned simpleFindHighBit (unsigned long x)
 {
 	unsigned	cnt;
 
@@ -62,7 +62,7 @@ unsigned simpleFindHighBit (unsigned x)
 	return cnt - 1;
 }
 
-unsigned simpleLowBit (unsigned x)
+unsigned simpleLowBit (unsigned long x)
 {
 	unsigned	cnt = 0;
 
@@ -72,7 +72,7 @@ unsigned simpleLowBit (unsigned x)
 	return 1 << cnt;
 }
 
-void tstFindHighBit (unsigned x)
+void tstFindHighBit (unsigned long x)
 {
 	if (simpleFindHighBit(x) != ffsBit(x)) {
 		printf("FAILED FindHighBit: %x %d %d\n",
@@ -80,7 +80,7 @@ void tstFindHighBit (unsigned x)
 	}
 }
 
-void tstLowBit (unsigned x)
+void tstLowBit (unsigned long x)
 {
 	if (simpleLowBit(x) != lowBit(x)) {
 		printf("FAILED lowBit: %x %x %x\n",
