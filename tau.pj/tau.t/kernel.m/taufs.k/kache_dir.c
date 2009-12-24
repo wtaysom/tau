@@ -305,7 +305,7 @@ static u64 root_dir (tree_s *tree)
 static int change_root_dir (tree_s *tree, void *root)
 {
 FN;
-	tree->t_root = (u64)root;
+	tree->t_root = (addr)root;
 
 	return 0;
 }

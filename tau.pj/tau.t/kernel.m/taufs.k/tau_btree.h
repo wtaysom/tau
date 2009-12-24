@@ -74,7 +74,7 @@ static inline char* dump_rec (
 	}
 }
 
-static inline u64 root (tree_s *tree)
+static inline addr root (tree_s *tree)
 {
 	return tree->t_species->ts_root(tree);
 }

@@ -113,7 +113,7 @@ struct replygate_s {
 	struct page	*rg_pages[MAX_DATA_PAGES];
 };
 
-enum { AVATAR_MAGIC = 0x726174617661 };
+enum { AVATAR_MAGIC = 0x726174617661ULL };
 
 struct avatar_s {
 	u64			av_magic;
@@ -188,6 +188,7 @@ typedef struct Inst_s {
 	#define LOCK_MSG	((void)0)
 	#define UNLOCK_MSG	((void)0)
 	#define LOCKED_MSG	((void)0)
+	#define UNLOCKED_MSG	((void)0)
 #endif
 
 extern Inst_s	Inst;

@@ -1275,7 +1275,7 @@ in_node_died(avatar, node_no);
 			out_node_died(avatar);
 			return 0;
 		}
-		foreach_dq( &av->av_gates, destroy_gate, (void *)node_no);
+		foreach_dq( &av->av_gates, destroy_gate, (void *)(addr)node_no);
 	}
 }
 

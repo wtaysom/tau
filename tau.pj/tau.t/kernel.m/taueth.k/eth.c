@@ -20,6 +20,7 @@
 #include <linux/init.h>
 #include <linux/netdevice.h>
 #include <linux/version.h>
+#include <linux/skbuff.h>
 
 #include <tau/msg.h>
 #define tMASK	tNET

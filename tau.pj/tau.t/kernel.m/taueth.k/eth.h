@@ -58,10 +58,12 @@ enum { CHECK_PACKET_SIZE = 1 / ((sizeof(eth_hdr_s)+sizeof(packet_s)+CHUNK_SIZE)
 
 /* For compatibility with SLES 11 */
 
+#if 0 //This is different between 2.6.16.60-0.21-smp and 2.6.16.60-0.54.5-bigsmp
 static inline void skb_reset_mac_header (struct sk_buff *skb)
 {
 	skb->mac.raw = skb->data;
 }
+#endif
 
 static inline void skb_reset_network_header (struct sk_buff *skb)
 {
