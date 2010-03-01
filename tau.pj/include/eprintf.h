@@ -35,9 +35,11 @@
 
 #define fatal(fmt, arg...)	pr_fatal(MYFILE, __func__, __LINE__, fmt, ## arg)
 #define warn(fmt, arg...)	pr_warn(MYFILE, __func__, __LINE__, fmt, ## arg)
+#define display(fmt, arg...)	pr_display(MYFILE, __func__, __LINE__, fmt, ## arg)
 
 void pr_fatal  (const char *file, const char *func, int line, const char *fmt, ...);
 void pr_warn   (const char *file, const char *func, int line, const char *fmt, ...);
+void pr_display(const char *file, const char *func, int line, const char *fmt, ...);
 void pr_usage  (const char *fmt, ...);
 void eprintf   (const char *, ...);
 void weprintf  (const char *, ...);

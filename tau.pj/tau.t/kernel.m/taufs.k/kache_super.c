@@ -682,7 +682,8 @@ FN;
 	inode->i_ctime   = ctime;
 	inode->i_size    = size;
 	inode->i_blocks  = blocks;
-	inode->i_sb      = sb;
+	inode->i_sb      = sb;	//XXX: I think this is already filled in
+				// see: lsa_read_inode
 	inode->i_rdev    = sb->s_dev;
 	inode->i_blkbits = TAU_BLK_SHIFT;
 	inode->i_blksize = TAU_BLK_SIZE;

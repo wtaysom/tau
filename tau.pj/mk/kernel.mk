@@ -71,6 +71,7 @@ default:
 	@echo 'EXTRA_CFLAGS += -I$$(src)/../' >>$(makefile)
 	@echo 'EXTRA_CFLAGS += -I$$(src)/../../include' >>$(makefile)
 	@echo 'EXTRA_CFLAGS += -I$$(src)/../../../include' >>$(makefile)
+	@echo 'EXTRA_CFLAGS += $(myinc)' >>$(makefile)
 	@echo "default:" >>$(makefile)
 	@echo '	$$(MAKE) -C $(kdir) M=$(pwd) modules' >>$(makefile)
 	@cd $(objdir) && $(MAKE)

@@ -51,6 +51,7 @@ static void jill_write          (void *msg);
 static void jill_invalid        (void *msg);
 static void jill_enumerate      (void *msg);
 static void jill_get_info       (void *msg);
+static void jill_zid_open       (void *msg);
 
 static struct {
 	type_s		jwt_tag;
@@ -75,6 +76,7 @@ jill_type_s Jill_type = {{ JILL_OPS, jill_close }, {
 			jill_invalid,
 			jill_invalid,
 			jill_invalid,
+			jill_invalid,
 			jill_invalid
 			}};
 
@@ -87,7 +89,8 @@ jill_type_s Jill_open = {{ JILL_OPS, jill_close }, {
 			jill_read,
 			jill_write,
 			jill_enumerate,
-			jill_get_info
+			jill_get_info,
+			jill_zid_open
 			}};
 
 typedef struct jill_s {
@@ -522,6 +525,40 @@ void jill_write (void *msg)
 	if (rc) {
 		warn("send_tau %d", rc);
 		destroy_key_tau(reply);
+	}
+}
+
+void jill_zid_open (void *msg)
+{
+	jmsg_s	*m = msg;
+	ki_t	reply = m->q.q_passed_key;
+	jill_s	*j = m->q.q_tag;
+	jill_s	*jopen;
+	int	rc;
+
+	jopen = ezalloc(sizeof(*jopen));
+	*jopen = *j;
+	jopen->j_type = &Jill_open.jt_tag;
+
+	rc = zZIDOpen(j->j_key, j->j_task, j->j_name_space, NULL,
+			m->ji_zid, m->ji_requested_rights, &jopen->j_key);
+	if (rc) {
+		warn("zOpen %d", rc);
+		destroy_key_tau(reply);
+		free(jopen);
+		return;
+	}
+	m->q.q_passed_key = make_gate(jopen, RESOURCE | PASS_REPLY);
+	if (!m->q.q_passed_key) {
+		destroy_key_tau(reply);
+		warn("make_gate");
+		return;
+	}	
+	rc = send_key_tau(reply, m);
+	if (rc) {
+		destroy_key_tau(reply);
+		warn("send_key_tau %d", rc);
+		return;
 	}
 }
 

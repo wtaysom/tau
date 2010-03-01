@@ -22,6 +22,28 @@
 #include <errno.h>
 #include <eprintf.h>
 
+/* pr_display: print debug message */
+void pr_display (const char *file, const char *func, int line, const char *fmt, ...)
+{
+	va_list args;
+
+	fflush(stdout);
+	if (getprogname() != NULL) {
+		fprintf(stderr, "%s ", getprogname());
+	}
+	fprintf(stderr, "%s:%s<%d> ", file, func, line);
+	if (fmt) {
+		va_start(args, fmt);
+		vfprintf(stderr, fmt, args);
+		va_end(args);
+
+		if (fmt[0] != '\0' && fmt[strlen(fmt)-1] == ':') {
+			fprintf(stderr, " %s<%d>", strerror(errno), errno);
+		}
+	}
+	fprintf(stderr, "\n");
+}
+
 /* pr_fatal: print error message and exit */
 void pr_fatal (const char *file, const char *func, int line, const char *fmt, ...)
 {
@@ -168,8 +190,9 @@ char *estrdup (const char *s)
 	char *t;
 
 	t = (char *) malloc(strlen(s)+1);
-	if (t == NULL)
+	if (t == NULL) {
 		eprintf("estrdup(\"%.20s\") failed:", s);
+	}
 	strcpy(t, s);
 	return t;
 }

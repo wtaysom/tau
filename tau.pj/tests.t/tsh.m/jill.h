@@ -20,7 +20,8 @@
 
 enum {	JILL_IO_SIZE  = 1<<16,
 	JILL_MAX_PATH = 1<<12,
-	JILL_MAX_FDN  = 1<<10 };
+	JILL_MAX_FDN  = 1<<10,
+	JILL_NAME_LEN = (1<<8) - 1 };
 
 enum {	JILL_SW_REG = 0,
 	JILL_SW_OPS };
@@ -34,6 +35,7 @@ enum {	JILL_ROOT_KEY = 0,
 	JILL_WRITE,
 	JILL_ENUMERATE,
 	JILL_GET_INFO,
+	JILL_ZID_OPEN,
 	JILL_OPS };
 
 #ifndef _NSS_INTERNAL_
@@ -54,6 +56,7 @@ typedef struct jmsg_s {
 		body_u  b;
 		struct {
 			METHOD_S;
+			u64	ji_zid;
 			u32	ji_id;
 			u32	ji_task;
 			u32	ji_name_space;
