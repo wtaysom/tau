@@ -16,8 +16,13 @@
 #include <stdarg.h>
 #include <ctype.h>
 #include <debug.h>
-#include <strings.h>
-#include <uuid/uuid.h>
+#include <string.h>
+
+#ifdef __WINDOWS__
+	#define strncasecmp	_strnicmp
+	#define strcasecmp	_stricmp
+	#define snprintf	sprintf_s
+#endif
 
 #include <style.h>
 
@@ -150,7 +155,7 @@ bool prg (const char *fn, unsigned line, const char *label, double x)
 static void pr_n_u8 (const void *mem, unint n)
 {
 	const u8	*u = mem;
-	int	i;
+	unint		i;
 
 	printf(" ");
 	for (i = 4; i > n; i--) printf("  ");

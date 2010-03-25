@@ -40,8 +40,8 @@ bool prmem   (const char *, const void *, unsigned int);
 bool prbytes (const char *, const void *, unsigned int);
 bool print   (const char *fn, unsigned line, const char *format, ...);
 
-#define FN_ARG		__func__, __LINE__
-#define FN		prf(__func__)
+#define FN_ARG		__FUNCTION__, __LINE__
+#define FN		prf(__FUNCTION__)
 #define HERE		pr(FN_ARG, NULL)
 #define PR(_s_)		pr(FN_ARG, # _s_)
 #define PRd(_x_)	prd(FN_ARG, # _x_, _x_)
@@ -62,7 +62,7 @@ struct counter_s {
 void count (counter_s *coutner);
 void report (void);
 #define CNT {								\
-	static counter_s counter = { NULL, WHERE, __func__, 0 };	\
+	static counter_s counter = { NULL, WHERE, __FUNCTION__, 0 };	\
 	count( &counter);						\
 }
 

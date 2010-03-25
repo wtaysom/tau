@@ -35,7 +35,7 @@ typedef struct fs_s {
 
 static void supplied_fs (void *m);
 
-fs_type_s	Fs_type = { {SW_REPLY_MAX, 0 },
+fs_type_s	Fs_type = { { "Fs", SW_REPLY_MAX, 0 },
 				supplied_fs };
 
 fs_s		Fs = { &Fs_type.tf_tag };

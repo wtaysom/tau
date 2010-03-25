@@ -23,6 +23,7 @@ enum {	EBADMETHOD	= 2000, /* Bad method number */
  * Pointer to type must be first field of an object
  */
 typedef struct type_s {
+	const char	*ty_name;
 	unsigned	ty_num_methods;
 	method_f	ty_destroy;
 	method_f	ty_method[0];

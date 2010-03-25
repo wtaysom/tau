@@ -1,4 +1,4 @@
-#include <strings.h>
+#include <string.h>
 #include "ded.h"
 
 u64	Memory[MAX_MEM];

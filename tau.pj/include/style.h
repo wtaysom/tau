@@ -133,7 +133,7 @@ extern "C" {
 #define IS_ENABLED	==1)
 #define IS_DISABLED	==0)
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__WINDOWS__)
 	typedef	unsigned long long	__u64;
 	typedef unsigned int		__u32;
 	typedef unsigned short		__u16;
@@ -177,7 +177,7 @@ extern "C" {
 	typedef unsigned long	saddr;
 #endif
 
-#if !defined(_BOOL_) && !defined(__cplusplus)
+#if !defined(_BOOL_) && !defined(__cplusplus) && !(__WINDOWS__)
 	#ifndef FALSE
 		enum { FALSE, TRUE };
 	#endif
@@ -192,6 +192,13 @@ extern "C" {
 		#define _BOOL_ 1
 		typedef _Bool	bool;
 	#endif
+#endif
+
+#ifdef __WINDOWS__
+	#ifndef FALSE
+		enum { FALSE, TRUE };
+	#endif
+	typedef unsigned char	bool;
 #endif
 
 #ifndef _UTF8_T

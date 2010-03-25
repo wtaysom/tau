@@ -190,7 +190,7 @@ FN;
 struct file_type_s {
 	type_s		ft_tag;
 	method_f	ft_ops[FILE_OPS];
-} File_type = { { FILE_OPS, file_destroyed },
+} File_type = { { "File", FILE_OPS, file_destroyed },
 		{ ino_write,
 		  file_read,
 		  file_write,
@@ -457,7 +457,7 @@ static void ino_lookup (void *msg)
 struct bag_type_s {
 	type_s		bt_tag;
 	method_f	bt_ops[BAG_OPS];
-} Bag_type = { { BAG_OPS, 0 },
+} Bag_type = { { "Bag", BAG_OPS, 0 },
 		{ stat_bag,
 		  read_bag,
 		  write_bag,

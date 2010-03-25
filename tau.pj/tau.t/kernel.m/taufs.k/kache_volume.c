@@ -24,7 +24,7 @@ static void replica_key (void *msg);
 static struct {
 	type_s		rst_tag;
 	method_f	rst_ops[SW_REPLY_MAX];
-} Replica_sw_type = { { SW_REPLY_MAX, NULL },
+} Replica_sw_type = { { "Replica_sw", SW_REPLY_MAX, NULL },
 			{ replica_key }};
 
 static d_q	Volume_list = static_init_dq(Volume_list);

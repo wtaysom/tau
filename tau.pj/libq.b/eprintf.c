@@ -197,7 +197,7 @@ char *estrdup (const char *s)
 	return t;
 }
 
-#if __linux__
+#if __linux__ || __WINDOWS__
 static char *name = NULL;  /* program name for messages */
 
 // Defined in stdlib.h getprogname instead of progname

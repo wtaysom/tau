@@ -40,7 +40,7 @@ typedef struct hello_s {
 
 static void hello (void *m);
 
-hello_type_s	Hello_type = { {HELLO_OPS, 0 },
+hello_type_s	Hello_type = { { "Hello", HELLO_OPS, 0 },
 				hello };
 hello_s		Hello = { &Hello_type.th_tag };
 
@@ -56,7 +56,7 @@ typedef struct welcome_s {
 
 static void welcome (void *m);
 
-welcome_type_s	Welcome_type = { {1, 0 },
+welcome_type_s	Welcome_type = { { "Welcome", 1, 0 },
 				welcome };
 welcome_s	Welcome = { &Welcome_type.tw_tag };
 
@@ -80,7 +80,7 @@ static void peer_key   (void *m);
 static void add_shares (void *m);
 static void del_shares (void *m);
 
-share_type_s	Share_type = { {SHARE_OPS, share_destroyed },
+share_type_s	Share_type = { { "Share", SHARE_OPS, share_destroyed },
 				peer_key,
 				add_shares,
 				del_shares };
@@ -115,7 +115,7 @@ static void backup_add_dir   (void *msg);
 static void backup_new_dir   (void *msg);
 static void backup_print_dir (void *msg);
 
-peer_type_s	Peer_type = { {PEER_OPS, peer_destroyed },
+peer_type_s	Peer_type = { { "Peer", PEER_OPS, peer_destroyed },
 				peer_lookup,
 				peer_add_dir,
 				peer_new_dir,

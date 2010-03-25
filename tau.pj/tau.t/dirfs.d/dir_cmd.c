@@ -42,7 +42,7 @@ void prtree_cmd   (void *m);
 void prbackup_cmd (void *m);
 void readdir_cmd  (void *m);
 
-cmd_type_s	Cmd_type = { {DIR_OPS, destroy_cmd },
+cmd_type_s	Cmd_type = { { "Cmd", DIR_OPS, destroy_cmd },
 				crdir_cmd,
 				prtree_cmd,
 				prbackup_cmd,
@@ -63,7 +63,7 @@ typedef struct read_s {
 void destroy_read (void *m);
 void done_read (void *m);
 
-read_type_s	Read_type = { {DIR_OPS, destroy_read },	// WRONG
+read_type_s	Read_type = { { "Read", DIR_OPS, destroy_read },	// WRONG
 				done_read };
 
 read_s		Read = { &Read_type.tr_tag };

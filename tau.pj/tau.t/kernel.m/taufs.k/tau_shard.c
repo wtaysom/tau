@@ -30,7 +30,7 @@ static void create_spoke (void *msg);
 static struct shard_type_s {
 	type_s		st_tag;
 	method_f	st_ops[SHARD_OPS];
-} Shard_type = { { SHARD_OPS, NULL },
+} Shard_type = { { "Shard",  SHARD_OPS, NULL },
 		{	open_spoke,
 			create_spoke }};
 
@@ -340,7 +340,7 @@ error:
 static struct {
 	type_s		spi_tag;
 	method_f	spi_ops[SPOKE_OPS];
-} Spoke_type = { { SPOKE_OPS, close_spoke },
+} Spoke_type = { { "Spoke", SPOKE_OPS, close_spoke },
 			{ register_spoke,
 			  add_dir_entry,
 			  lookup_dir_entry,

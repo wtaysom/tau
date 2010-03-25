@@ -49,7 +49,7 @@ static void close_knode (void *msg);
 static struct {
 	type_s		kt_tag;
 	method_f	kt_ops[0];
-} Knode_type = { { 0, close_knode } };
+} Knode_type = { { "Knode", 0, close_knode } };
 
 void kache_pr_inode (const char *fn, unsigned line, struct inode *inode)
 {
@@ -1034,7 +1034,7 @@ FN;
 	up( &ksw->ksw_mutex);
 }
 
-ksw_type_s	Ksw_type = { { SW_REPLY_MAX, 0 },
+ksw_type_s	Ksw_type = { { "Ksw", SW_REPLY_MAX, 0 },
 				.tksw_key_supplied = ksw_key_supplied };
 
 /*

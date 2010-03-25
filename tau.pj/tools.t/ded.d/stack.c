@@ -1,4 +1,4 @@
-#include <strings.h>
+#include <string.h>
 #include "ded.h"
 
 static u64	Stack[STK_SIZE];

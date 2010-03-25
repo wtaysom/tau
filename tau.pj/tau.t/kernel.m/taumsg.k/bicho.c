@@ -33,7 +33,7 @@ static void find_gate_by_id (void *msg);
 struct bicho_sw_type_s {
 	type_s		bst_tag;
 	method_f	bst_methods[BICHO_SW_NUM];
-} 	Bicho_sw_type = { { BICHO_SW_NUM, NULL }, {
+} 	Bicho_sw_type = { { "Bicho_sw", BICHO_SW_NUM, NULL }, {
 				who_am_i,
 				ps,
 				next_pid,
@@ -54,7 +54,8 @@ static void avatar_gates   (void *msg);
 struct bicho_avatar_type_s {
 	type_s		bct_tag;
 	method_f	bct_methods[BICHO_AVATAR_NUM];
-} Bicho_avatar_type = { { BICHO_AVATAR_NUM, avatar_cleanup }, {
+} Bicho_avatar_type = { { "Bicho_avatar", BICHO_AVATAR_NUM, avatar_cleanup },
+			{
 				avatar_stat,
 				avatar_keys,
 				avatar_gates }};

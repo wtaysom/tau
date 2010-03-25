@@ -36,7 +36,7 @@ static avatar_s	*Alarm_avatar;
 
 static void create_alarm (void *msg);
 alarm_sw_type_s	Alarm_sw_type = {
-				{ ALARM_SW_NUM, NULL },
+				{ "Alarm_sw", ALARM_SW_NUM, NULL },
 				create_alarm };
 
 alarm_sw_s	Alarm_sw = { &Alarm_sw_type };	
@@ -57,7 +57,7 @@ typedef struct alarm_s {
 static void destroy_alarm (void *msg);
 static void start_cyclic  (void *msg);
 alarm_type_s	Alarm_type = {
-			{ ALARM_NUM, destroy_alarm },
+			{ "Alarm", ALARM_NUM, destroy_alarm },
 			start_cyclic };
 
 unint	Num_alarms = 0;

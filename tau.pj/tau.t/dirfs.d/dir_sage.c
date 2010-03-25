@@ -33,7 +33,7 @@ typedef struct sage_s {
 
 static void mkfs_cmd (void *m);
 
-sage_type_s	Sage_type = { {FS_OPS, 0 },
+sage_type_s	Sage_type = { { "Sage", FS_OPS, 0 },
 				mkfs_cmd };
 
 sage_s		Sage = { &Sage_type.tsg_tag };

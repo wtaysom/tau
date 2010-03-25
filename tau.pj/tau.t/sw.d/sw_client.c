@@ -44,7 +44,7 @@ static void any_key        (void *m);
 static void next_key       (void *m);
 
 client_type_s	Client_type = {
-			{ SW_OPS, client_destroy },{
+			{ "Client", SW_OPS, client_destroy },{
 			post_key,
 			get_keys,
 			next_key}};
@@ -177,7 +177,7 @@ typedef struct register_s {
 void register_client (void *m);
 
 register_type_s	Register_type = {
-				{ 1, 0 },
+				{ "Register", 1, 0 },
 				register_client};
 
 register_s	Register = { &Register_type.tr_tag};

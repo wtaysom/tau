@@ -54,7 +54,7 @@ static void node_connect (void *m);
 static void node_post    (void *m);
 
 node_type_s	Node_type = {
-			{ NODE_OPS, node_destroy },
+			{ "Node", NODE_OPS, node_destroy },
 			node_post,
 			node_connect };
 
@@ -174,7 +174,7 @@ static void net_connect (void *m);
 enum { NET_NEW, NET_CONNECT, NET_OPS };
 
 net_type_s	Net_type = {
-			{ NET_OPS, 0 },
+			{ "Net", NET_OPS, 0 },
 			net_new,
 			net_connect};
 

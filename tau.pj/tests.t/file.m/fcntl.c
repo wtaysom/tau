@@ -465,7 +465,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <strings.h>
+#include <string.h>
 #include <signal.h>
 
 #include <sys/types.h>
