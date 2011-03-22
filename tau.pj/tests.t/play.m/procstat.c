@@ -102,7 +102,7 @@ int main (int argc, char *argv[])
 	for (;;) {
 		r = fgets(s, sizeof(s), f);
 		if (!r) break;
-		printf(s);
+		printf("%s", s);
 		n = get_args(s);
 		dump_args(n);
 		v = mk_vector(n);

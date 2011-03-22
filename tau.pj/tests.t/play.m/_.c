@@ -24,8 +24,13 @@ void scan (char *name, dir_f fn)
 
 void pr_dir (struct dirent *d)
 {
+#ifdef __APPLE__
+	printf("%10llx %10llx %2x %s\n",
+		(u64)d->d_ino, (u64)d->d_seekoff, d->d_type, d->d_name);
+#else
 	printf("%10llx %10llx %2x %s\n",
 		(u64)d->d_ino, (u64)d->d_off, d->d_type, d->d_name);
+#endif
 }
 
 bool no_white_space (char *name)

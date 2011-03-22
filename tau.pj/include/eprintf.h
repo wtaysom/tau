@@ -23,6 +23,10 @@
 #include <stddef.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define xprintk(L, fmt, ...)	\
 	printk(L "tau: " "%s<%d>: " fmt "\n", __FUNCTION__, __LINE__, ## __VA_ARGS__)
 
@@ -56,4 +60,7 @@ const char *getprogname (void);
 
 #define	NELEMS(a)	(sizeof(a) / sizeof(a[0]))
 
+#ifdef __cplusplus
+}
+#endif
 #endif

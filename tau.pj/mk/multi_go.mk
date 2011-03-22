@@ -12,27 +12,20 @@
 #  GNU General Public License for more details.
 ############################################################################
 
-os	:= $(shell uname)
-target  := $(shell uname -p)
-objdir  :=.$(target)
-sources := $(wildcard *.c)
-objects := $(addprefix $(objdir)/, $(sources:.c=))
-opuses  := $(sources:.c=)
+include ../../mk/Make.$(GOARCH)
+
+objdir  :=.$(GOOS)/$(GOARCH)
+sources := $(wildcard *.go)
+objects := $(addprefix $(objdir)/, $(sources:.go=))
+opuses  := $(sources:.go=)
 bin     ?= ~/playbin
-
-INC+=-I. -I../include -I../../include
-
-CFLAGS+=-O -g -Wall -Wstrict-prototypes -Werror \
-	-D_F=\"$(basename $(notdir $(<)))\" \
-	-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 \
-	$(.INCLUDES) $(INC) \
 
 all: $(objects)
 
-$(objdir)/% : %.c
+$(objdir)/% : %.go
 	@ mkdir -p $(objdir)
-	echo $(LIBS)
-	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
+	$(GC) -o $@.$O $^
+	$(LD) -o $@ $@.$O
 	cp $@ $(bin)
 
 install:
@@ -49,6 +42,8 @@ cleanbin:
 	@ cd $(bin) ; rm -f $(opuses)
 
 test:
-	@echo "objdir ="$(objdir)
-	@echo "objects="$(objects)
-	@echo "opuses ="$(opuses)
+	@echo $(opuses)
+	@echo $(objdir)
+	@echo $(sources)
+	@echo $(objects)
+

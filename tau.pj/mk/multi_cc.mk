@@ -15,24 +15,23 @@
 os	:= $(shell uname)
 target  := $(shell uname -p)
 objdir  :=.$(target)
-sources := $(wildcard *.c)
-objects := $(addprefix $(objdir)/, $(sources:.c=))
-opuses  := $(sources:.c=)
+sources := $(wildcard *.cc)
+objects := $(addprefix $(objdir)/, $(sources:.cc=))
+opuses  := $(sources:.cc=)
 bin     ?= ~/playbin
 
 INC+=-I. -I../include -I../../include
 
-CFLAGS+=-O -g -Wall -Wstrict-prototypes -Werror \
+CFLAGS+=-O -g -Wall -Werror \
 	-D_F=\"$(basename $(notdir $(<)))\" \
 	-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 \
 	$(.INCLUDES) $(INC) \
 
 all: $(objects)
 
-$(objdir)/% : %.c
+$(objdir)/% : %.cc
 	@ mkdir -p $(objdir)
-	echo $(LIBS)
-	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
+	$(CXX) $(CFLAGS) -o $@ $^ $(LIBS)
 	cp $@ $(bin)
 
 install:
@@ -49,6 +48,5 @@ cleanbin:
 	@ cd $(bin) ; rm -f $(opuses)
 
 test:
-	@echo "objdir ="$(objdir)
-	@echo "objects="$(objects)
-	@echo "opuses ="$(opuses)
+	@echo $(opuses)
+

@@ -14,6 +14,10 @@
 #ifndef _TIMER_H_
 #define _TIMER_H_ 1
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef unsigned long long	tick_t;
 
 enum { NUM_SLOTS = 16, NUM_WHEELS = 16 };
@@ -119,4 +123,8 @@ static inline u64 nsecs (void)
 	cascade(_c, end-start);	\
 }
 
+#endif
+
+#ifdef __cplusplus
+}
 #endif

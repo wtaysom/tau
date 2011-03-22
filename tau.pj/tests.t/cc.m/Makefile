@@ -12,16 +12,6 @@
 #  GNU General Public License for more details.
 ############################################################################
 
-BLOCKNUM?=32
-
-CFLAGS += -DBLOCKNUM=$(BLOCKNUM)
-
-system := $(shell uname)
-include ../../mk/multi.mk
-INC += -Iinclude
+include ../../mk/multi_cc.mk
 LIBS += ../../libq.b/$(objdir)/libq -lm
 #LIBS += -lq -lm
-ifeq ($(system),Linux)
-	LIBS += -lrt -luuid
-endif
-LIBS += -lpthread

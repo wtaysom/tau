@@ -12,43 +12,35 @@
 #  GNU General Public License for more details.
 ############################################################################
 
-os	:= $(shell uname)
-target  := $(shell uname -p)
-objdir  :=.$(target)
-sources := $(wildcard *.c)
-objects := $(addprefix $(objdir)/, $(sources:.c=))
-opuses  := $(sources:.c=)
+include ../../mk/Make.inc
+
+
+name    := $(basename $(notdir $(PWD)))
+objdir  :=.$(GOOS)/$(GOARCH)
+sources := $(wildcard *.go)
+objects := $(addprefix $(objdir)/, $(sources:.go=.$O))
+opus    := $(objdir)/$(name)
 bin     ?= ~/playbin
 
-INC+=-I. -I../include -I../../include
-
-CFLAGS+=-O -g -Wall -Wstrict-prototypes -Werror \
-	-D_F=\"$(basename $(notdir $(<)))\" \
-	-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 \
-	$(.INCLUDES) $(INC) \
-
-all: $(objects)
-
-$(objdir)/% : %.c
+$(objdir)/%.$O : %.go Makefile
 	@ mkdir -p $(objdir)
-	echo $(LIBS)
-	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
-	cp $@ $(bin)
+	$(GC) -I $(objdir) -o $@ $<
+
+$(opus):$(objects) $(LIBS)
+	$(LD) -L $(objdir) -o $(opus) $(objdir)/main.$O $(LIBS)
+	cp $(opus) $(bin)
+
+.PHONEY: install clean test
 
 install:
-	cd $(objdir); cp $(opuses) $(bin)
+	cp $(opus) $(bin)
 
-.PHONEY : clean
 clean:
-	@ rm -fr $(objdir)
+	@rm -fr $(objdir)
 	@rm -f *.core
 	@rm -f *.out
-	@ cd $(bin) ; rm -f $(opuses)
-
-cleanbin:
-	@ cd $(bin) ; rm -f $(opuses)
+	@rm -f $(bin)/$(opus)
 
 test:
-	@echo "objdir ="$(objdir)
-	@echo "objects="$(objects)
-	@echo "opuses ="$(opuses)
+	@ echo "sources=$(sources)"
+	@ echo "objects=$(objects)"

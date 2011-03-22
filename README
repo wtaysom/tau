@@ -1,0 +1,4 @@
+An expermimental project started at Novell to develop a distributed file system.
+
+Current focus is on micro-benchmarks for file systems and tools for
+measuring performance.

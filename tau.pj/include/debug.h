@@ -18,6 +18,10 @@
 #include <style.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int debugon   (void);
 int debugoff  (void);
 int fdebugon  (void);
@@ -69,6 +73,10 @@ void report (void);
 #ifndef assert
 extern int assertError(const char *what);
 #define assert(_e_)	((void)((_e_) || assertError(WHERE " (" # _e_ ")")))
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif
