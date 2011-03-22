@@ -12,6 +12,8 @@
 #  GNU General Public License for more details.
 ############################################################################
 
+TARGET  ?= $(shell uname -m)
+
 os	:= $(shell uname)
 opus    := $(basename $(notdir $(PWD)))
 target  := $(TARGET)

@@ -12,6 +12,8 @@
 #  GNU General Public License for more details.
 ############################################################################
 
+TARGET  ?= $(shell uname -m)
+
 target  := $(TARGET)
 objdir  :=.$(target)
 sources := $(wildcard *.c)

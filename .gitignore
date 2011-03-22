@@ -1,6 +1,8 @@
+cscope.*
+save
 .Linux*
 .x86_64
-.386
+.i386
 .i686
 .mario
-cscope.*
+.*.swp

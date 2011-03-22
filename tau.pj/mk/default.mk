@@ -11,9 +11,8 @@
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #  GNU General Public License for more details.
 ############################################################################
-# Old things I don't want to forget
-##target  := $(shell uname -m)
 
+TARGET  ?= $(shell uname -m)
 
 name    := $(basename $(notdir $(PWD)))
 target  := $(TARGET)
