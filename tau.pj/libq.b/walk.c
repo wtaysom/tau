@@ -41,7 +41,7 @@ void walk_dir (char *name, dir_f f, void *arg, int level)
 		walk_dir(de->d_name, f, arg, level+1);
 	}
 	closedir(dir);
-	chdir("..");
+	if (chdir("..")) return;
 }
 
 #if 0

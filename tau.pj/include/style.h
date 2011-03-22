@@ -244,6 +244,16 @@ enum {
 #endif
 
 /*
+ * Macros for checking values of constants
+ * Generates a divide by 0 error during compilation
+ */
+#define CONCATENATE_DETAIL(_x_, _y_)	_x_##_y_
+#define CONCATENATE(_x_, _y_)		CONCATENATE_DETAIL(_x_, _y_)
+#define MAKE_UNIQUE(_x_)		CONCATENATE(_x_, __COUNTER__)
+#define CHECK_CONST(_expression_)	\
+	enum { MAKE_UNIQUE(CHECK_) = 1 / (_expression_) }
+
+/*
  * When given a pointer to a field of sub-struct of a
  * structure, container returns a pointer to the beginning
  * of structure.

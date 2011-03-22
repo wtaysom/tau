@@ -14,10 +14,12 @@
 
 os	:= $(shell uname)
 opus    := $(basename $(notdir $(PWD)))
-target  := $(shell uname -p)
+target  := $(TARGET)
 objdir  :=.$(target)
 sources := $(wildcard *.c)
 objects := $(addprefix $(objdir)/, $(sources:.c=.o))
+
+include $(BASEPJ)/mk/$(target).mk
 
 #CC=/usr/local/bin/gcc
 INC+=-I. -I../include -I../../include
@@ -43,7 +45,8 @@ $(opus): $(objects)
 	esac
 
 install:
-	sudo cp $(objdir)/$(opus) /usr/lib/$(opus).a
+	cp $(objdir)/$(opus) /tmp/$(opus).a
+	sudo mv /tmp/$(opus).a /usr/lib/$(opus).a
 
 clean:
 	@rm -f *.core

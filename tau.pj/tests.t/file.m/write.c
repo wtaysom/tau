@@ -156,7 +156,7 @@ int main (int argc, char *argv[])
 		exit(1);
 	}
 	if (rc != sizeof(Buf)) {
-		fprintf(stderr, "Asked to write %ld bytes but only wrote %d bytes\n",
+		fprintf(stderr, "Asked to write %zu bytes but only wrote %d bytes\n",
 			sizeof(Buf), rc);
 		exit(1); 
 	}

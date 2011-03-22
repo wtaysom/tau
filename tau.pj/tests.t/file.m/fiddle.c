@@ -178,7 +178,9 @@ void fill (int fd, unsigned size, arg_s *arg)
 
 	randomize(buf, sizeof(buf), arg);
 	for (i = 0; i < size; i++) {
-		write(fd, buf, sizeof(buf));
+		if (write(fd, buf, sizeof(buf)) < 0) {
+			fatal("write:");
+		}
 	}
 	Inst.num_written += size;
 }

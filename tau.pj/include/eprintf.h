@@ -40,7 +40,8 @@ extern "C" {
 
 #define fatal(fmt, ...)		pr_fatal  (MYFILE, __FUNCTION__, __LINE__, fmt, ## __VA_ARGS__)
 #define warn(fmt, ...)		pr_warn   (MYFILE, __FUNCTION__, __LINE__, fmt, ## __VA_ARGS__)
-#define display(fmt, ...)	pr_display(MYFILE, __FUNCTION__, __LINE__, fmt, ## __VA_ARGS__)
+// Has a name clash. I think with ncurses
+//#define display(fmt, ...)	pr_display(MYFILE, __FUNCTION__, __LINE__, fmt, ## __VA_ARGS__)
 
 void pr_fatal  (const char *file, const char *func, int line, const char *fmt, ...);
 void pr_warn   (const char *file, const char *func, int line, const char *fmt, ...);

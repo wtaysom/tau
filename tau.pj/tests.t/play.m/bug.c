@@ -78,7 +78,7 @@ int main (int argc, char *argv[])
 
 	init();
 
-	fgets(s, sizeof(s), stdin);
+	if (!fgets(s, sizeof(s), stdin)) return 0;
 	execute( &bug, s);
 	return 0;
 }

@@ -167,7 +167,9 @@ int main (int argc, char *argv[])
 			exit(1);
 		}
 		lseek(fd, NUM_BUFS * sizeof(Buf), 0);
-		write(fd, Buf, sizeof(Buf));
+		if (write(fd, Buf, sizeof(Buf)) != sizeof(Buf)) {
+			perror("write");
+		}
 		lseek(fd, 0, 0);
 		for (i = 0; i < NUM_BUFS; ++i) {
 			bytes = read(fd, Buf, sizeof(Buf));

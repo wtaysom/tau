@@ -106,6 +106,6 @@ int main (int argc, char *argv[])
 		stopTimer();
 		prTimer();
 		printf(" size=%lld n=%d\n", size, n);
-		chdir("..");
+		if (chdir("..")) perror("chdir ..");
 	}
 }

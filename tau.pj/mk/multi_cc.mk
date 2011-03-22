@@ -13,7 +13,7 @@
 ############################################################################
 
 os	:= $(shell uname)
-target  := $(shell uname -p)
+target  := $(shell uname -m)
 objdir  :=.$(target)
 sources := $(wildcard *.cc)
 objects := $(addprefix $(objdir)/, $(sources:.cc=))

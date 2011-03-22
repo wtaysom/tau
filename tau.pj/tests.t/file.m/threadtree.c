@@ -186,7 +186,9 @@ void fill (int fd, arg_s *arg)
 		buf[i] = rnd_char[a_range(sizeof(rnd_char)-1, arg)];
 	}
 	for (i = 0; i < n; i++) {
-		write(fd, buf, sizeof(buf));
+		if (write(fd, buf, sizeof(buf)) != sizeof(buf)) {
+			fatal("write:");
+		}
 	}
 	Inst.num_written += n * sizeof(buf);
 }

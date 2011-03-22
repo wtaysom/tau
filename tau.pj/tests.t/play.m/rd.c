@@ -32,7 +32,10 @@ void fill (int fd, int pages)
 	int	i;
 
 	for (i = pages; i; i--) {
-		write(fd, buf, sizeof(buf));
+		if (write(fd, buf, sizeof(buf)) != sizeof(buf)) {
+			perror("fill");
+			exit(2);
+		}
 	}
 	fsync(fd);
 }
@@ -105,7 +108,10 @@ int main (int argc, char *argv[])
 	remainder = filesize;
 	startTime = nsecs();
 	for (i = n; i; i--) {
-		read(fd, buf, readsize);
+		if (read(fd, buf, readsize) == -1) {
+			perror("read");
+			exit(2);
+		}
 		remainder -= readsize;
 		if (remainder < readsize) {
 			remainder = filesize;

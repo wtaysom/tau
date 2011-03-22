@@ -88,9 +88,11 @@
 #include <mylib.h>
 #include <eprintf.h>
 #include <timer.h>
+#include <debug.h>
 
 typedef struct arg_s {
 	char	name[128];
+	pthread_t	id;
 } arg_s;
 
 typedef struct lock_s {
@@ -123,7 +125,9 @@ raw_spinlock_t	Init_spin_lock = __RAW_SPIN_LOCK_UNLOCKED;
 unint	Loops = 100000;
 unint	Num_locks = 10;
 lock_s	*Lock;
-pthread_mutex_t	Start = PTHREAD_MUTEX_INITIALIZER;
+lock_s	StartLock;
+lock_s	CountLock;
+int Count;
 
 static void init_locks (unint n)
 {
@@ -142,6 +146,19 @@ static void init_locks (unint n)
 		lock->lock = 0;
 #endif
 	}
+#if MUTEX
+	pthread_mutex_init( &StartLock->lock, NULL);
+	pthread_mutex_init( &CountLock->lock, NULL);
+#elif SPIN
+	StartLock.lock = Init_spin_lock;
+	CountLock.lock = Init_spin_lock;
+#elif TSPIN
+	pthread_spin_init( &StartLock->lock, PTHREAD_PROCESS_PRIVATE);
+	pthread_spin_init( &CountLock->lock, PTHREAD_PROCESS_PRIVATE);
+#elif GLOBAL
+	StartLock.lock = 0;
+	CountLock.lock = 0;
+#endif
 }
 
 static inline void rgb_lock (char *name, lock_s *lock)
@@ -172,18 +189,26 @@ static inline void rgb_unlock (char *name, lock_s *lock)
 #endif
 }
 
+static void dec_count(void)
+{
+	rgb_lock("count", &CountLock);
+	--Count;
+	rgb_unlock("count", &CountLock);
+}
+
 void *rgb (void *arg)
 {
 	arg_s	*a = arg;
 	u64	start, finish;
-	unint	red   = 0;
-	unint	green = 1;
+	unint	red   = a->id;
+	unint	green = a->id + 1;
 	unint	i;
 
-	pthread_mutex_lock( &Start);
-	pthread_mutex_unlock( &Start);
-	start = nsecs();
 	rgb_lock(a->name, &Lock[red]);
+	dec_count();
+	rgb_lock("start", &StartLock);
+	rgb_unlock("start", &StartLock);
+	start = nsecs();
 	for (i = Loops; i; i--) {
 #if (!DEBUG && !MUTEX && !SPIN && !TSPIN)
 		donothing();
@@ -197,7 +222,7 @@ void *rgb (void *arg)
 	rgb_unlock(a->name, &Lock[red]);
 	finish = nsecs();
 	printf("%s %g nsecs per lock-unlock pair\n", a->name,
-		((double)(finish - start))/(Loops + 1));
+		((double)(finish - start))/Loops);
 	return NULL;
 }
 
@@ -209,20 +234,24 @@ void start_threads (unsigned threads)
 	arg_s		*arg;
 	arg_s		*a;
 
-	pthread_mutex_lock( &Start);
+	Count = threads;
+	rgb_lock("start", &StartLock);
 	thread = ezalloc(threads * sizeof(pthread_t));
 	arg    = ezalloc(threads * sizeof(arg_s));
 	for (i = 0, a = arg; i < threads; i++, a++) {
 		sprintf(a->name, "rgb%d", i);
+		a->id = i;
 		rc = pthread_create( &thread[i], NULL, rgb, a);
 		if (rc) {
 			eprintf("pthread_create %d\n", rc);
 			break;
 		}
 	}
-	sleep(1);
-	pthread_mutex_unlock( &Start);
-	while (i--) {
+	for (i = 0; Count; i++) {
+		sleep(1);
+	}
+	rgb_unlock("start", &StartLock);
+	for (i = 0; i < threads; i++) {
 		pthread_join(thread[i], NULL);
 	}
 }

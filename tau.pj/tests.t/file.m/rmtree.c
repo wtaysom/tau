@@ -81,11 +81,11 @@ void rmtreeq (const char *path)
 	int	current;
 
 	current = openq(".", O_RDONLY);
-	chdir(path);
+	if (chdir(path)) perror("chdir");
 
 	rmlevel();
 
-	fchdir(current);
+	if (fchdir(current)) perror("fchdir");
 	rmdirq(path);
 }
 

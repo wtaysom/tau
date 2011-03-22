@@ -11,15 +11,19 @@
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #  GNU General Public License for more details.
 ############################################################################
+# Old things I don't want to forget
+##target  := $(shell uname -m)
 
-os	:= $(shell uname)
+
 name    := $(basename $(notdir $(PWD)))
-target  := $(shell uname -p)
+target  := $(TARGET)
 objdir  :=.$(target)
 sources := $(wildcard *.c)
 objects := $(addprefix $(objdir)/, $(sources:.c=.o))
 opus    := $(objdir)/$(name)
 bin     ?= ~/playbin
+
+include $(BASEPJ)/mk/$(target).mk
 
 INC+=-I. -I../include -I../../include
 

@@ -12,13 +12,14 @@
 #  GNU General Public License for more details.
 ############################################################################
 
-os	:= $(shell uname)
-target  := $(shell uname -p)
+target  := $(TARGET)
 objdir  :=.$(target)
 sources := $(wildcard *.c)
 objects := $(addprefix $(objdir)/, $(sources:.c=))
 opuses  := $(sources:.c=)
 bin     ?= ~/playbin
+
+include $(BASEPJ)/mk/$(target).mk
 
 INC+=-I. -I../include -I../../include
 

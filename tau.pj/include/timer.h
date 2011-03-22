@@ -18,6 +18,10 @@
 extern "C" {
 #endif
 
+#ifndef _STYLE_H_
+#include <style.h>
+#endif
+
 typedef unsigned long long	tick_t;
 
 enum { NUM_SLOTS = 16, NUM_WHEELS = 16 };
@@ -84,6 +88,7 @@ static inline tick_t nsecs (void)
 #endif
 
 // DON'T USE keeping here for future reference.
+#if 0
 static __always_inline unsigned long long cputicks (void)
 {
 	DECLARE_ARGS(val, low, high);
@@ -95,6 +100,7 @@ static __always_inline unsigned long long cputicks (void)
 
 	return EAX_EDX_VAL(val, low, high);
 }
+#endif
 
 #ifndef _TIME_H
 #include <time.h>
