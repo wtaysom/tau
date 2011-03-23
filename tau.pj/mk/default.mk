@@ -14,6 +14,7 @@
 
 TARGET  ?= $(shell uname -m)
 
+makedir := $(dir $(lastword $(MAKEFILE_LIST)))
 name    := $(basename $(notdir $(PWD)))
 target  := $(TARGET)
 objdir  :=.$(target)
@@ -22,7 +23,7 @@ objects := $(addprefix $(objdir)/, $(sources:.c=.o))
 opus    := $(objdir)/$(name)
 bin     ?= ~/playbin
 
-include $(BASEPJ)/mk/$(target).mk
+include $(makedir)/$(target).mk
 
 INC+=-I. -I../include -I../../include
 

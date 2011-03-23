@@ -14,6 +14,7 @@
 
 TARGET  ?= $(shell uname -m)
 
+makedir := $(dir $(lastword $(MAKEFILE_LIST)))
 os	:= $(shell uname)
 opus    := $(basename $(notdir $(PWD)))
 target  := $(TARGET)
@@ -21,7 +22,7 @@ objdir  :=.$(target)
 sources := $(wildcard *.c)
 objects := $(addprefix $(objdir)/, $(sources:.c=.o))
 
-include $(BASEPJ)/mk/$(target).mk
+include $(makedir)/$(target).mk
 
 #CC=/usr/local/bin/gcc
 INC+=-I. -I../include -I../../include
