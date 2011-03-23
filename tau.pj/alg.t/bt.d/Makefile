@@ -12,9 +12,16 @@
 #  GNU General Public License for more details.
 ############################################################################
 
-LIBS += -lq
-#LIBS += -lreadline
 #LIBS += /usr/local/include/readline
 #LIBS += /Users/taysom/src/readline-6.1/shlib/readline.so
-LIBS += /usr/lib/libreadline.dylib
+#LIBS += /usr/lib/libreadline.dylib
 include ../../mk/default.mk
+LIBS += -lq
+##ifeq ($(os),Linux)
+##	LIBS += -lreadline
+##else ifeq ($(os),Darwin)
+##	LIBS += /usr/lib/libreadline.dylib
+##else
+##	LIBS += -lxyzzy
+##endif
+#LIBS += -lreadline

@@ -8,6 +8,8 @@
 // could even just encode the length into bytes and put it back together.
 // then it could be 3 bytes :-)
 
+#define _XOPEN_SOURCE 500
+
 #include <fcntl.h>
 #include <string.h>
 #include <unistd.h>
