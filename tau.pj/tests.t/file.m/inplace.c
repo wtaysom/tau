@@ -12,7 +12,8 @@
 
 #include "timer.h"
 
-static void inplace_write(int fd, void *buf, size_t n, int iterations) {
+static void inplace_write(int fd, void *buf, size_t n, int iterations)
+{
 	while (iterations--) {
 		ssize_t rc = pwrite(fd, buf, n, 0);
 		if (rc != n) {
@@ -22,7 +23,8 @@ static void inplace_write(int fd, void *buf, size_t n, int iterations) {
 	}
 }
 
-static void inplace_read(int fd, void *buf, size_t n, int iterations) {
+static void inplace_read(int fd, void *buf, size_t n, int iterations)
+{
 	while (iterations--) {
 		ssize_t rc = pread(fd, buf, n, 0);
 		if (rc != n) {
@@ -32,7 +34,8 @@ static void inplace_read(int fd, void *buf, size_t n, int iterations) {
 	}
 }
 
-static int init(char *name, size_t size) {
+static int init(char *name, size_t size)
+{
 	size_t i;
 	int fd;
 	
@@ -51,19 +54,32 @@ static int init(char *name, size_t size) {
 	return fd;
 }
 
-static void cleanup(char *name, int fd) {
+static void cleanup(char *name, int fd)
+{
 	close(fd);
 	unlink(name);
 }
 
-static void report(char *label, tick_t total, size_t n, int iterations) {
+static void report(char *label, tick_t total, size_t n, int iterations)
+{
 	double avg = (double)total / (double)iterations;
 	printf("%s: total = %lld nanoseconds for %d iterations"
 		" avg = %g nsecs  %g nsecs/byte\n",
 		label, total, iterations, avg, avg / n);
 }
 
-int main(int argc, char *argv[]) {
+static void usage(char *progname)
+{
+	fprintf(stderr, "usage: %s [-?]"
+		" [<file size> [<iterations> [<file name>]]]\n"
+		"\tdefaults: 1 1000000 .scratch\n"
+		"\t? - usage\n",
+		progname);
+	exit(2);
+}
+
+int main(int argc, char *argv[])
+{
 	char *name = ".scratch";
 	int fd;
 	void *buf;
@@ -72,7 +88,19 @@ int main(int argc, char *argv[]) {
 	tick_t finish;
 	tick_t total;
 	int iterations = 1000000;
-	
+	int c;
+
+	while ((c = getopt(argc, argv, "?")) != -1) {
+		switch (c) {
+		case '?':
+			usage(argv[0]);
+			break;
+		default:
+			fprintf(stderr, "unknown option %c\n", c);
+			usage(argv[0]);
+			break;
+		}
+	}
 	if (argc > 1) {
 		size = strtol(argv[1], NULL, 0);
 	}
