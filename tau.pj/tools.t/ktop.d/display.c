@@ -29,8 +29,6 @@ typedef struct Top_ten_s {
 	int	value;
 } Top_ten_s;
 
-int Display_tid;
-
 static u64 A[NUM_SYS_CALLS];
 static u64 B[NUM_SYS_CALLS];
 static u64 *Old = A;
@@ -154,8 +152,7 @@ static void init(void)
 
 void *display(void *arg)
 {
-	Display_tid = gettid();
-
+	ignore_pid(gettid());
 	init();	
 	for (;;) {
 		if (Command) {

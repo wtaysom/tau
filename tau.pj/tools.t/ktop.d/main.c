@@ -12,16 +12,39 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <eprintf.h>
 #include <debug.h>
 #include <style.h>
 
 #include "tracer.h"
 
-int Command_tid;
-
 int Command;
 
+bool Dump = FALSE;
+bool Trace_exit = FALSE;
+bool Trace_self = FALSE;
+
 pid_t gettid(void) { return syscall(__NR_gettid); }
+
+u8 Ignore_pid[(MAX_PID + 4) / 8];
+pthread_mutex_t Ignore_pid_lock = PTHREAD_MUTEX_INITIALIZER;
+
+void ignore_pid(int pid)
+{
+	if ((pid < 0) || (pid >= MAX_PID)) fatal("pid out of range %d", pid);
+	
+	pthread_mutex_lock(&Ignore_pid_lock);
+	Ignore_pid[pid / 8] |= (1 << (pid & 0x7));
+	pthread_mutex_unlock(&Ignore_pid_lock);
+}
+
+bool do_ignore_pid(int pid)
+{
+	if ((pid < 0) || (pid >= MAX_PID)) fatal("pid out of range %d", pid);
+	
+	return Ignore_pid[pid / 8] & (1 << (pid & 0x7));
+}
+	
 
 void cleanup(int sig)
 {
@@ -36,18 +59,52 @@ void set_signals(void)
 	signal(SIGHUP,	cleanup);
 	signal(SIGINT,	cleanup);
 	signal(SIGQUIT,	cleanup);
+	signal(SIGILL,	cleanup);
 	signal(SIGTRAP,	cleanup);
 	signal(SIGABRT,	cleanup);
-	signal(SIGFPE,	cleanup);
-	signal(SIGILL,	cleanup);
 	signal(SIGBUS,	cleanup);
+	signal(SIGFPE,	cleanup);
+	signal(SIGKILL,	cleanup);
 	signal(SIGSEGV,	cleanup);
+	signal(SIGPIPE,	cleanup);
+	signal(SIGSTOP,	cleanup);
 	signal(SIGTSTP,	cleanup);
 }
 
-void init(void)
+static void usage(void)
 {
+	fprintf(stderr, "usage: %s [-ds?]\n"
+		"\td - dump of ftrace log of cpu 0 for debugging\n"
+		"\ts - trace self\n"
+		"\t? - usage\n",
+		getprogname());
+	exit(2);
+}
+
+static void init(int argc, char *argv[])
+{
+	int c;
+
+	setprogname(argv[0]);
 	set_signals();
+
+	while ((c = getopt(argc, argv, "ds?")) != -1) {
+		switch (c) {
+		case 'd':
+			Dump = TRUE;
+			break;
+		case 's':
+			Trace_self = TRUE;
+			break;
+		case '?':
+			usage();
+			break;
+		default:
+			fprintf(stderr, "unknown option %c\n", c);
+			usage();
+			break;
+		}
+	}
 }
 
 void quit(void)
@@ -80,17 +137,20 @@ void commander(void)
 
 int main(int argc, char **argv)
 {
-	pthread_t collector_thread;
+//	pthread_t collector_thread;
 	pthread_t display_thread;
 	int rc;
-
-	init();
+FN;
+	init(argc, argv);
 	
-	Command_tid = gettid();
+	ignore_pid(gettid());
 	
-	rc = pthread_create(&collector_thread, NULL, collector, NULL);
-	rc = pthread_create(&display_thread, NULL, display, NULL);
+	start_collector();
 	
+//	rc = pthread_create(&collector_thread, NULL, collector_raw, NULL);
+	if (!Dump) {
+		rc = pthread_create(&display_thread, NULL, display, NULL);
+	}
 	commander();
 	
 	cleanup(0);
