@@ -260,7 +260,7 @@ static void process_event(void *buf)
 		process_sys_enter(event);
 		break;
 	default:
-		printf(" no processing\n");
+		//printf(" no processing\n");
 		break;
 	}
 }
@@ -446,6 +446,11 @@ static void dump_raw(int cpu, int sz, u8 buf[sz])
 void *collector(void *args)
 {
 	Collector_args_s *a = args;
+	/*
+	 *  1 ms -> 7% overhead
+	 * 10 ms -> 1% overhead
+	 */
+	struct timespec sleep = { 0, 10 * A_MILLION };
 	u8 buf[BUF_SIZE];
 	int cpu = a->cpu_id;
 	int trace_pipe;
@@ -462,7 +467,8 @@ void *collector(void *args)
 		}
 		rc = process_buf(buf);
 		if (rc < SMALL_READ) {
-		//	++Slept;
+			++Slept;
+			nanosleep(&sleep, NULL);
 		//	sleep(1);	// Wait for input to accumulate
 		}
 	}

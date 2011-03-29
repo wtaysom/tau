@@ -1,5 +1,7 @@
-// Copyright 2010 Google Inc. All Rights reserved
-// Author: taysom@google.com (Paul Taysom)
+/*
+ * Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
+ * Distributed under the terms of the GNU General Public License v2
+ */
 
 #define _XOPEN_SOURCE 500
 

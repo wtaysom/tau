@@ -137,17 +137,15 @@ void commander(void)
 
 int main(int argc, char **argv)
 {
-//	pthread_t collector_thread;
 	pthread_t display_thread;
 	int rc;
-FN;
+
 	init(argc, argv);
 	
 	ignore_pid(gettid());
 	
 	start_collector();
 	
-//	rc = pthread_create(&collector_thread, NULL, collector_raw, NULL);
 	if (!Dump) {
 		rc = pthread_create(&display_thread, NULL, display, NULL);
 	}
