@@ -13,7 +13,7 @@
 #include <style.h>
 
 #include "syscall.h"
-#include "tracer.h"
+#include "ktop.h"
 
 enum {	RW_ROW = 0,
 	RW_COL = 0,

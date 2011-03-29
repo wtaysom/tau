@@ -18,7 +18,7 @@
 #include <style.h>
 
 #include "syscall.h"
-#include "tracer.h"
+#include "ktop.h"
 
 #define _STR(x) #x
 #define STR(x) _STR(x)

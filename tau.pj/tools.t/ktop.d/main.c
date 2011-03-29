@@ -16,7 +16,7 @@
 #include <debug.h>
 #include <style.h>
 
-#include "tracer.h"
+#include "ktop.h"
 
 int Command;
 

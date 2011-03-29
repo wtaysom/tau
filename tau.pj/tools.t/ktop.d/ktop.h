@@ -3,8 +3,8 @@
  * Distributed under the terms of the GNU General Public License v2
  */
 
-#ifndef _TRACER_H
-#define _TRACER_H 1
+#ifndef _KTOP_H
+#define _KTOP_H 1
 
 #ifndef _STYLE_H_
 #include <style.h>
