@@ -1,7 +1,7 @@
-/*
- * Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
- * Distributed under the terms of the GNU General Public License v2
- */
+ /*
+  * Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
+  * Distributed under the terms of the GNU General Public License v2
+  */
 
 #define _XOPEN_SOURCE 500
 
@@ -10,9 +10,20 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #include <unistd.h>
 
-#include "timer.h"
+typedef unsigned long long	u64;
+
+FILE *Results;
+
+static inline u64 nsecs (void)
+{
+	struct timespec t;
+
+	clock_gettime(CLOCK_REALTIME, &t);
+	return (u64)t.tv_sec * 1000000000ULL + t.tv_nsec;
+}
 
 static void inplace_write(int fd, void *buf, size_t n, int iterations)
 {
@@ -62,10 +73,10 @@ static void cleanup(char *name, int fd)
 	unlink(name);
 }
 
-static void report(char *label, tick_t total, size_t n, int iterations)
+static void report(char *label, u64 total, size_t n, int iterations)
 {
 	double avg = (double)total / (double)iterations;
-	printf("%s: total = %lld nanoseconds for %d iterations"
+	fprintf(Results, "%s: total = %lld nanoseconds for %d iterations"
 		" avg = %g nsecs  %g nsecs/byte\n",
 		label, total, iterations, avg, avg / n);
 }
@@ -73,8 +84,8 @@ static void report(char *label, tick_t total, size_t n, int iterations)
 static void usage(char *progname)
 {
 	fprintf(stderr, "usage: %s [-?]"
-		" [<file size> [<iterations> [<file name>]]]\n"
-		"\tdefaults: 1 1000000 .scratch\n"
+		" [<file size> [<iterations> [<file name> [<results>]]]]\n"
+		"\tdefaults: 1 1000000 .scratch stdout\n"
 		"\t? - usage\n",
 		progname);
 	exit(2);
@@ -83,15 +94,17 @@ static void usage(char *progname)
 int main(int argc, char *argv[])
 {
 	char *name = ".scratch";
+	char *results = "stdout";
 	int fd;
 	void *buf;
 	size_t size = 1;
-	tick_t start;
-	tick_t finish;
-	tick_t total;
+	u64 start;
+	u64 finish;
+	u64 total;
 	int iterations = 1000000;
 	int c;
 
+	Results = stdout;
 	while ((c = getopt(argc, argv, "?")) != -1) {
 		switch (c) {
 		case '?':
@@ -112,8 +125,16 @@ int main(int argc, char *argv[])
 	if (argc > 3) {
 		name = argv[3];
 	}
-	printf("i/o size = %zd iterations = %d name = %s\n",
-		size, iterations, name);
+	if (argc > 4) {
+		results = argv[4];
+		Results = fopen(results, "a");
+		if (!Results) return 3;
+	}
+	time_t timestamp;
+	timestamp = time(NULL);
+	fprintf(Results, "\n%s", ctime(&timestamp));
+	fprintf(Results, "i/o size=%zd iterations=%d scratch=%s results=%s\n",
+		size, iterations, name, results);
 
 	fd = init(name, size);
 	buf = malloc(size);
