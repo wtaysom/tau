@@ -15,13 +15,15 @@
 #include "syscall.h"
 #include "ktop.h"
 
-enum {	RW_ROW = 0,
-	RW_COL = 0,
-	PID_ROW = 5,
-	PID_COL = 0,
-	TOP_ROW = 10,
-	TOP_COL = 90,
-	SELF_ROW = 0,
+enum {	HELP_ROW = 0,
+	HELP_COL = 0,
+	RW_ROW   = HELP_ROW + 1,
+	RW_COL   = 0,
+	PID_ROW  = RW_ROW + 6,
+	PID_COL  = 0,
+	TOP_ROW  = RW_ROW + 6,
+	TOP_COL  = 50,
+	SELF_ROW = HELP_ROW + 1,
 	SELF_COL = 40 };
 
 typedef struct Top_ten_s {
@@ -36,15 +38,22 @@ static u64 *New = B;
 static int Delta[NUM_SYS_CALLS];
 static Top_ten_s Top_ten[10];
 
+static void help(void)
+{
+	mvprintw(HELP_ROW, HELP_COL,
+		"q - quit  c - clear");
+}
+
 static void read_write(void)
 {
-	mvprintw(RW_ROW,   RW_COL, "read:  %10lld %10d",
+	mvprintw(RW_ROW,   RW_COL, "            total   hits/sec");
+	mvprintw(RW_ROW+1, RW_COL, "read:  %10lld %10d",
 		New[sys_read], Delta[sys_read]);
-	mvprintw(RW_ROW+1, RW_COL, "write: %10lld %10d",
+	mvprintw(RW_ROW+2, RW_COL, "write: %10lld %10d",
 		New[sys_write], Delta[sys_write]);
-	mvprintw(RW_ROW+2, RW_COL, "pread: %10lld %10d",
+	mvprintw(RW_ROW+3, RW_COL, "pread: %10lld %10d",
 		New[sys_pread64], Delta[sys_pread64]);
-	mvprintw(RW_ROW+3, RW_COL, "pwrite:%10lld %10d",
+	mvprintw(RW_ROW+4, RW_COL, "pwrite:%10lld %10d",
 		New[sys_pwrite64], Delta[sys_pwrite64]);
 }
 
@@ -72,12 +81,15 @@ static void top_pid(void)
 static void display_pidcall(void)
 {
 	Pidcall_s *p = Pidcall;
+	int row = PID_ROW;
+	int col = PID_COL;
 	int i;
 
-	for (i = 0; i < 25; i++, p++) {
+	mvprintw(row++, col, "     total    pid");
+	for (i = 0; i < 25; i++, p++, row++) {
 		if (p == Pidnext) return;
-		mvprintw(PID_ROW+i, PID_COL, "%3d. %5d %6d %-22s",
-			i, get_pid(p->pidcall), p->count,
+		mvprintw(row, col, "%3d. %5d %6d %-22s",
+			i+1, get_pid(p->pidcall), p->count,
 			Syscall[get_call(p->pidcall)]);
 	}
 }
@@ -139,7 +151,7 @@ static void process(void)
 	}
 	top_ten();
 }
-	
+
 static void init(void)
 {
 	initscr();
@@ -153,12 +165,13 @@ static void init(void)
 void *display(void *arg)
 {
 	ignore_pid(gettid());
-	init();	
+	init();
 	for (;;) {
 		if (Command) {
 			return NULL;
 		}
 		process();
+		help();
 		read_write();
 		top_pid();
 		display_pidcall();

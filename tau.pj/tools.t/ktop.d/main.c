@@ -32,7 +32,7 @@ pthread_mutex_t Ignore_pid_lock = PTHREAD_MUTEX_INITIALIZER;
 void ignore_pid(int pid)
 {
 	if ((pid < 0) || (pid >= MAX_PID)) warn("pid out of range %d", pid);
-	
+
 	pthread_mutex_lock(&Ignore_pid_lock);
 	Ignore_pid[pid / 8] |= (1 << (pid & 0x7));
 	pthread_mutex_unlock(&Ignore_pid_lock);
@@ -40,11 +40,13 @@ void ignore_pid(int pid)
 
 bool do_ignore_pid(int pid)
 {
-	if ((pid < 0) || (pid >= MAX_PID)) warn("pid out of range %d", pid);
-	
+	if ((pid < 0) || (pid >= MAX_PID)) {
+		warn("pid out of range %d", pid);
+		return TRUE;
+	}
 	return Ignore_pid[pid / 8] & (1 << (pid & 0x7));
 }
-	
+
 
 void cleanup(int sig)
 {
@@ -141,16 +143,16 @@ int main(int argc, char **argv)
 	int rc;
 
 	init(argc, argv);
-	
+
 	ignore_pid(gettid());
-	
+
 	start_collector();
-	
+
 	if (!Dump) {
 		rc = pthread_create(&display_thread, NULL, display, NULL);
 	}
 	commander();
-	
+
 	cleanup(0);
 	return 0;
 }

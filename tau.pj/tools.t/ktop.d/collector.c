@@ -174,7 +174,7 @@ static int init_raw(int cpu)
 {
 	char name[MAX_NAME];
 	int fd;
-	
+
 	snprintf(name, sizeof(name), "per_cpu/cpu%d/trace_pipe_raw", cpu);
 	fd = open(tracing_file(name), O_RDONLY);
 	if (fd == -1) {
@@ -208,12 +208,15 @@ void record_pid_syscall (u32 pidcall)
 		}
 	}
 	if (Pidnext == &Pidcall[MAX_PIDCALLS]) {
-		warn("Out of entries in pid/syscall table");
+		--p;
+		p->pidcall = pidcall;
+		p->count   = 1;
+		swap_pidcall(p);
 		return;
 	}
 	p = Pidnext++;
 	p->pidcall = pidcall;
-	p->count   = 1;	
+	p->count   = 1;
 }
 
 static void process_sys_enter(void *event)
@@ -221,7 +224,7 @@ static void process_sys_enter(void *event)
 	sys_enter_s *sy = event;
 	int pid = sy->ev.pid;
 	snint call_num = sy->id;
-	
+
 	++Pid[pid];
 
 	if (call_num >= Num_syscalls) {
@@ -525,7 +528,7 @@ void start_collector(void)
 	args = ezalloc(num_cpus * sizeof(Collector_args_s));
 	for (i = 0; i < num_cpus; i++, args++) {
 		args->cpu_id = i;
-		rc = pthread_create(&collector_thread, NULL, 
+		rc = pthread_create(&collector_thread, NULL,
 			Dump ? dump_collector : collector, args);
 		if (rc) fatal("Couldn't create collector %d:", rc);
 	}
