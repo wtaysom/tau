@@ -208,6 +208,9 @@ void record_pid_syscall (u32 pidcall)
 		}
 	}
 	if (Pidnext == &Pidcall[MAX_PIDCALLS]) {
+		/*
+		 * Need a better method but this might be good enough
+		 */
 		--p;
 		p->pidcall = pidcall;
 		p->count   = 1;

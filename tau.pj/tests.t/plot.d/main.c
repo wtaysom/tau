@@ -109,7 +109,7 @@ void vplot(graph_s *g, vector_s v, char c)
 
 double f(double x)
 {
-	return x * x;
+	return sin(x/3) + 1;
 }
 
 vector_s vinit(int n, double f(double))
@@ -128,10 +128,10 @@ vector_s vinit(int n, double f(double))
 
 void graph(void)
 {
-	graph_s g = { { 0, 0}, { 40, 40} };
+	graph_s g = { { 0, 0}, { 80, 10} };
 	vector_s v;
 
-	v = vinit(10, f);
+	v = vinit(80, f);
 	vplot(&g, v, '*');
 }
 

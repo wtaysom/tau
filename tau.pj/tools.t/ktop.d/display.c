@@ -59,8 +59,8 @@ static void read_write(void)
 
 static void self(void)
 {
-	mvprintw(SELF_ROW,   SELF_COL, "pid:   %10lld", MyPidCount);
-	mvprintw(SELF_ROW+1, SELF_COL, "Slept: %10lld", Slept);
+	mvprintw(SELF_ROW,   SELF_COL, "Skipped: %8lld", MyPidCount);
+	mvprintw(SELF_ROW+1, SELF_COL, "Slept:   %8lld", Slept);
 }
 
 static void top_pid(void)
@@ -85,7 +85,7 @@ static void display_pidcall(void)
 	int col = PID_COL;
 	int i;
 
-	mvprintw(row++, col, "     total    pid");
+	mvprintw(row++, col, "       pid  total");
 	for (i = 0; i < 25; i++, p++, row++) {
 		if (p == Pidnext) return;
 		mvprintw(row, col, "%3d. %5d %6d %-22s",
@@ -99,6 +99,7 @@ static void display_top_ten(void)
 	int row = TOP_ROW + 1;
 	int i;
 
+	mvprintw(row++, TOP_COL, "    hits sys_call");
 	for (i = 0; i < 10; i++, row++) {
 		if (Top_ten[i].value == 0) return;
 		mvprintw(row, TOP_COL, "%8d %-22s",
