@@ -6,3 +6,6 @@ save
 .i686
 .mario
 .*.swp
+_go_.6
+_obj
+.linux
