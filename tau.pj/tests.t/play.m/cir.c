@@ -19,8 +19,8 @@ typedef struct atom_s {
 } atom_s;
 
 atom_s Cir[Q_SZ];
-atom_s *Start = Cir;
-atom_s *End = &Cir[Q_SZ];
+atom_s *Head = Cir;
+atom_s *Tail = Cir;
 int Iterations = 0;
 int Incs = 0;
 
@@ -28,12 +28,12 @@ void swap(atom_s *p)
 {
 	atom_s	t;
 
-	if (p == Start) return;
+	if (p == Head) return;
 
 	if (p == Cir) {
 		t = *p;
-		*p = End[-1];
-		End[-1] = t;
+		*p = Cir[Q_SZ - 1];
+		Tail[Q_SZ - 1] = t;
 		return;
 	}
 	t = *p;
@@ -45,49 +45,44 @@ void inc(int key)
 {
 	atom_s *p;
 
-++Incs;
-	for (p = Start; p < End; p++) {
-++Iterations;
+	++Incs;
+	for (p = Head; p != Tail; ) {
+	++Iterations;
 		if (p->key == key) {
 			++p->cnt;
-			goto done;
-		} else if (!p->key) {
-			p->key = key;
-			p->cnt = 1;
-			goto done;
+			swap(p);
+			return;
 		}
+		if (++p == &Cir[Q_SZ]) {
+			p = Cir;
+		}	
 	}
-	for (p = Cir; p < Start; p++) {
-++Iterations;
-		if (p->key == key) {
-			++p->cnt;
-			goto done;
-		} else if (!p->key) {
-			p->key = key;
-			p->cnt = 1;
-			goto done;
-		}
-	}
-	if (Start == Cir) {
-		p = &End[-1];
+	if (Head == Cir) {
+		Head = &Cir[Q_SZ - 1];
 	} else {
-		p = &Start[-1];
+		--Head;
 	}
+	if (Head == Tail) {
+		if (Tail == Cir) {
+			Tail = &Cir[Q_SZ - 1];
+		} else {
+			--Tail;
+		}
+	}
+	p = Head;
 	p->key = key;
 	p->cnt = 1;
-done:
-	swap(p);
 }
 
 void dump(void)
 {
 	atom_s *p;
 
-	for (p = Start; p < End; p++) {
+	for (p = Head; p != Tail; ) {
 		printf("%2d %3d\n", p->key, p->cnt);
-	}
-	for (p = Cir; p < Start; p++) {
-		printf("%2d %3d\n", p->key, p->cnt);
+		if (++p == &Cir[Q_SZ]) {
+			p = Cir;
+		}	
 	}
 	printf("Incs=%d Iterations=%d  %g iter/inc\n",
 		Incs, Iterations, (double)Iterations/(double)Incs);

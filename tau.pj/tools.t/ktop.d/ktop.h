@@ -72,4 +72,6 @@ pid_t gettid(void);
 void ignore_pid(int pid);
 bool do_ignore_pid(int pid);
 
+void graph(void);
+
 #endif
