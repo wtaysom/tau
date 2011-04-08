@@ -10,7 +10,6 @@
 #include <time.h>
 #include <unistd.h>
 
-#include <debug.h>
 #include <style.h>
 
 #include "ktop.h"
@@ -24,10 +23,13 @@ enum {	HELP_ROW = 0,
 	RW_COL   = 0,
 	PID_ROW  = RW_ROW + 6,
 	PID_COL  = 0,
-	TOP_ROW  = RW_ROW + 6,
-	TOP_COL  = 70,
 	SELF_ROW = HELP_ROW + 1,
-	SELF_COL = 40 };
+	SELF_COL = 40,
+	MAX_ROW  = SELF_ROW + 4,
+	MAX_COL  = SELF_COL,
+	TOP_ROW  = MAX_ROW + 2,
+	TOP_COL  = 70,
+};
 
 typedef struct Top_ten_s {
 	int	syscall;
@@ -35,6 +37,7 @@ typedef struct Top_ten_s {
 } Top_ten_s;
 
 bool Plot = FALSE;
+struct timespec Sleep = { 1, 0 };
 
 static u64 A[NUM_SYS_CALLS];
 static u64 B[NUM_SYS_CALLS];
@@ -49,7 +52,8 @@ static graph_s TotalGraph = {{0, 0}, {{0, 10}, {60, 20}}};
 static void help(void)
 {
 	mvprintw(HELP_ROW, HELP_COL,
-		"q - quit  c - clear");
+		"q quit  c clear  < shorter  > longer %d.%.3d",
+		Sleep.tv_sec, Sleep.tv_nsec / A_MILLION);
 }
 
 char *getpidname(int pid)
@@ -97,7 +101,7 @@ static void top_pid(void)
 			pid = i;
 		}
 	}
-	mvprintw(TOP_ROW, TOP_COL, "max: %d %d", pid, max);
+	mvprintw(MAX_ROW, MAX_COL, "max: %d %d", pid, max);
 }
 
 static void display_pidcall(void)
@@ -211,10 +215,32 @@ static void init(void)
 	init_counter(&TotalDelta, 1);
 }
 
+void decrease_display_interval(void)
+{
+	if (Sleep.tv_sec == 1) {
+		Sleep.tv_sec = 0;
+		Sleep.tv_nsec = 500 * A_MILLION;
+	} else if (Sleep. tv_sec > 1) {
+		Sleep.tv_sec >>= 1;
+	} else if (Sleep.tv_nsec > A_MILLION) {
+		Sleep.tv_nsec >>= 1;
+	}
+}
+
+void increase_display_interval(void)
+{
+	if (Sleep.tv_nsec >= 500 * A_MILLION) {
+		Sleep.tv_sec = 1;
+		Sleep.tv_nsec = 0;
+	} else if (Sleep. tv_sec >= 1) {
+		Sleep.tv_sec <<= 1;
+	} else {
+		Sleep.tv_nsec <<= 1;
+	}
+}
+
 void *display(void *arg)
 {
-	struct timespec sleep = { 1, 0 };
-
 	ignore_pid(gettid());
 	init();
 	for (;;) {
@@ -234,7 +260,7 @@ void *display(void *arg)
 		read_write();
 		self();
 		refresh();
-		nanosleep(&sleep, NULL);
+		nanosleep(&Sleep, NULL);
 	}
 }
 

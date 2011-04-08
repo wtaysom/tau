@@ -13,7 +13,6 @@
 #include <unistd.h>
 
 #include <eprintf.h>
-#include <debug.h>
 #include <style.h>
 
 #include "ktop.h"
@@ -50,7 +49,6 @@ bool do_ignore_pid(int pid)
 
 void cleanup(int sig)
 {
-PRd(sig);
 	cleanup_collector();
 	cleanup_display();
 	exit(0);
@@ -130,6 +128,12 @@ void commander(void)
 			return;
 		case 'c':
 			clear();
+			break;
+		case '<':
+			decrease_display_interval();
+			break;
+		case '>':
+			increase_display_interval();
 			break;
 		default:
 			break;  // ignore

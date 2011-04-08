@@ -1,22 +1,23 @@
-/****************************************************************************
- |  (C) Copyright 2008 Novell, Inc. All Rights Reserved.
- |
- |  GPLv2: This program is free software; you can redistribute it
- |  and/or modify it under the terms of version 2 of the GNU General
- |  Public License as published by the Free Software Foundation.
- |
- |  This program is distributed in the hope that it will be useful,
- |  but WITHOUT ANY WARRANTY; without even the implied warranty of
- |  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- |  GNU General Public License for more details.
- +-------------------------------------------------------------------------*/
+/*
+ * Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
+ * Distributed under the terms of the GNU General Public License v2
+ */
 #define _XOPEN_SOURCE 500
 #include <ftw.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include <eprintf.h>
 #include <myio.h>
+#include <qsort.h>
 #include <timer.h>
+
+enum { NUM_BUCKETS = 65 };
+
+typedef struct Histogram_s {
+	unint	bucket[NUM_BUCKETS];
+} Histogram_s;
 
 typedef struct Ftw_s {
 	u64	files;
@@ -30,10 +31,50 @@ typedef struct Ftw_s {
 
 typedef struct Stat_s {
 	u64	gt1link;
+	u64	reg;
+	u64	special;
 } Stat_s;
 
 Ftw_s Ftw;
 Stat_s Stat;
+Histogram_s Histogram;
+
+static int highbit(u64 val)
+{
+	int i;
+
+	for (i = 0; val; val >>= 1, i++) {}
+	return i;
+}
+
+void histogram_record(Histogram_s *h, u64 val)
+{
+	++h->bucket[highbit(val)];
+}
+
+void pr_histogram(Histogram_s *h)
+{
+	int i;
+	int last;
+	bool found = FALSE;
+	u64 total = 0;
+	u64 median = 0;
+
+	for (i = 0; i < NUM_BUCKETS; i++) {
+		if (h->bucket[i]) {
+			total += h->bucket[i];
+			last = i;
+		}
+	}
+	for (i = 0; i <= last; i++) {
+		median += h->bucket[i];
+		if (median >= total / 2) {
+			if (!found) printf("---median---\n");
+			median = 0;
+		}
+		printf("%2d. %5ld\n", i, h->bucket[i]);
+	}
+}
 
 void pr_ftw_flag(const char *dir)
 {
@@ -47,10 +88,107 @@ void pr_ftw_flag(const char *dir)
 		+ Ftw.dir_path + Ftw.symlink + Ftw.broken_symlink);
 }
 
-void pr_stat(void)
+void pr_Stat(void)
 {
-	printf("hardlinks > 1 = %lld\n", Stat.gt1link);
+	printf("hardlinks > 1 = %lld regular=%lld special=%lld\n",
+		Stat.gt1link, Stat.reg, Stat.special);
 }
+
+typedef struct info_s info_s;
+struct info_s {
+	info_s	*s_next;
+	ino_t	s_ino;
+	dev_t	s_dev;
+	off_t	s_size;
+	char	s_name[];
+};
+
+enum { HASH_BUCKETS = 98317 };
+
+info_s *Bucket[HASH_BUCKETS];
+unint NumInfo;
+
+void pr_info(info_s *s)
+{
+	printf("ino=%5lld dev=%5lld size=%20lld %s\n",
+		s->s_ino, s->s_dev, s->s_size, s->s_name);
+}
+
+info_s *hash(ino_t ino, dev_t dev)
+{
+	unint h = ino * dev % HASH_BUCKETS;
+
+	return (info_s *)&Bucket[h];
+}
+
+info_s *find(ino_t ino, dev_t dev)
+{
+	info_s *s = hash(ino, dev);
+
+	for (;;) {
+		s = s->s_next;
+		if (!s) return NULL;
+		if ((s->s_ino == ino) && (s->s_dev == dev)) {
+			return s;
+		}
+	}
+}
+
+void add(const char *fpath, const struct stat *sb)
+{
+	info_s *s;
+	info_s *t;
+
+	s = find(sb->st_ino, sb->st_dev);
+	if (s) return;  // should count this to confirm number of hardlinks
+
+	s = emalloc(sizeof(*s) + strlen(fpath) + 1);
+
+	strcpy(s->s_name, fpath);
+	s->s_ino  = sb->st_ino;
+	s->s_dev  = sb->st_dev;
+	s->s_size = sb->st_size;
+
+	t = hash(s->s_ino, s->s_dev);
+	s->s_next = t->s_next;
+	t->s_next = s;
+
+	++NumInfo;
+}
+
+int info_cmp(const void *a, const void *b)
+{
+	const info_s *r = a;
+	const info_s *s = b;
+
+	if (r->s_size > s->s_size) return 1;
+	if (r->s_size == s->s_size) return 0;
+	return -1;
+}
+
+void find_median(void)
+{
+	void **set;
+	void **next;
+	info_s *s;
+	int i;
+
+	next = set = emalloc(NumInfo * sizeof(info_s *));
+	for (i = 0; i < HASH_BUCKETS; i++) {
+		s = Bucket[i];
+		while (s) {
+			*next++ = s;
+			s = s->s_next;
+		}
+	}
+	quickSort(set, NumInfo, info_cmp);
+	for (i = 0; i < NumInfo; i++) {
+		pr_info(set[i]);
+	}
+	pr_info(set[NumInfo / 2]);
+	
+	free(set);
+}		
 
 int do_entry(
 	const char *fpath,
@@ -58,13 +196,37 @@ int do_entry(
 	int typeflag,
 	struct FTW *ftwbuf)
 {
+	static dev_t current = 0;
+
+	if (sb->st_dev < 100) {
+		/*
+		 * Ignore special system file systems
+		 * /sys /proc /tmp ...
+		 */
+		return 0;
+	}
+
 //	printf("%s\n", fpath);
+	if (sb->st_dev != current) {
+		current = sb->st_dev;
+		printf("%4lld %s\n", current, fpath);
+	}
 	switch (typeflag) {
 	case FTW_F:
 		++Ftw.files;
 		if (sb->st_nlink > 2) {
 			++Stat.gt1link;
-			printf("%s\n", fpath);
+			//printf("%s\n", fpath);
+		}
+		if (S_ISREG(sb->st_mode)) {
+			++Stat.reg;
+			histogram_record(&Histogram, sb->st_size);
+			if (sb->st_size == 0) {
+				//printf("%s\n", fpath);
+			}
+			add(fpath, sb);
+		} else {
+			++Stat.special;
 		}
 		break;
 	case FTW_D:
@@ -113,6 +275,8 @@ int main (int argc, char *argv[])
 	printf("%lld nsecs %g secs\n", total, (double)total/1000000000.0);
 
 	pr_ftw_flag(dir);
-	pr_stat();
+	pr_Stat();
+	pr_histogram(&Histogram);
+	find_median();
 	return 0;
 }

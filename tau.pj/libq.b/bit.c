@@ -13,6 +13,10 @@
 
 #include "bit.h"
 
+/*
+ * Finds the first bit counting from the top or the highest bit set.
+ * This is the oposite of ffs in string.h
+ */
 unsigned ffsBit (register unsigned long word)
 {
 	register unsigned	bit;

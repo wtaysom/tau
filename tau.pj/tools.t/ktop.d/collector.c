@@ -13,7 +13,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#include <debug.h>
 #include <eprintf.h>
 #include <style.h>
 

@@ -67,6 +67,8 @@ void start_collector(void);
 void *display(void *arg);
 void cleanup_display(void);
 void clear_display(void);
+void decrease_display_interval(void);
+void increase_display_interval(void);
 
 pid_t gettid(void);
 void ignore_pid(int pid);
