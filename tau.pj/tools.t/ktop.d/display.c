@@ -21,7 +21,7 @@ enum {	HELP_ROW = 0,
 	HELP_COL = 0,
 	RW_ROW   = HELP_ROW + 1,
 	RW_COL   = 0,
-	PID_ROW  = RW_ROW + 6,
+	PID_ROW  = RW_ROW + 8,
 	PID_COL  = 0,
 	SELF_ROW = HELP_ROW + 1,
 	SELF_COL = 40,
@@ -81,6 +81,10 @@ static void read_write(void)
 		New[sys_pread64], Delta[sys_pread64]);
 	mvprintw(RW_ROW+4, RW_COL, "pwrite:%10lld %10d",
 		New[sys_pwrite64], Delta[sys_pwrite64]);
+	mvprintw(RW_ROW+5, RW_COL, "sync:  %10lld %10d",
+		New[sys_sync], Delta[sys_sync]);
+	mvprintw(RW_ROW+6, RW_COL, "fsync: %10lld %10d",
+		New[sys_fsync], Delta[sys_fsync]);
 }
 
 static void self(void)

@@ -20,7 +20,7 @@
 int Command;
 
 bool Dump = FALSE;
-bool Trace_exit = FALSE;
+bool Trace_exit = TRUE;
 bool Trace_self = FALSE;
 
 pid_t gettid(void) { return syscall(__NR_gettid); }

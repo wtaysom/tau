@@ -12,9 +12,15 @@
 #  GNU General Public License for more details.
 ############################################################################
 
-TARGET  ?= $(shell uname -m)
-
 makedir := $(dir $(lastword $(MAKEFILE_LIST)))
+include $(makedir)/gnu.mk
+
+ifeq ($(BOARD),)
+  TARGET = $(shell uname -m)
+else
+  TARGET = $(BOARD)
+endif
+
 name    := $(basename $(notdir $(PWD)))
 target  := $(TARGET)
 objdir  :=.$(target)
@@ -58,3 +64,4 @@ test:
 	@ echo "sources=$(sources)"
 	@ echo "objects=$(objects)"
 	@ echo "CFLAGS=$(CFLAGS)"
+	@ echo "prefix=$(prefix)"

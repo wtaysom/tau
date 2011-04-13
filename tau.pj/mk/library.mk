@@ -12,9 +12,15 @@
 #  GNU General Public License for more details.
 ############################################################################
 
-TARGET  ?= $(shell uname -m)
-
 makedir := $(dir $(lastword $(MAKEFILE_LIST)))
+include $(makedir)/gnu.mk
+
+ifeq ($(BOARD),)
+  TARGET = $(shell uname -m)
+else
+  TARGET = $(BOARD)
+endif
+
 os	:= $(shell uname)
 opus    := $(basename $(notdir $(PWD)))
 target  := $(TARGET)
@@ -30,7 +36,17 @@ INC+=-I. -I../include -I../../include
 # -pg -O -g -DUNOPT -DNDEBUG
 CFLAGS+=-O -pg -g -Wall -Wstrict-prototypes -Werror \
 	-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 \
-	$(.INCLUDES) $(INC) \
+	$(.INCLUDES) $(INC)
+
+ifeq ($(os),Linux)
+  AR := ar
+  ARFLAGS := rc
+else
+  ifeq ($(os),Darwin)
+    AR := libtool
+    ARFLAGS := -static -o
+  endif
+endif
 
 $(objdir)/%.o : %.c Makefile
 	@ mkdir -p $(objdir)
@@ -38,14 +54,7 @@ $(objdir)/%.o : %.c Makefile
 
 $(opus): $(objects)
 	@rm -f $(objdir)/$@
-	@case $(os) in \
-		Linux)	echo "Building linux library $@"; \
-			ar rc $(objdir)/$@ $(objects); \
-			;; \
-		Darwin)	echo "Buidling apple library $@"; \
-			libtool -static -o $(objdir)/$@ $(objects); \
-			;; \
-	esac
+	$(AR) $(ARFLAGS) $(objdir)/$@ $(objects)
 
 install:
 	cp $(objdir)/$(opus) /tmp/$(opus).a

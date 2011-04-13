@@ -17,6 +17,8 @@ enum { NUM_BUCKETS = 65 };
 
 typedef struct Histogram_s {
 	unint	bucket[NUM_BUCKETS];
+	u64	num;
+	u64	sum;
 } Histogram_s;
 
 typedef struct Ftw_s {
@@ -50,6 +52,8 @@ static int highbit(u64 val)
 void histogram_record(Histogram_s *h, u64 val)
 {
 	++h->bucket[highbit(val)];
+	++h->num;
+	h->sum += val;
 }
 
 void pr_histogram(Histogram_s *h)
@@ -74,6 +78,7 @@ void pr_histogram(Histogram_s *h)
 		}
 		printf("%2d. %5ld\n", i, h->bucket[i]);
 	}
+	printf("Number %lld average %lld\n", h->num, h->sum / h->num);
 }
 
 void pr_ftw_flag(const char *dir)
@@ -108,9 +113,10 @@ enum { HASH_BUCKETS = 98317 };
 info_s *Bucket[HASH_BUCKETS];
 unint NumInfo;
 
-void pr_info(info_s *s)
+void pr_info(char *label, info_s *s)
 {
-	printf("ino=%5lld dev=%5lld size=%20lld %s\n",
+	printf("%s ino=%6ld dev=%5ld size=%8ld %s\n",
+		label,
 		s->s_ino, s->s_dev, s->s_size, s->s_name);
 }
 
@@ -171,6 +177,7 @@ void find_median(void)
 	void **set;
 	void **next;
 	info_s *s;
+	u64 avg = (Histogram.sum + Histogram.num / 2) / Histogram.num;
 	int i;
 
 	next = set = emalloc(NumInfo * sizeof(info_s *));
@@ -183,9 +190,14 @@ void find_median(void)
 	}
 	quickSort(set, NumInfo, info_cmp);
 	for (i = 0; i < NumInfo; i++) {
-		pr_info(set[i]);
+		s = set[i];
+		if (s->s_size > avg) {
+			printf("%d. n=%ld avg=%lld", i, NumInfo, avg);
+			pr_info("Average File: ", s);
+			break;
+		}
 	}
-	pr_info(set[NumInfo / 2]);
+	pr_info("Median File: ", set[NumInfo / 2]);
 	
 	free(set);
 }		
@@ -209,7 +221,7 @@ int do_entry(
 //	printf("%s\n", fpath);
 	if (sb->st_dev != current) {
 		current = sb->st_dev;
-		printf("%4lld %s\n", current, fpath);
+		printf("%4ld %s\n", current, fpath);
 	}
 	switch (typeflag) {
 	case FTW_F:

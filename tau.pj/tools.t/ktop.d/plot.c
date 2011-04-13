@@ -29,6 +29,7 @@ vector_s new_vector(int n)
 	vector_s v;
 
 	if (!n) {
+		v.n = 0;
 		v.p = NULL;
 		return v;
 	}
