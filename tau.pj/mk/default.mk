@@ -65,3 +65,4 @@ test:
 	@ echo "objects=$(objects)"
 	@ echo "CFLAGS=$(CFLAGS)"
 	@ echo "prefix=$(prefix)"
+	@ echo "bin=$(bin)"

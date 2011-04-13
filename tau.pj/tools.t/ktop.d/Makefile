@@ -12,6 +12,8 @@
 #  GNU General Public License for more details.
 ############################################################################
 
+#bin=$(DESTDIR)$(sbindir)
+
 CFLAGS+=-Werror
 include ../../mk/default.mk
 LIBS += ../../libq.b/$(objdir)/libq -lrt -lm -lpthread -lncurses
