@@ -115,7 +115,7 @@ unint NumInfo;
 
 void pr_info(char *label, info_s *s)
 {
-	printf("%s ino=%6ld dev=%5ld size=%8ld %s\n",
+	printf("%s ino=%6jd dev=%5jd size=%8jd %s\n",
 		label,
 		s->s_ino, s->s_dev, s->s_size, s->s_name);
 }
@@ -190,6 +190,9 @@ void find_median(void)
 	}
 	quickSort(set, NumInfo, info_cmp);
 	for (i = 0; i < NumInfo; i++) {
+		pr_info(" ", set[i]);
+	}
+	for (i = 0; i < NumInfo; i++) {
 		s = set[i];
 		if (s->s_size > avg) {
 			printf("%d. n=%ld avg=%lld", i, NumInfo, avg);
@@ -221,7 +224,7 @@ int do_entry(
 //	printf("%s\n", fpath);
 	if (sb->st_dev != current) {
 		current = sb->st_dev;
-		printf("%4ld %s\n", current, fpath);
+		printf("%4jd %s\n", current, fpath);
 	}
 	switch (typeflag) {
 	case FTW_F:

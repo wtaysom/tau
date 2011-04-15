@@ -2,8 +2,8 @@
  * Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
  * Distributed under the terms of the GNU General Public License v2
  */
-#ifndef _PLOT_H
-#define _PLOT_H 1
+#ifndef _PLOT_H_
+#define _PLOT_H_ 1
 
 typedef struct point_s {
 	double	x;

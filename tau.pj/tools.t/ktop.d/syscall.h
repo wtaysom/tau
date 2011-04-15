@@ -4,7 +4,7 @@
  */
 
 #ifndef _SYSCALL_H_
-#define _SYSCALL_H_
+#define _SYSCALL_H_ 1
 
 enum {
 	sys_restart_syscall,	/* 0 - old setup,() system call, used for restarting */

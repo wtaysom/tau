@@ -13,51 +13,20 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+#include <debug.h>
 #include <eprintf.h>
+#include <mylib.h>
 #include <style.h>
 
-#include "syscall.h"
+#include "collector.h"
 #include "ktop.h"
+#include "syscall.h"
 
 #define _STR(x) #x
 #define STR(x) _STR(x)
 #define MAX_PATH 256
 
-enum {	BUF_SIZE = 1 << 12,
-	SMALL_READ = BUF_SIZE >> 2 };
-
-typedef struct ring_header_s {
-	u64	time_stamp;
-	unint	commit;
-	u8	data[];
-} ring_header_s;
-
-typedef struct ring_event_s {
-	u32	type_len   : 5,
-		time_delta : 27;
-	u32	array[];
-} ring_event_s;
-
-typedef struct event_s {
-	u16	type;
-	u8	flags;
-	u8	preempt_count;
-	s32	pid;
-	s32	lock_depth;
-} event_s;
-
-typedef struct sys_enter_s {
-	event_s	ev;
-	snint	id;
-	unint	args[6];
-} sys_enter_s;
-
-typedef struct sys_exit_s {
-	event_s	ev;
-	snint	id;
-	snint	ret;
-} sys_exit_s;
-
+enum { PIDCALL_BUCKETS = 1543 };
 
 pthread_mutex_t Count_lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -65,6 +34,19 @@ u64 Syscall_count[NUM_SYS_CALLS];
 u64 MyPidCount;
 u64 Slept;
 int Pid[MAX_PID];
+u64 LastEnter[MAX_PID];
+
+Pidcall_s Pidcall[MAX_PIDCALLS];
+Pidcall_s *Pidnext = Pidcall;
+u64 PidcallIterations;
+u64 PidcallRecord;
+
+u64 No_enter;
+u64 Found;
+u64 Out_of_order;
+u64 No_start;
+
+Pidcall_s *Pidcall_bucket[PIDCALL_BUCKETS];
 
 static const char *find_debugfs(void)
 {
@@ -169,7 +151,7 @@ static void disable_sys_exit (void)
 	disable_event("sys_exit");
 }
 
-static int init_raw(int cpu)
+int open_raw(int cpu)
 {
 	char name[MAX_NAME];
 	int fd;
@@ -182,67 +164,147 @@ static int init_raw(int cpu)
 	return fd;
 }
 
-Pidcall_s Pidcall[MAX_PIDCALLS];
-Pidcall_s *Pidnext = Pidcall;
-
-static inline void swap_pidcall(Pidcall_s *p)
+static Pidcall_s *hash_pidcall(u32 pidcall)
 {
-	Pidcall_s tmp;
-
-	if (p == Pidcall) return;
-	tmp = *p;
-	*p = p[-1];
-	p[-1] = tmp;
+	return (Pidcall_s *)&Pidcall_bucket[pidcall % PIDCALL_BUCKETS];
 }
 
-void record_pid_syscall (u32 pidcall)
+static Pidcall_s *find_pidcall(u32 pidcall)
 {
-	Pidcall_s *p;
+	Pidcall_s *pc = hash_pidcall(pidcall);
 
-	for (p = Pidcall; p < Pidnext; p++) {
-		if (p->pidcall == pidcall) {
-			++p->count;
-			swap_pidcall(p);
+++PidcallRecord;
+	for (;;) {
+++PidcallIterations;
+		pc = pc->next;
+		if (!pc) return NULL;
+		if (pc->pidcall == pidcall) return pc;
+	}
+}
+
+#if 0
+static void dump(char *label, Pidcall_s *pc)
+{
+	int i;
+
+	fprintf(stderr, "%s", label);
+	for (i = 0; (i < 10) && pc; i++) {
+		fprintf(stderr, " %p", pc);
+		pc = pc->next;
+	}
+	if (pc) fprintf(stderr, "STUCK");
+	fprintf(stderr, "\n");
+}
+#endif
+
+static void add_pidcall(Pidcall_s *pidcall)
+{
+	Pidcall_s *pc = hash_pidcall(pidcall->pidcall);
+
+	pidcall->next = pc->next;
+	pc->next = pidcall;
+}
+
+static void rmv_pidcall(u32 pidcall)
+{
+	Pidcall_s *prev = hash_pidcall(pidcall);
+	Pidcall_s *next;
+
+	for (;;) {
+		next = prev->next;
+		if (!next) return;
+		if (next->pidcall == pidcall) {
+			prev->next = next->next;
 			return;
 		}
+		prev = next;
 	}
-	if (Pidnext == &Pidcall[MAX_PIDCALLS]) {
-		/*
-		 * Need a better method but this might be good enough
-		 */
-		--p;
-		p->pidcall = pidcall;
-		p->count   = 1;
-		swap_pidcall(p);
-		return;
-	}
-	p = Pidnext++;
-	p->pidcall = pidcall;
-	p->count   = 1;
 }
 
-static void process_sys_enter(void *event)
+static Pidcall_s *victim_pidcall(u32 pidcall)
+{
+	Pidcall_s *pc = &Pidcall[range(MAX_PIDCALLS)];
+
+	if (pc->pidcall) {
+		rmv_pidcall(pc->pidcall);
+	}
+	if (pc->name) {
+		free(pc->name);
+	}
+	zero(*pc);
+	pc->pidcall = pidcall;
+	add_pidcall(pc);
+
+	return pc;
+}
+
+void record_pidcall(u32 pidcall, u64 time)
+{
+	Pidcall_s *pc;
+
+	pc = find_pidcall(pidcall);
+	if (!pc) {
+		pc = victim_pidcall(pidcall);
+	}
+	++pc->count;
+	pc->start_time = time;
+}
+
+void record_pidexit(u32 pidcall, u64 time)
+{
+	Pidcall_s *pc;
+
+	pc = find_pidcall(pidcall);
+	if (!pc) {
+		++No_enter;
+		return;
+	}
+	++pc->count;
+	if (pc->start_time) {
+		if (time > pc->start_time) {
+			++Found;
+			pc->total_time += time - pc->start_time;
+		} else {
+			++Out_of_order;
+		}
+		pc->start_time = 0;
+	} else {
+		++No_start;
+	}
+}
+
+static void parse_sys_enter(void *event, u64 time)
 {
 	sys_enter_s *sy = event;
 	int pid = sy->ev.pid;
 	snint call_num = sy->id;
 
 	++Pid[pid];
+	LastEnter[pid] = time;
 
 	if (call_num >= Num_syscalls) {
 		warn("syscall number out of range %ld\n", call_num);
 		return;
 	}
 	++Syscall_count[call_num];
-	record_pid_syscall(mkpidcall(pid, call_num));
+	record_pidcall(mkpidcall(pid, call_num), time);
 }
 
-static void process_sys_exit(void *event)
+static void parse_sys_exit(void *event, u64 time)
 {
-//	sys_exit_s *sy = event;
+	sys_exit_s *sy = event;
+	int pid = sy->ev.pid;
+	snint call_num = sy->id;
+	u64 start = LastEnter[pid];
+	u64 wait;
+
+	if (start && (start <= time)) {
+		wait = time - start;
+	}
+	record_pidexit(mkpidcall(pid, call_num), time);
 }
 
-static void process_event(void *buf)
+static void parse_event(void *buf, u64 time)
 {
 	event_s *event = buf;
 
@@ -259,10 +321,10 @@ static void process_event(void *buf)
 	}
 	switch (event->type) {
 	case 21:
-		process_sys_exit(event);
+		parse_sys_exit(event, time);
 		break;
 	case 22:
-		process_sys_enter(event);
+		parse_sys_enter(event, time);
 		break;
 	default:
 		//printf(" no processing\n");
@@ -270,7 +332,7 @@ static void process_event(void *buf)
 	}
 }
 
-static unint process_buf(u8 *buf)
+static unint parse_buf(u8 *buf)
 {
 	ring_header_s *rh = (ring_header_s *)buf;
 	ring_event_s *r;
@@ -297,7 +359,7 @@ static unint process_buf(u8 *buf)
 			length = r->type_len;
 			size   = 4 + length * 4;
 			time  += r->time_delta;
-			process_event(buf+4);
+			parse_event(buf+4, time);
 		} else if (r->type_len == 29) {
 			/* Left over page padding or discarded event */
 			if (r->time_delta == 0) {
@@ -312,8 +374,8 @@ static unint process_buf(u8 *buf)
 			time += (((u64)r->array[0]) << 28) | r->time_delta;
 		} else if (r->type_len == 31) {
 			/* Sync time with external clock (NOT IMMPLEMENTED) */
-			//tv_nsec = r->array[0];
-			//tv_sec  = *(u64 *)&(r->array[1]);
+			time = r->array[0];
+			time += *(u64 *)&(r->array[1]) * A_BILLION;
 		} else {
 			warn(" Unknown event %d", r->type_len);
 			/* Unknown - ignore */
@@ -323,129 +385,6 @@ static unint process_buf(u8 *buf)
 done:
 	pthread_mutex_unlock(&Count_lock);
 	return commit;
-}
-
-void pr_buf(int cpu, int sz, u8 buf[sz])
-{
-	int i;
-	int j;
-
-	printf("%d. trace=%d bytes\n", cpu, sz);
-	for (i = 0; i < sz; i++) {
-		for (j = 0; j < 32; j++, i++) {
-			if (i == sz) goto done;
-			printf(" %2x", buf[i]);
-		}
-		printf("\n");
-	}
-done:
-	printf("\n");
-}
-
-static void pr_event(event_s *event)
-{
-	printf(" type=%2u flags=%2x cnt=%2d pid=%5d lock=%2d",
-		event->type, event->flags, event->preempt_count, event->pid,
-		event->lock_depth);
-}
-
-static void pr_sys_enter(void *event)
-{
-	sys_enter_s *sy = event;
-	int i;
-
-	printf(" %-20s", Syscall[sy->id]);
-	for (i = 0; i < 6; i++) {
-		printf(" %ld", sy->args[i]);
-	}
-	printf("\n");
-}
-
-static void pr_sys_exit(void *event)
-{
-	sys_exit_s *sy = event;
-
-	printf(" %-20s ret=%ld\n", Syscall[sy->id], sy->ret);
-}
-
-static void pr_ring_header(ring_header_s *rh)
-{
-	printf("%lld %lld %ld\n",
-		rh->time_stamp / A_BILLION, rh->time_stamp % A_BILLION,
-		rh->commit);
-}
-
-static void dump_event(void *buf)
-{
-	event_s *event = buf;
-
-	pr_event(event);
-	switch (event->type) {
-	case 21:
-		pr_sys_exit(event);
-		break;
-	case 22:
-		pr_sys_enter(event);
-		break;
-	default:
-		printf(" no processing\n");
-		break;
-	}
-}
-
-static void dump_buf(u8 *buf)
-{
-	ring_header_s *rh = (ring_header_s *)buf;
-	ring_event_s *r;
-	unint length;
-	unint size;
-	u64 time;
-	u8 *end;
-
-	pr_ring_header(rh);
-	time = rh->time_stamp;
-	buf += sizeof(*rh);
-	end  = &buf[rh->commit];
-	for (; buf < end; buf += size) {
-		r = (ring_event_s *)buf;
-		printf("type_len=%2u time=%9d", r->type_len, r->time_delta);
-		if (r->type_len == 0) {
-			length = r->array[0];
-			size   = 4 + length * 4;
-			time  += r->time_delta;
-		} else if (r->type_len <= 28) {
-			length = r->type_len;
-			size   = 4 + length * 4;
-			time  += r->time_delta;
-			dump_event(buf+4);
-		} else if (r->type_len == 29) {
-			printf("\n");
-			if (r->time_delta == 0) {
-				return;
-			} else {
-				length = r->array[0];
-				size = 4 + length * 4;
-			}
-		} else if (r->type_len == 30) {
-			/* Extended time delta */
-			printf("\n");
-			size = 8;
-			time += (((u64)r->array[0]) << 28) | r->time_delta;
-		} else if (r->type_len == 31) {
-			/* Sync time with external clock (NOT IMMPLEMENTED) */
-			//tv_nsec = r->array[0];
-			//tv_sec  = *(u64 *)&(r->array[1]);
-		} else {
-			printf(" Unknown event %d\n", r->type_len);
-			/* Unknown - ignore */
-			size = 4;
-		}
-	}
-}
-
-static void dump_raw(int cpu, int sz, u8 buf[sz])
-{
-	dump_buf(buf);	// Need to do something with sz
 }
 
 void *collector(void *args)
@@ -463,45 +402,17 @@ void *collector(void *args)
 	int i;
 
 	ignore_pid(gettid());
-	trace_pipe = init_raw(cpu);
+	trace_pipe = open_raw(cpu);
 	for (i = 0;; i++) {
 		rc = read(trace_pipe, buf, sizeof(buf));
 		if (rc == -1) {
 			close(trace_pipe);
 			cleanup(0);
 		}
-		rc = process_buf(buf);
+		rc = parse_buf(buf);
 		if (rc < SMALL_READ) {
 			++Slept;
 			nanosleep(&sleep, NULL);
-		//	sleep(1);	// Wait for input to accumulate
-		}
-	}
-	return NULL;
-}
-
-static void *dump_collector(void *args)
-{
-	Collector_args_s *a = args;
-	u8 buf[BUF_SIZE];
-	int cpu = a->cpu_id;
-	int trace_pipe;
-	int rc;
-	int i;
-
-	ignore_pid(gettid());
-	trace_pipe = init_raw(cpu);
-	for (i = 0;; i++) {
-		rc = read(trace_pipe, buf, sizeof(buf));
-		printf("i=%d rc=%d\n", i, rc);
-		if (rc == -1) {
-			close(trace_pipe);
-			cleanup(0);
-		}
-		dump_raw(cpu, rc, buf);
-		if (rc < SMALL_READ) {
-			++Slept;
-			sleep(1);	// Wait for input to accumulate
 		}
 	}
 	return NULL;

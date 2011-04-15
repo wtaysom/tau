@@ -30,6 +30,8 @@ int	DebugIsOn = 1;
 int	AssertIsOn = 1;
 int	FnDebugIsOn = 1;
 
+static FILE **stdbug = &stdout;
+
 int debugon (void)
 {
 	return DebugIsOn = 1;
@@ -50,6 +52,16 @@ int fdebugoff (void)
 	return FnDebugIsOn = 0;
 }
 
+void debugstderr (void)
+{
+	stdbug = &stderr;
+}
+
+void debugstdout (void)
+{
+	stdbug = &stdout;
+}
+
 bool debug_is_on (void)
 {
 	return DebugIsOn;
@@ -67,7 +79,7 @@ int debugenv (void)
 	c = getenv("DEBUG");
 	if (c) {
 		if (strcasecmp(c, "on") == 0) {
-			printf("Debug is on\n");
+			fprintf(*stdbug, "Debug is on\n");
 			DebugIsOn = 1;
 			debugon();
 			fdebugon();
@@ -82,10 +94,27 @@ int debugenv (void)
 bool prf (const char *fn)
 {
 	if (FnDebugIsOn) {
-		printf("%s\n", fn);
-		fflush(stdout);
+		fprintf(*stdbug, "%s\n", fn);
+		fflush(*stdbug);
 	}
 	return TRUE;
+}
+
+int prbug (const char *format, ...)
+{
+	va_list	args;
+	int	rc;
+
+	va_start(args, format);
+	rc = vfprintf(*stdbug, format, args);
+	va_end(args);
+
+	return rc;
+}
+
+int flushbug (void)
+{
+	return fflush(*stdbug);
 }
 
 bool print (const char *fn, unsigned line, const char *format, ...)
@@ -110,8 +139,8 @@ bool print (const char *fn, unsigned line, const char *format, ...)
 	vsnprintf(b, r, format, args);
 	va_end(args);
 
-	printf("%s\n", buf);
-	fflush(stdout);
+	fprintf(*stdbug, "%s\n", buf);
+	fflush(*stdbug);
 
 	return TRUE;
 }
@@ -157,10 +186,10 @@ static void pr_n_u8 (const void *mem, unint n)
 	const u8	*u = mem;
 	unint		i;
 
-	printf(" ");
-	for (i = 4; i > n; i--) printf("  ");
+	prbug(" ");
+	for (i = 4; i > n; i--) prbug("  ");
 
-	while (i-- > 0) printf("%.2x", u[i]);
+	while (i-- > 0) prbug("%.2x", u[i]);
 }
 
 bool prmem (
@@ -178,26 +207,26 @@ bool prmem (
 
 	if (!DebugIsOn) return TRUE;
 
-	printf("%s:\n", label);
+	prbug("%s:\n", label);
 
 	q = n / NCHARS;
 	r = n % NCHARS;
 	for (i = 0; i < q; i++) {
-		printf("%p:", p);
+		prbug("%p:", p);
 		for (j = 0; j < NLONGS; j++) {
-			printf(" %8x", *p++);
+			prbug(" %8x", *p++);
 		}
-		printf(" | ");
+		prbug(" | ");
 		for (j = 0; j < NCHARS; j++, c++) {
-			printf("%c", isprint(*c) ? *c : '.');
+			prbug("%c", isprint(*c) ? *c : '.');
 		}
-		printf("\n");
+		prbug("\n");
 	}
-	fflush(stdout);
+	flushbug();
 	if (!r) return TRUE;
-	printf("%8p:", p);
+	prbug("%8p:", p);
 	for (j = 0; j < r / sizeof(u32); j++) {
-		printf(" %8x", *p++);
+		prbug(" %8x", *p++);
 	}
 	i = r % sizeof(u32);
 	if (i) {
@@ -205,14 +234,14 @@ bool prmem (
 		pr_n_u8(p, i);
 	}
 	for (; j < NLONGS; j++) {
-		printf("         ");
+		prbug("         ");
 	}
-	printf(" | ");
+	prbug(" | ");
 	for (j = 0; j < r; j++, c++) {
-		printf("%c", isprint(*c) ? *c : '.');
+		prbug("%c", isprint(*c) ? *c : '.');
 	}
-	printf("\n");
-	fflush(stdout);
+	prbug("\n");
+	flushbug();
 	return TRUE;
 }
 
@@ -229,44 +258,44 @@ bool prbytes (
 
 	if (!DebugIsOn) return TRUE;
 
-	printf("%s:\n", label);
+	prbug("%s:\n", label);
 
 	q = n / CHARS_PER_LINE;
 	r = n % CHARS_PER_LINE;
 	for (i = 0; i < q; i++) {
-		printf("%p:", p);
+		prbug("%p:", p);
 		for (j = 0; j < CHARS_PER_LINE; j++) {
-			printf(" %.2x", *p++);
+			prbug(" %.2x", *p++);
 		}
-		printf(" | ");
+		prbug(" | ");
 		for (j = 0; j < CHARS_PER_LINE; j++, c++) {
-			printf("%c", isprint(*c) ? *c : '.');
+			prbug("%c", isprint(*c) ? *c : '.');
 		}
-		printf("\n");
+		prbug("\n");
 	}
 	if (r) {
-		printf("%8p:", p);
+		prbug("%8p:", p);
 		for (j = 0; j < r; j++) {
-			printf(" %.2x", *p++);
+			prbug(" %.2x", *p++);
 		}
 		for (; j < CHARS_PER_LINE; j++) {
-			printf("   ");
+			prbug("   ");
 		}
-		printf(" | ");
+		prbug(" | ");
 		for (j = 0; j < r; j++, c++) {
-			printf("%c", isprint(*c) ? *c : '.');
+			prbug("%c", isprint(*c) ? *c : '.');
 		}
-		printf("\n");
+		prbug("\n");
 	}
-	fflush(stdout);
+	flushbug();
 	return TRUE;
 }
 
 int assertError (const char *what)
 {
 	if (AssertIsOn) {
-		printf("%s\n", what);
-		fflush(stdout);
+		prbug("ASSERT FAILED: %s\n", what);
+		flushbug();
 		exit(2);
 	}
 	return 0;

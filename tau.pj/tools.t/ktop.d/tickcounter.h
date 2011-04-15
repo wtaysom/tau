@@ -2,8 +2,8 @@
  * Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
  * Distributed under the terms of the GNU General Public License v2
  */
-#ifndef _TICKCOUNTER_H
-#define _TICKCOUNTER_H 1
+#ifndef _TICKCOUNTER_H_
+#define _TICKCOUNTER_H_ 1
 
 enum {	WHEEL_SIZE = 60 };
 

@@ -12,6 +12,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <debug.h>
 #include <eprintf.h>
 #include <style.h>
 
@@ -49,6 +50,10 @@ bool do_ignore_pid(int pid)
 
 void cleanup(int sig)
 {
+PRd(sig);
+	if (sig) {
+		fprintf(stderr, "died because %d\n", sig);
+	}
 	cleanup_collector();
 	cleanup_display();
 	exit(0);
@@ -145,6 +150,8 @@ int main(int argc, char **argv)
 {
 	pthread_t display_thread;
 	int rc;
+
+	debugstderr();
 
 	init(argc, argv);
 

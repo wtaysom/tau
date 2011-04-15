@@ -3,6 +3,7 @@
  * Distributed under the terms of the GNU General Public License v2
  */
 
+#include <pthread.h>
 #include <ncurses.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,6 +11,9 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <debug.h>
+#include <eprintf.h>
+#include <qsort.h>
 #include <style.h>
 
 #include "ktop.h"
@@ -24,11 +28,11 @@ enum {	HELP_ROW = 0,
 	PID_ROW  = RW_ROW + 8,
 	PID_COL  = 0,
 	SELF_ROW = HELP_ROW + 1,
-	SELF_COL = 40,
+	SELF_COL = HELP_ROW + 40,
 	MAX_ROW  = SELF_ROW + 4,
 	MAX_COL  = SELF_COL,
-	TOP_ROW  = MAX_ROW + 2,
-	TOP_COL  = 70,
+	TOP_ROW  = HELP_ROW,
+	TOP_COL  = 90,
 };
 
 typedef struct Top_ten_s {
@@ -45,6 +49,7 @@ static u64 *Old = A;
 static u64 *New = B;
 static int Delta[NUM_SYS_CALLS];
 static Top_ten_s Top_ten[10];
+static void *Rank_pidcall[MAX_PIDCALLS];
 
 static TickCounter_s TotalDelta;
 static graph_s TotalGraph = {{0, 0}, {{0, 10}, {60, 20}}};
@@ -64,10 +69,15 @@ char *getpidname(int pid)
 
 	snprintf(path, sizeof(path), "/proc/%d/exe", pid);
 	rc = readlink(path, name, sizeof(name));
-	if (rc == -1) return NULL;
+	if (rc == -1) {
+		return NULL;
+	}
+	if (rc == sizeof(name)) {
+		fatal("pid name too long");
+	}
 	name[rc] = '\0';
-	
-	return name; //strdup(name);
+
+	return strdup(name);
 }
 
 static void read_write(void)
@@ -89,8 +99,24 @@ static void read_write(void)
 
 static void self(void)
 {
+	static double max = 0;
+	double avg;
+
 	mvprintw(SELF_ROW,   SELF_COL, "Skipped: %8lld", MyPidCount);
 	mvprintw(SELF_ROW+1, SELF_COL, "Slept:   %8lld", Slept);
+	mvprintw(SELF_ROW+2, SELF_COL, "Tick:    %8zd", sizeof(TickCounter_s));
+	mvprintw(SELF_ROW+3, SELF_COL, "No_enter:    %8lld", No_enter);
+	mvprintw(SELF_ROW+4, SELF_COL, "Found:       %8lld", Found);
+	mvprintw(SELF_ROW+5, SELF_COL, "Out_of_order:%8lld", Out_of_order);
+	mvprintw(SELF_ROW+6, SELF_COL, "No_start:    %8lld", No_start);
+	if (0) {
+		if (PidcallRecord == 0) return;
+		avg = (double)PidcallIterations / (double)PidcallRecord;
+		PidcallIterations = PidcallRecord = 0;
+		if (avg > max) max =avg;
+		mvprintw(SELF_ROW+5, SELF_COL, "Avg:     %g", avg);
+		mvprintw(SELF_ROW+6, SELF_COL, "Max:     %g", max);
+	}
 }
 
 static void top_pid(void)
@@ -108,28 +134,58 @@ static void top_pid(void)
 	mvprintw(MAX_ROW, MAX_COL, "max: %d %d", pid, max);
 }
 
+static int compare_pidcall(const void *a, const void *b)
+{
+	const Pidcall_s *p = a;
+	const Pidcall_s *q = b;
+
+	if (p->count > q->count) return -11;
+	if (p->count == q->count) return 0;
+	return 1;
+}
+
 static void display_pidcall(void)
 {
-	Pidcall_s *p = Pidcall;
+	extern pthread_mutex_t Count_lock;
+
+	Pidcall_s *pc;
 	int row = PID_ROW;
 	int col = PID_COL;
 	int pid;
 	int i;
+	int j;
 
+	for (i = 0, j = 0; i < MAX_PIDCALLS; i++) {
+		if (Pidcall[i].pidcall) {
+			Rank_pidcall[j++] = &Pidcall[i];
+		}
+	}
+	if (1) {
+		pthread_mutex_lock(&Count_lock);
+		quickSort(Rank_pidcall, j, compare_pidcall);
+		pthread_mutex_unlock(&Count_lock);
+	}
 	mvprintw(row++, col, "       pid  total");
-	for (i = 0; i < 25; i++, p++, row++) {
-		if (p == Pidnext) return;
-		pid = get_pid(p->pidcall);
-		mvprintw(row, col, "%3d. %5d %6d %-22.22s %-28.28s",
-			i+1, pid, p->count,
-			Syscall[get_call(p->pidcall)],
-			getpidname(pid));
+	for (i = 0; i < 25 && i < j; i++, row++) {
+		pc = Rank_pidcall[i];
+		pid = get_pid(pc->pidcall);
+		if (!pc->name) {
+			pc->name = getpidname(pid);
+			if (!pc->name) {
+				pc->name = strdup("(unknown)");
+			}
+		}
+		mvprintw(row, col, "%3d. %5d %6d %10lld %-22.22s %-28.28s",
+			i+1, pid, pc->count,
+			pc->count ? pc->total_time / pc->count : 0LL,
+			Syscall[get_call(pc->pidcall)],
+			pc->name);
 	}
 }
 
 static void display_top_ten(void)
 {
-	int row = TOP_ROW + 1;
+	int row = TOP_ROW;
 	int i;
 
 	mvprintw(row++, TOP_COL, "    hits sys_call");

@@ -22,11 +22,14 @@
 extern "C" {
 #endif
 
-int debugon   (void);
-int debugoff  (void);
-int fdebugon  (void);
-int fdebugoff (void);
-int debugenv  (void);
+int debugon  (void);
+int debugoff (void);
+int fdebugon (void);
+int fdebugoff(void);
+int debugenv (void);
+
+void debugstderr(void);
+void debugstdout(void);
 
 bool debug_is_on  (void);
 bool debug_is_off (void);
