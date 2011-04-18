@@ -83,6 +83,11 @@ void lumpfree(Lump_s a)
 	if (a.d) free(a.d);
 }
 
+int allocatable(Head_s *head)
+{
+	return head->end - SZ_HEAD - SZ_U16 * head->num_recs;
+}
+
 #if 0
 static int node_free(Head_s *head)
 {
