@@ -170,7 +170,7 @@ static void display_pidcall(void)
 	if (1) {
 		quickSort(Rank_pidcall, j, compare_pidcall);
 	}
-	mvprintw(row++, col, "%4d   pid  total", j);
+	mvprintw(row++, col, "%3d    pid  count   duration", j);
 	for (i = 0; i < 25 && i < j; i++, row++) {
 		pc = Rank_pidcall[i];
 		pid = get_pid(pc->pidcall);
