@@ -17,6 +17,7 @@
 #LIBS += /usr/lib/libreadline.dylib
 include ../../mk/default.mk
 LIBS += -lq
+##os := $(system uname)
 ##ifeq ($(os),Linux)
 ##	LIBS += -lreadline
 ##else ifeq ($(os),Darwin)
