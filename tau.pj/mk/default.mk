@@ -25,6 +25,7 @@ name    := $(basename $(notdir $(PWD)))
 target  := $(TARGET)
 objdir  :=.$(target)
 sources := $(wildcard *.c)
+headers := $(wildcard *.h)
 objects := $(addprefix $(objdir)/, $(sources:.c=.o))
 opus    := $(objdir)/$(name)
 bin     ?= ~/playbin
@@ -41,7 +42,7 @@ CFLAGS+=-g -Wall -Wstrict-prototypes -Werror \
 	-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 \
 	$(.INCLUDES) $(INC) \
 
-$(objdir)/%.o : %.c Makefile
+$(objdir)/%.o : %.c Makefile $(headers)
 	@ mkdir -p $(objdir)
 	$(CC) $(CFLAGS) -c $< -o $@
 

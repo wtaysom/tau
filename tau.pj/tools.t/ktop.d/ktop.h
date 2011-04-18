@@ -42,8 +42,14 @@ struct Pidcall_s {
 	Pidcall_s *next;
 	u32 pidcall;
 	u32 count;
-	u64 start_time;
-	u64 total_time;
+	struct {
+		u64 start;
+		u64 total;
+	} time;
+	struct {
+		u32 count;
+		u64 time;
+	} save;
 	char *name;
 };
 

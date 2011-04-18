@@ -247,7 +247,7 @@ void record_pidcall(u32 pidcall, u64 time)
 		pc = victim_pidcall(pidcall);
 	}
 	++pc->count;
-	pc->start_time = time;
+	pc->time.start = time;
 }
 
 void record_pidexit(u32 pidcall, u64 time)
@@ -259,15 +259,14 @@ void record_pidexit(u32 pidcall, u64 time)
 		++No_enter;
 		return;
 	}
-	++pc->count;
-	if (pc->start_time) {
-		if (time > pc->start_time) {
+	if (pc->time.start) {
+		if (time > pc->time.start) {
 			++Found;
-			pc->total_time += time - pc->start_time;
+			pc->time.total += time - pc->time.start;
 		} else {
 			++Out_of_order;
 		}
-		pc->start_time = 0;
+		pc->time.start = 0;
 	} else {
 		++No_start;
 	}

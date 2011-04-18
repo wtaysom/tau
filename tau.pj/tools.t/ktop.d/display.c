@@ -21,6 +21,9 @@
 #include "syscall.h"
 #include "tickcounter.h"
 
+extern pthread_mutex_t Count_lock;
+
+
 enum {	HELP_ROW = 0,
 	HELP_COL = 0,
 	RW_ROW   = HELP_ROW + 1,
@@ -139,15 +142,13 @@ static int compare_pidcall(const void *a, const void *b)
 	const Pidcall_s *p = a;
 	const Pidcall_s *q = b;
 
-	if (p->count > q->count) return -11;
-	if (p->count == q->count) return 0;
+	if (p->save.count > q->save.count) return -11;
+	if (p->save.count == q->save.count) return 0;
 	return 1;
 }
 
 static void display_pidcall(void)
 {
-	extern pthread_mutex_t Count_lock;
-
 	Pidcall_s *pc;
 	int row = PID_ROW;
 	int col = PID_COL;
@@ -155,17 +156,21 @@ static void display_pidcall(void)
 	int i;
 	int j;
 
-	for (i = 0, j = 0; i < MAX_PIDCALLS; i++) {
-		if (Pidcall[i].pidcall) {
-			Rank_pidcall[j++] = &Pidcall[i];
+	pthread_mutex_lock(&Count_lock);
+	for (pc = Pidcall, j = 0; pc < &Pidcall[MAX_PIDCALLS]; pc++) {
+		if (pc->count) {
+			Rank_pidcall[j++] = pc;
+			pc->save.count = pc->count;
+			pc->count = 0;
+			pc->save.time = pc->time.total;
+			pc->time.total = 0;
 		}
 	}
+	pthread_mutex_unlock(&Count_lock);
 	if (1) {
-		pthread_mutex_lock(&Count_lock);
 		quickSort(Rank_pidcall, j, compare_pidcall);
-		pthread_mutex_unlock(&Count_lock);
 	}
-	mvprintw(row++, col, "       pid  total");
+	mvprintw(row++, col, "%4d   pid  total", j);
 	for (i = 0; i < 25 && i < j; i++, row++) {
 		pc = Rank_pidcall[i];
 		pid = get_pid(pc->pidcall);
@@ -176,8 +181,8 @@ static void display_pidcall(void)
 			}
 		}
 		mvprintw(row, col, "%3d. %5d %6d %10lld %-22.22s %-28.28s",
-			i+1, pid, pc->count,
-			pc->count ? pc->total_time / pc->count : 0LL,
+			i+1, pid, pc->save.count,
+			pc->save.count ? pc->save.time / pc->save.count : 0LL,
 			Syscall[get_call(pc->pidcall)],
 			pc->name);
 	}
@@ -235,12 +240,15 @@ static void delta(void)
 	Old = New;
 	New = tmp;
 
+	pthread_mutex_lock(&Count_lock);
 	memmove(New, Syscall_count, sizeof(Syscall_count));
+	memset(Syscall_count, 0, sizeof(Syscall_count));
+	pthread_mutex_unlock(&Count_lock);
 
 	sum = 0;
 	for (i = 0; i < NUM_SYS_CALLS; i++) {
-		Delta[i] = New[i] - Old[i];
-		sum += Delta[i];
+		Delta[i] = New[i] /*- Old[i];
+		sum += Delta[i]*/;
 	}
 	tick(&TotalDelta, sum);
 	top_ten();

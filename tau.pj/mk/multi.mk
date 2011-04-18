@@ -18,6 +18,7 @@ makedir := $(dir $(lastword $(MAKEFILE_LIST)))
 target  := $(TARGET)
 objdir  :=.$(target)
 sources := $(wildcard *.c)
+headers := $(wildcard *.h)
 objects := $(addprefix $(objdir)/, $(sources:.c=))
 opuses  := $(sources:.c=)
 bin     ?= ~/playbin
@@ -33,7 +34,7 @@ CFLAGS+=-O -g -Wall -Wstrict-prototypes -Werror \
 
 all: $(objects)
 
-$(objdir)/% : %.c
+$(objdir)/% : %.c $(headers)
 	@ mkdir -p $(objdir)
 	echo $(LIBS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
