@@ -240,15 +240,23 @@ static void delta(void)
 	Old = New;
 	New = tmp;
 
-	pthread_mutex_lock(&Count_lock);
-	memmove(New, Syscall_count, sizeof(Syscall_count));
-	memset(Syscall_count, 0, sizeof(Syscall_count));
-	pthread_mutex_unlock(&Count_lock);
+	if (0) {
+		pthread_mutex_lock(&Count_lock);
+		memmove(New, Syscall_count, sizeof(Syscall_count));
+		memset(Syscall_count, 0, sizeof(Syscall_count));
+		pthread_mutex_unlock(&Count_lock);
+	} else {
+		memmove(New, Syscall_count, sizeof(Syscall_count));
+	}
 
 	sum = 0;
 	for (i = 0; i < NUM_SYS_CALLS; i++) {
-		Delta[i] = New[i] /*- Old[i];
-		sum += Delta[i]*/;
+		if (0) {
+			Delta[i] = New[i];
+		} else {
+			Delta[i] = New[i] - Old[i];
+			sum += Delta[i];
+		}
 	}
 	tick(&TotalDelta, sum);
 	top_ten();
