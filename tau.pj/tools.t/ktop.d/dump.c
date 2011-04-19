@@ -41,7 +41,7 @@ static void pr_sys_enter(void *event)
 
 	printf(" %-20s", Syscall[sy->id]);
 	for (i = 0; i < 6; i++) {
-		printf(" %ld", sy->args[i]);
+		printf(" %ld", sy->arg[i]);
 	}
 	printf("\n");
 }

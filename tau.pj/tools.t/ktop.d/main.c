@@ -18,7 +18,7 @@
 
 #include "ktop.h"
 
-int Command;
+bool Halt = FALSE;
 
 bool Dump = FALSE;
 bool Trace_exit = TRUE;
@@ -114,12 +114,12 @@ static void init(int argc, char *argv[])
 
 void quit(void)
 {
-	Command = 1;
+	Halt = TRUE;
 }
 
 void clear(void)
 {
-	clear_display();
+	reset_reduce();
 }
 
 void commander(void)
@@ -135,10 +135,10 @@ void commander(void)
 			clear();
 			break;
 		case '<':
-			decrease_display_interval();
+			decrease_reduce_interval();
 			break;
 		case '>':
-			increase_display_interval();
+			increase_reduce_interval();
 			break;
 		default:
 			break;  // ignore
@@ -148,7 +148,7 @@ void commander(void)
 
 int main(int argc, char **argv)
 {
-	pthread_t display_thread;
+	pthread_t reduce_thread;
 	int rc;
 
 	debugstderr();
@@ -160,7 +160,7 @@ int main(int argc, char **argv)
 	start_collector();
 
 	if (!Dump) {
-		rc = pthread_create(&display_thread, NULL, display, NULL);
+		rc = pthread_create(&reduce_thread, NULL, reduce, NULL);
 	}
 	commander();
 

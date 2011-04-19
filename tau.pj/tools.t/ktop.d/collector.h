@@ -9,6 +9,10 @@
 #include <style.h>
 #endif
 
+#ifndef _KTOP_H_
+#include <ktop.h>
+#endif
+
 enum {	BUF_SIZE = 1 << 12,
 	SMALL_READ = BUF_SIZE >> 2 };
 
@@ -35,7 +39,7 @@ typedef struct event_s {
 typedef struct sys_enter_s {
 	event_s	ev;
 	snint	id;
-	unint	args[6];
+	unint	arg[NUM_ARGS];
 } sys_enter_s;
 
 typedef struct sys_exit_s {

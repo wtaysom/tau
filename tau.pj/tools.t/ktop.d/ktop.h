@@ -18,7 +18,8 @@ enum {	MAX_PID = 1 << 15,
 	MAX_PIDCALLS = 1 << 10,
 	MAX_NAME = 1 << 12,
 	SYSCALL_SHIFT = 9,
-	SYSCALL_MASK  = (1 << SYSCALL_SHIFT) - 1 };
+	SYSCALL_MASK  = (1 << SYSCALL_SHIFT) - 1,
+	NUM_ARGS = 6 };
 
 CHECK_CONST((1 << SYSCALL_SHIFT) >= NUM_SYS_CALLS);
 
@@ -50,6 +51,7 @@ struct Pidcall_s {
 		u32 count;
 		u64 time;
 	} save;
+	unint arg[NUM_ARGS];
 	char *name;
 };
 
@@ -71,18 +73,20 @@ extern u64 No_start;
 
 extern u64 MyPidCount;
 extern u64 Slept;
-extern int Command;
+extern bool Halt;
 
 void cleanup(int sig);
 
 void cleanup_collector(void);
 void start_collector(void);
 
-void *display(void *arg);
+void *reduce(void *arg);
+void decrease_reduce_interval(void);
+void increase_reduce_interval(void);
+void reset_reduce(void);
+
 void cleanup_display(void);
 void clear_display(void);
-void decrease_display_interval(void);
-void increase_display_interval(void);
 
 pid_t gettid(void);
 void ignore_pid(int pid);

@@ -64,9 +64,6 @@ void tick(TickCounter_s *counter, u32 n)
 	counter->ihour = 0;
 	++counter->hour_wrapped;
 }
-	
-		
-	
 
 void dump_counter(TickCounter_s *counter)
 {

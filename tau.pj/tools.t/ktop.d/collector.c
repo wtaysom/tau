@@ -34,7 +34,6 @@ u64 Syscall_count[NUM_SYS_CALLS];
 u64 MyPidCount;
 u64 Slept;
 int Pid[MAX_PID];
-u64 LastEnter[MAX_PID];
 
 Pidcall_s Pidcall[MAX_PIDCALLS];
 Pidcall_s *Pidnext = Pidcall;
@@ -238,9 +237,21 @@ static Pidcall_s *victim_pidcall(u32 pidcall)
 	return pc;
 }
 
-void record_pidcall(u32 pidcall, u64 time)
+static void parse_sys_enter(void *event, u64 time)
 {
+	sys_enter_s *sy = event;
+	int   pid       = sy->ev.pid;
+	snint call_num  = sy->id;
+	u32   pidcall   = mkpidcall(pid, call_num);
 	Pidcall_s *pc;
+
+	++Pid[pid];
+
+	if (call_num >= Num_syscalls) {
+		warn("syscall number out of range %ld\n", call_num);
+		return;
+	}
+	++Syscall_count[call_num];
 
 	pc = find_pidcall(pidcall);
 	if (!pc) {
@@ -248,10 +259,15 @@ void record_pidcall(u32 pidcall, u64 time)
 	}
 	++pc->count;
 	pc->time.start = time;
+	memmove(pc->arg, sy->arg, sizeof(pc->arg));
 }
 
-void record_pidexit(u32 pidcall, u64 time)
+static void parse_sys_exit(void *event, u64 time)
 {
+	sys_exit_s *sy = event;
+	int   pid      = sy->ev.pid;
+	snint call_num = sy->id;
+	u32   pidcall  = mkpidcall(pid, call_num);
 	Pidcall_s *pc;
 
 	pc = find_pidcall(pidcall);
@@ -270,37 +286,6 @@ void record_pidexit(u32 pidcall, u64 time)
 	} else {
 		++No_start;
 	}
-}
-
-static void parse_sys_enter(void *event, u64 time)
-{
-	sys_enter_s *sy = event;
-	int pid = sy->ev.pid;
-	snint call_num = sy->id;
-
-	++Pid[pid];
-	LastEnter[pid] = time;
-
-	if (call_num >= Num_syscalls) {
-		warn("syscall number out of range %ld\n", call_num);
-		return;
-	}
-	++Syscall_count[call_num];
-	record_pidcall(mkpidcall(pid, call_num), time);
-}
-
-static void parse_sys_exit(void *event, u64 time)
-{
-	sys_exit_s *sy = event;
-	int pid = sy->ev.pid;
-	snint call_num = sy->id;
-	u64 start = LastEnter[pid];
-	u64 wait;
-
-	if (start && (start <= time)) {
-		wait = time - start;
-	}
-	record_pidexit(mkpidcall(pid, call_num), time);
 }
 
 static void parse_event(void *buf, u64 time)
