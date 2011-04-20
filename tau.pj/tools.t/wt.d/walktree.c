@@ -43,6 +43,11 @@ Ftw_s Ftw;
 Stat_s Stat;
 Histogram_s Histogram;
 
+bool By_device = FALSE;
+bool Print_hardlinks = FALSE;
+bool Print_files = FALSE;
+int This_mount_point = 0;
+
 static int highbit(u64 val)
 {
 	int i;
@@ -191,14 +196,16 @@ void find_median(void)
 		}
 	}
 	quickSort(set, NumInfo, info_cmp);
-	for (i = 0; i < NumInfo; i++) {
-		pr_info(" ", set[i]);
+	if (Print_files) {
+		for (i = 0; i < NumInfo; i++) {
+			pr_info(" ", set[i]);
+		}
 	}
 	for (i = 0; i < NumInfo; i++) {
 		s = set[i];
 		if (s->s_size > avg) {
 			printf("%d. n=%ld avg=%lld", i, NumInfo, avg);
-			pr_info("Average File: ", s);
+			pr_info(" Average File:", s);
 			break;
 		}
 	}
@@ -223,17 +230,21 @@ int do_entry(
 		return 0;
 	}
 
-//	printf("%s\n", fpath);
-	if (sb->st_dev != current) {
-		current = sb->st_dev;
-		printf("%4jd %s\n", current, fpath);
+	if (0) {
+		printf("%s\n", fpath);
+		if (sb->st_dev != current) {
+			current = sb->st_dev;
+			printf("%4jd %s\n", current, fpath);
+		}
 	}
 	switch (typeflag) {
 	case FTW_F:
 		++Ftw.files;
-		if (sb->st_nlink > 2) {
+		if (sb->st_nlink > 1) {
 			++Stat.gt1link;
-			//printf("%s\n", fpath);
+			if (Print_hardlinks) {
+				printf("%s\n", fpath);
+			}
 		}
 		if (S_ISREG(sb->st_mode)) {
 			++Stat.reg;
@@ -273,20 +284,12 @@ int do_entry(
 
 void nftw_walk_tree(char *dir)
 {
-	nftw(dir, do_entry, 200, FTW_CHDIR | FTW_PHYS /*| FTW_MOUNT*/);
-}
-
-int main (int argc, char *argv[])
-{
-	char *dir = ".";
 	tick_t start;
 	tick_t finish;
 	tick_t total;
 
-	if (argc > 1) dir = argv[1];
-
 	start = nsecs();
-	nftw_walk_tree(dir);
+	nftw(dir, do_entry, 200, FTW_CHDIR | FTW_PHYS | This_mount_point);
 	finish = nsecs();
 	total = finish - start;
 	printf("%lld nsecs %g secs\n", total, (double)total/1000000000.0);
@@ -295,5 +298,53 @@ int main (int argc, char *argv[])
 	pr_Stat();
 	pr_histogram(&Histogram);
 	find_median();
+}
+
+void usage(void)
+{
+	pr_usage("[-mx?] {<dir>}\n"
+		"\th - print hard links\n"
+		"\tm - only traverse the device represented by dir\n"
+		"\tp - print all the files\n"
+		"\tx - sort result by device\n"
+		"\t? - this message\n");
+}
+
+int main(int argc, char *argv[])
+{
+	int c;
+	int i;
+
+	setprogname(argv[0]);
+	while ((c = getopt(argc, argv, "hmpx?")) != -1) {
+		switch (c) {
+		case 'h':
+			Print_hardlinks = TRUE;
+			break;
+		case 'm':
+			This_mount_point = FTW_MOUNT;
+			break;
+		case 'p':
+			Print_files = TRUE;
+			break;
+		case 'x':
+			By_device = TRUE;
+			break;
+		case '?':
+			usage();
+			break;
+		default:
+			fprintf(stderr, "unknown option %c\n", c);
+			usage();
+			break;
+		}
+	}
+	if (!argv[optind]) {
+		nftw_walk_tree(".");
+	} else {
+		for (i = optind; i < argc; i++) {
+			nftw_walk_tree(argv[i]);
+		}
+	}
 	return 0;
 }

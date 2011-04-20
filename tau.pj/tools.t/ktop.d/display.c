@@ -93,20 +93,21 @@ static void self(void)
 	static double max = 0;
 	double avg;
 
-	mvprintw(SELF_ROW,   SELF_COL, "Skipped: %8lld", MyPidCount);
-	mvprintw(SELF_ROW+1, SELF_COL, "Slept:   %8lld", Slept);
-	mvprintw(SELF_ROW+2, SELF_COL, "Tick:    %8zd", sizeof(TickCounter_s));
-	mvprintw(SELF_ROW+3, SELF_COL, "No_enter:    %8lld", No_enter);
-	mvprintw(SELF_ROW+4, SELF_COL, "Found:       %8lld", Found);
-	mvprintw(SELF_ROW+5, SELF_COL, "Out_of_order:%8lld", Out_of_order);
-	mvprintw(SELF_ROW+6, SELF_COL, "No_start:    %8lld", No_start);
-	if (0) {
+	mvprintw(SELF_ROW,   SELF_COL, "Skipped:     %12lld", MyPidCount);
+	mvprintw(SELF_ROW+1, SELF_COL, "Slept:       %12lld", Slept);
+	mvprintw(SELF_ROW+2, SELF_COL, "Tick:        %12zd", sizeof(TickCounter_s));
+	mvprintw(SELF_ROW+3, SELF_COL, "No_enter:    %12lld", No_enter);
+	mvprintw(SELF_ROW+4, SELF_COL, "Found:       %12lld", Found);
+	mvprintw(SELF_ROW+5, SELF_COL, "Out_of_order:%12lld", Out_of_order);
+	mvprintw(SELF_ROW+6, SELF_COL, "No_start:    %12lld", No_start);
+	if (1) {
+		mvprintw(SELF_ROW+7, SELF_COL, "Ticks:       %12lld", Pidcall_tick);
 		if (PidcallRecord == 0) return;
 		avg = (double)PidcallIterations / (double)PidcallRecord;
 		PidcallIterations = PidcallRecord = 0;
 		if (avg > max) max =avg;
-		mvprintw(SELF_ROW+5, SELF_COL, "Avg:     %g", avg);
-		mvprintw(SELF_ROW+6, SELF_COL, "Max:     %g", max);
+		mvprintw(SELF_ROW+8, SELF_COL, "Avg:              %g", avg);
+		mvprintw(SELF_ROW+9, SELF_COL, "Max:              %g", max);
 	}
 }
 

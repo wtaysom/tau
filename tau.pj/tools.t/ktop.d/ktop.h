@@ -45,6 +45,7 @@ struct Pidcall_s {
 	Pidcall_s *next;
 	u32 pidcall;
 	u32 count;
+	unint clock;
 	struct {
 		u64 start;
 		u64 total;
@@ -69,9 +70,9 @@ void file_system_display(void);
 extern u64 Syscall_count[NUM_SYS_CALLS];
 extern int Pid[MAX_PID];
 extern Pidcall_s Pidcall[MAX_PIDCALLS];
-extern Pidcall_s *Pidnext;
 extern u64 PidcallRecord;
 extern u64 PidcallIterations;
+extern u64 Pidcall_tick;
 
 extern u64 No_enter;
 extern u64 Found;

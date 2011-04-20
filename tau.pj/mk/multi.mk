@@ -12,7 +12,14 @@
 #  GNU General Public License for more details.
 ############################################################################
 
-TARGET  ?= $(shell uname -m)
+makedir := $(dir $(lastword $(MAKEFILE_LIST)))
+include $(makedir)/gnu.mk
+
+ifeq ($(BOARD),)
+  TARGET = $(shell uname -m)
+else
+  TARGET = $(BOARD)
+endif
 
 makedir := $(dir $(lastword $(MAKEFILE_LIST)))
 target  := $(TARGET)

@@ -36,9 +36,10 @@ u64 Slept;
 int Pid[MAX_PID];
 
 Pidcall_s Pidcall[MAX_PIDCALLS];
-Pidcall_s *Pidnext = Pidcall;
+Pidcall_s *Pidclock = Pidcall;
 u64 PidcallIterations;
 u64 PidcallRecord;
+u64 Pidcall_tick;
 
 u64 No_enter;
 u64 Found;
@@ -177,7 +178,10 @@ static Pidcall_s *find_pidcall(u32 pidcall)
 ++PidcallIterations;
 		pc = pc->next;
 		if (!pc) return NULL;
-		if (pc->pidcall == pidcall) return pc;
+		if (pc->pidcall == pidcall) {
+			pc->clock = 1;
+			return pc;
+		}
 	}
 }
 
@@ -222,8 +226,16 @@ static void rmv_pidcall(u32 pidcall)
 
 static Pidcall_s *victim_pidcall(u32 pidcall)
 {
-	Pidcall_s *pc = &Pidcall[range(MAX_PIDCALLS)];
+	Pidcall_s *pc = Pidclock;
 
+	while (pc->clock) {
+++Pidcall_tick;
+		pc->clock = 0;
+		if (++Pidclock == &Pidcall[MAX_PIDCALLS]) {
+			Pidclock = Pidcall;
+		}
+		pc = Pidclock;
+	}
 	if (pc->pidcall) {
 		rmv_pidcall(pc->pidcall);
 	}
