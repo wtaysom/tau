@@ -22,16 +22,16 @@
 
 enum {	HELP_ROW = 0,
 	HELP_COL = 0,
+	TOP_ROW  = HELP_ROW + 1,
+	TOP_COL  = 0,
 	RW_ROW   = HELP_ROW + 1,
 	RW_COL   = 0,
-	PID_ROW  = RW_ROW + 8,
+	PID_ROW  = TOP_ROW + 12,
 	PID_COL  = 0,
 	SELF_ROW = HELP_ROW + 1,
-	SELF_COL = HELP_ROW + 40,
-	MAX_ROW  = SELF_ROW + 4,
-	MAX_COL  = SELF_COL,
-	TOP_ROW  = HELP_ROW,
-	TOP_COL  = 90,
+	SELF_COL = 0,
+	MAX_ROW  = SELF_ROW,
+	MAX_COL  = SELF_COL + 40,
 };
 
 typedef struct Top_ten_s {
@@ -39,34 +39,53 @@ typedef struct Top_ten_s {
 	int	value;
 } Top_ten_s;
 
+typedef struct Display_call_s {
+	char	*name;
+	int	index;
+} Display_call_s;
+
 bool Plot = FALSE;
 
 static Top_ten_s Top_ten[10];
 
 static graph_s TotalGraph = {{0, 0}, {{0, 10}, {60, 20}}};
 
+Display_call_s Display_call[] = {
+	{ "read:  ", sys_read },
+	{ "write: ", sys_write },
+	{ "pread: ", sys_pread64 },
+	{ "pwrite:", sys_pwrite64 },
+	{ "sync:  ", sys_sync },
+	{ "fsync: ", sys_fsync },
+	{ "open:  ", sys_open },
+	{ "close: ", sys_close },
+	{ "creat: ", sys_creat },
+	{ "unlink:", sys_unlink },
+	{ "stat:  ", sys_stat64 },
+	{ "fstat: ", sys_fstat64 },
+	{ "fork:  ", ptregs_fork },
+	{ "vfork: ", ptregs_vfork },
+	{ NULL, 0 }};
+
 static void help(void)
 {
 	mvprintw(HELP_ROW, HELP_COL,
-		"q quit  c clear  < shorter  > longer %d.%.3d",
+		"q quit  c clear  k kernel ops  i internal ops  f file ops "
+		" < shorter  > longer %d.%.3d",
 		Sleep.tv_sec, Sleep.tv_nsec / A_MILLION);
 }
 
-static void read_write(void)
+static void file_system(void)
 {
-	mvprintw(RW_ROW,   RW_COL, "            total   hits/sec");
-	mvprintw(RW_ROW+1, RW_COL, "read:  %10lld %10d",
-		New[sys_read], Delta[sys_read]);
-	mvprintw(RW_ROW+2, RW_COL, "write: %10lld %10d",
-		New[sys_write], Delta[sys_write]);
-	mvprintw(RW_ROW+3, RW_COL, "pread: %10lld %10d",
-		New[sys_pread64], Delta[sys_pread64]);
-	mvprintw(RW_ROW+4, RW_COL, "pwrite:%10lld %10d",
-		New[sys_pwrite64], Delta[sys_pwrite64]);
-	mvprintw(RW_ROW+5, RW_COL, "sync:  %10lld %10d",
-		New[sys_sync], Delta[sys_sync]);
-	mvprintw(RW_ROW+6, RW_COL, "fsync: %10lld %10d",
-		New[sys_fsync], Delta[sys_fsync]);
+	Display_call_s *d;
+	int row = RW_ROW;
+
+	mvprintw(row,   RW_COL, "            total   hits/sec");
+
+	for (d = Display_call; d->name; d++) {
+		mvprintw(++row, RW_COL, "%s %10lld %10d",
+			d->name, New[d->index], Delta[d->index]);
+	}
 }
 
 static void self(void)
@@ -224,20 +243,35 @@ void init_display(void)
 	init_counter(&TotalDelta, 1);
 }
 
-void display(void)
+void kernel_display(void)
 {
+	clear();
+	top_ten();
 	if (Plot) {
 		clear();
 		graph_total();
 	} else {
-		top_pid();
 		display_pidcall();
 		display_top_ten();
 	}
-	top_ten();
 	help();
-	read_write();
+	refresh();
+}
+
+void internal_display(void)
+{
+	clear();
+	help();
 	self();
+	top_pid();
+	refresh();
+}
+
+void file_system_display(void)
+{
+	clear();
+	help();
+	file_system();
 	refresh();
 }
 

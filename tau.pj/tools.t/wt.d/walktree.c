@@ -13,6 +13,8 @@
 #include <qsort.h>
 #include <timer.h>
 
+#include <debug.h>
+
 enum { NUM_BUCKETS = 65 };
 
 typedef struct Histogram_s {
@@ -71,12 +73,12 @@ void pr_histogram(Histogram_s *h)
 		}
 	}
 	for (i = 0; i <= last; i++) {
+		printf("%2d. %5ld\n", i, h->bucket[i]);
 		median += h->bucket[i];
 		if (median >= total / 2) {
 			if (!found) printf("---median---\n");
-			median = 0;
+			found = TRUE;
 		}
-		printf("%2d. %5ld\n", i, h->bucket[i]);
 	}
 	printf("Number %lld average %lld\n", h->num, h->sum / h->num);
 }

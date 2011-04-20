@@ -24,6 +24,8 @@ bool Dump = FALSE;
 bool Trace_exit = TRUE;
 bool Trace_self = FALSE;
 
+display_fn Display = kernel_display;
+
 pid_t gettid(void) { return syscall(__NR_gettid); }
 
 u8 Ignore_pid[(MAX_PID + 4) / 8];
@@ -139,6 +141,15 @@ void commander(void)
 			break;
 		case '>':
 			increase_reduce_interval();
+			break;
+		case 'i':
+			Display = internal_display;
+			break;
+		case 'k':
+			Display = kernel_display;
+			break;
+		case 'f':
+			Display = file_system_display;
 			break;
 		default:
 			break;  // ignore

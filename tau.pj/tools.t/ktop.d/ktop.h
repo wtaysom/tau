@@ -38,6 +38,8 @@ static inline u32 get_call(u32 pidcall)
 	return pidcall & SYSCALL_MASK;
 }
 
+typedef void (*display_fn)(void);
+
 typedef struct Pidcall_s Pidcall_s;
 struct Pidcall_s {
 	Pidcall_s *next;
@@ -58,6 +60,11 @@ struct Pidcall_s {
 extern bool Dump;	/* Dump of ftrace logs - don't start display */
 extern bool Trace_exit;	/* Trace sys_exit events */
 extern bool Trace_self;	/* Trace myself and ignore others */
+
+extern display_fn Display;
+void internal_display(void);
+void kernel_display(void);
+void file_system_display(void);
 
 extern u64 Syscall_count[NUM_SYS_CALLS];
 extern int Pid[MAX_PID];

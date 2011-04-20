@@ -140,7 +140,7 @@ void *reduce(void *arg)
 		if (Halt) return NULL;
 		delta();
 		reduce_pidcall();
-		display();
+		Display();
 		nanosleep(&Sleep, NULL);
 	}
 }
