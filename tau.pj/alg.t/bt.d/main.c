@@ -16,6 +16,22 @@
 
 enum {	NUM_BUFS = 10 };
 
+#include <execinfo.h>
+
+void show_stackframe(void)
+{
+	void *trace[16];
+	char **messages = (char **)NULL;
+	int i, trace_size = 0;
+
+	trace_size = backtrace(trace, 16);
+	messages = backtrace_symbols(trace, trace_size);
+	printf("[bt] Execution path:\n");
+	for (i = 0; i < trace_size; ++i)
+		printf("[bt] %s\n", messages[i]);
+}
+
+
 char *rndstring(unint n)
 {
 	char	*s;
@@ -104,7 +120,7 @@ static Lump_s h_find(Lump_s key)
 	h = hash(key);
 	r = h->next;
 	while (r) {
-		if (lumpcmp(key, r->key) == 0) {
+		if (cmplump(key, r->key) == 0) {
 			return r->val;
 		}
 		r = r->next;
@@ -132,12 +148,12 @@ static void print_f(Lump_s key, Lump_s val, void *t)
 
 	v = t_find(t, key);
 	printf("%s=%s", key.d, val.d);
-	if (lumpcmp(val, v) != 0) {
+	if (cmplump(val, v) != 0) {
 		printf("!=%s\n", v.d);
 	} else {
 		printf("\n");
 	}
-	lumpfree(v);
+	freelump(v);
 }
 
 void t_print(Btree_s *t)
@@ -153,7 +169,7 @@ void test1(int n)
 	for (i = 0; i < n; i++) {
 		key = seq_lump();
 		printf("%s\n", key.d);
-		lumpfree(key);
+		freelump(key);
 	}
 }
 
@@ -171,8 +187,8 @@ void test3(int n)
 		val = rnd_lump();
 		h_add(key, val);
 		t_insert(t, key, val);
-		lumpfree(key);
-		lumpfree(val);
+		freelump(key);
+		freelump(val);
 	}
 	t_dump(t);
 }
@@ -191,8 +207,8 @@ void test4(int n)
 		val = rnd_lump();
 		h_add(key, val);
 		t_insert(t, key, val);
-		lumpfree(key);
-		lumpfree(val);
+		freelump(key);
+		freelump(val);
 	}
 	t_dump(t);
 }

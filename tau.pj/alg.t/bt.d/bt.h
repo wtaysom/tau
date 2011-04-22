@@ -10,31 +10,17 @@
 #include <style.h>
 #endif
 
+#ifndef _LUMP_H_
+#include <lump.h>
+#endif
+
 typedef struct Btree_s Btree_s;
-
-typedef struct Lump_s {
-	int size;
-	u8 *d;
-} Lump_s;
-
-extern const Lump_s Nil;
-
-int    lumpcmp(Lump_s a, Lump_s b);
-Lump_s lumpdup(Lump_s a);
-void   lumpfree(Lump_s a);
-
-static inline Lump_s lumpmk(int size, void *data)
-{
-	Lump_s b;
-
-	b.size = size;
-	b.d = data;
-	return b;
-}
 
 Btree_s *t_new(char *file, int num_bufs);
 void     t_dump(Btree_s *t);
 int      t_insert(Btree_s *t, Lump_s key, Lump_s val);
 Lump_s   t_find(Btree_s *t, Lump_s key);
+
+void show_stackframe(void);
 
 #endif
