@@ -98,7 +98,6 @@ static void h_add(Lump_s key, Lump_s val)
 #if 0
 static Lump_s h_find(Lump_s key)
 {
-FN;
 	struct Record *h;
 	struct Record *r;
 
@@ -116,7 +115,6 @@ FN;
 
 static void h_for_each (recFunc f, void *user)
 {
-FN;
 	unint i;
 	struct Record *r;
 
@@ -130,8 +128,8 @@ FN;
 
 static void print_f(Lump_s key, Lump_s val, void *t)
 {
-FN;
 	Lump_s v;
+
 	v = t_find(t, key);
 	printf("%s=%s", key.d, val.d);
 	if (lumpcmp(val, v) != 0) {
@@ -144,13 +142,11 @@ FN;
 
 void t_print(Btree_s *t)
 {
-FN;
 	h_for_each(print_f, t);
 }
 
 void test1(int n)
 {
-FN;
 	Lump_s key;
 	unint i;
 
@@ -163,7 +159,6 @@ FN;
 
 void test3(int n)
 {
-FN;
 	Btree_s *t;
 	Lump_s key;
 	Lump_s val;
@@ -184,7 +179,6 @@ FN;
 
 void test4(int n)
 {
-FN;
 	Btree_s *t;
 	Lump_s key;
 	Lump_s val;
@@ -206,11 +200,11 @@ FN;
 int main(int argc, char *argv[])
 {
 	int	n = 13;
-FN;
+
 	if (argc > 1) {
 		n = atoi(argv[1]);
 	}
-	fdebugoff();
+	fdebugon();
 	test3(n);
 	return 0;
 }
