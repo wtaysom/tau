@@ -18,8 +18,8 @@ enum {	NUM_BUFS = 10 };
 
 char *rndstring(unint n)
 {
-	char *s;
-	unint j;
+	char	*s;
+	unint	j;
 
 	if (!n) return NULL;
 
@@ -33,10 +33,35 @@ char *rndstring(unint n)
 
 Lump_s rnd_lump(void)
 {
-	unint n;
+	unint	n;
 
 	n = range(7) + 5;
 	return lumpmk(n, rndstring(n));
+}
+
+Lump_s seq_lump(void)
+{
+	enum { MAX_KEY = 4 };
+
+	static int	n = 0;
+	int	x = n++;
+	char	*s;
+	int	i;
+	int	r;
+
+	s = malloc(MAX_KEY);
+	i = MAX_KEY - 1;
+	s[i]   = '\0';
+	do {
+		--i;
+		r = x % 26;
+		x /= 26;
+		s[i] = 'a' + r;
+	} while (x && (i > 0));
+	while (--i >= 0) {
+		s[i] = ' ';
+	}
+	return lumpmk(MAX_KEY, s);
 }
 
 enum { NUM_BUCKETS = 7 };
@@ -123,7 +148,20 @@ FN;
 	h_for_each(print_f, t);
 }
 
-static void test4(void)
+void test1(int n)
+{
+FN;
+	Lump_s key;
+	unint i;
+
+	for (i = 0; i < n; i++) {
+		key = seq_lump();
+		printf("%s\n", key.d);
+		lumpfree(key);
+	}
+}
+
+void test3(int n)
 {
 FN;
 	Btree_s *t;
@@ -133,19 +171,46 @@ FN;
 
 	if (FALSE) seed_random();
 	t = t_new(".tfile", NUM_BUFS);
-	for (i = 0; i < 10/*23*/; i++) {
+	for (i = 0; i < n; i++) {
+		key = seq_lump();
+		val = rnd_lump();
+		h_add(key, val);
+		t_insert(t, key, val);
+		lumpfree(key);
+		lumpfree(val);
+	}
+	t_dump(t);
+}
+
+void test4(int n)
+{
+FN;
+	Btree_s *t;
+	Lump_s key;
+	Lump_s val;
+	unint i;
+
+	if (FALSE) seed_random();
+	t = t_new(".tfile", NUM_BUFS);
+	for (i = 0; i < n; i++) {
 		key = rnd_lump();
 		val = rnd_lump();
 		h_add(key, val);
 		t_insert(t, key, val);
-	t_dump(t);
+		lumpfree(key);
+		lumpfree(val);
 	}
+	t_dump(t);
 }
 
 int main(int argc, char *argv[])
 {
+	int	n = 13;
 FN;
+	if (argc > 1) {
+		n = atoi(argv[1]);
+	}
 	fdebugoff();
-	test4();
+	test3(n);
 	return 0;
 }

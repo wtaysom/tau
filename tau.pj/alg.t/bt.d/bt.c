@@ -22,14 +22,15 @@
 enum { LEAF = 1, BRANCH };
 
 typedef struct Head_s {
-	u8 kind;
-	u16 num_recs;
-	u16 available;
-	u16 end;
-	u64 block;
-	u64 overflow;
-	u64 last;
-	u16 rec[];
+	u8	kind;
+	u8	unused;
+	u16	num_recs;
+	u16	available;
+	u16	end;
+	u64	block;
+	u64	overflow;
+	u64	last;
+	u16	rec[];
 } Head_s;
 
 struct Btree_s {
@@ -40,20 +41,22 @@ struct Btree_s {
 enum {	MAX_U16 = (1 << 16) - 1,
 	BITS_U8 = 8,
 	MASK_U8 = (1 << BITS_U8) - 1,
-	SZ_BUF = 256,
-	SZ_U16 = sizeof(u16),
-	SZ_U64 = sizeof(u64),
+	SZ_BUF  = 128,
+	SZ_U16  = sizeof(u16),
+	SZ_U64  = sizeof(u64),
 	SZ_HEAD = sizeof(Head_s),
-	SZ_LEAF_OVERHEAD = 3 * SZ_U16,
+	SZ_LEAF_OVERHEAD   = 3 * SZ_U16,
 	SZ_BRANCH_OVERHEAD = 2 * SZ_U16 };
 
 const Lump_s Nil = { -1, NULL };
 
+bool Dump_buf = FALSE;
+
 int lumpcmp(Lump_s a, Lump_s b)
 {
 FN;
-	int size;
-	int x;
+	int	size;
+	int	x;
 
 	if (a.size > b.size) {
 		size = b.size;
@@ -97,7 +100,7 @@ static int node_free(Head_s *head)
 
 static void pr_indent(int indent)
 {
-	int i;
+	int	i;
 
 	for (i = 0; i < indent; i++) {
 		printf("  ");
@@ -107,23 +110,24 @@ static void pr_indent(int indent)
 static void pr_head(Head_s *head, int indent)
 {
 	pr_indent(indent);
-	printf("num_recs %d "
+	printf("%s %lld num_recs %d "
 		"available %d "
 		"end %d "
-		"block %lld "
 		"overflow %lld\n",
+		head->kind == LEAF ? "LEAF" : "BRANCH",
+		head->block,
 		head->num_recs,
 		head->available,
 		head->end,
-		head->block,
 		head->overflow);
 }
 
 static void pr_buf(Buf_s *buf, int indent)
 {
-	unint i, j;
-	u8 *d = buf->d;
-	char *c = buf->d;
+	unint	i;
+	unint	j;
+	u8	*d = buf->d;
+	char	*c = buf->d;
 
 	pr_indent(indent);
 	printf("block=%lld\n", buf->block);
@@ -143,9 +147,9 @@ static void pr_buf(Buf_s *buf, int indent)
 
 static Lump_s get_key(Head_s *head, unint i)
 {
-	Lump_s key;
-	unint x;
-	u8 *start;
+	Lump_s	key;
+	unint	x;
+	u8	*start;
 
 	assert(i < head->num_recs);
 	x = head->rec[i];
@@ -159,10 +163,10 @@ static Lump_s get_key(Head_s *head, unint i)
 
 static Lump_s get_val(Head_s *head, unint i)
 {
-	Lump_s val;
-	unint x;
-	u8 *start;
-	unint key_size;
+	Lump_s	val;
+	unint	x;
+	u8	*start;
+	unint	key_size;
 
 	assert(head->kind == LEAF);
 	assert(i < head->num_recs);
@@ -180,10 +184,10 @@ static Lump_s get_val(Head_s *head, unint i)
 
 static u64 get_block(Head_s *head, unint i)
 {
-	u64 block;
-	unint x;
-	u8 *start;
-	unint key_size;
+	u64	block;
+	unint	x;
+	u8	*start;
+	unint	key_size;
 
 	assert(head->kind == BRANCH);
 	assert(i < head->num_recs);
@@ -207,7 +211,7 @@ static u64 get_block(Head_s *head, unint i)
 #if 0
 static bool isGE(Head_s *head, Lump_s key, unint i)
 {
-	Lump_s target;
+	Lump_s	target;
 FN;
 	target = get_key(head, i);
 	return lumpcmp(key, target) >= 0;	
@@ -216,7 +220,7 @@ FN;
 
 static bool isLE(Head_s *head, Lump_s key, unint i)
 {
-	Lump_s target;
+	Lump_s	target;
 FN;
 	target = get_key(head, i);
 	return lumpcmp(key, target) <= 0;	
@@ -224,8 +228,8 @@ FN;
 
 static void store_lump(Head_s *head, Lump_s lump)
 {
-	int total = lump.size + SZ_U16;
-	u8 *start;
+	int	total = lump.size + SZ_U16;
+	u8	*start;
 
 	assert(total <= head->available);
 	assert(total <= head->end);
@@ -241,8 +245,8 @@ static void store_lump(Head_s *head, Lump_s lump)
 
 static void store_block(Head_s *head, u64 block)
 {
-	int total = SZ_U64;
-	u8 *start;
+	int	total = SZ_U64;
+	u8	*start;
 
 	assert(total <= head->available);
 	assert(total <= head->end);
@@ -274,8 +278,8 @@ static void store_end(Head_s *head, unint i)
 
 static void lf_audit(const char *fn, unsigned line, Head_s *head)
 {
-	int i;
-	int avail = SZ_BUF - SZ_HEAD;
+	int	i;
+	int	avail = SZ_BUF - SZ_HEAD;
 
 	assert(head->kind == LEAF);
 	for (i = 0; i < head->num_recs; i++) {
@@ -293,11 +297,10 @@ static void lf_audit(const char *fn, unsigned line, Head_s *head)
 	}
 }
 
-#if 0
 static void br_audit(const char *fn, unsigned line, Head_s *head)
 {
-	int i;
-	int avail = SZ_BUF - SZ_HEAD;
+	int	i;
+	int	avail = SZ_BUF - SZ_HEAD;
 
 	assert(head->kind == LEAF);
 	for (i = 0; i < head->num_recs; i++) {
@@ -312,12 +315,13 @@ static void br_audit(const char *fn, unsigned line, Head_s *head)
 		exit(2);
 	}
 }
-#endif
 
 static int find_le(Head_s *head, Lump_s key)
 {
 FN;
-	int x, left, right;
+	int	x;
+	int	left;
+	int	right;
 
 	left = 0;
 	right = head->num_recs - 1;
@@ -336,7 +340,9 @@ FN;
 static int find_ge(Head_s *head, Lump_s key)
 {
 FN;
-	int x, left, right;
+	int	x;
+	int	left;
+	int	right;
 
 	left = 0;
 	right = head->num_recs - 1;
@@ -356,7 +362,9 @@ FN;
 static int find_eq(Head_s *head, Lump_s key)
 {
 FN;
-	int x, left, right;
+	int	x;
+	int	left;
+	int	right;
 
 	left = 0;
 	right = head->num_recs - 1;
@@ -374,8 +382,8 @@ FN;
 
 static void lf_del_rec(Head_s *head, unint i)
 {
-	Lump_s key;
-	Lump_s val;
+	Lump_s	key;
+	Lump_s	val;
 
 	LF_AUDIT(head);
 	assert(i < head->num_recs);
@@ -394,8 +402,8 @@ static void lf_del_rec(Head_s *head, unint i)
 static void lf_rec_copy(Head_s *dst, int i, Head_s *src, int j)
 {
 FN;
-	Lump_s key;
-	Lump_s val;
+	Lump_s	key;
+	Lump_s	val;
 
 	key = get_key(src, j);
 	val = get_val(src, j);
@@ -408,8 +416,8 @@ FN;
 static void lf_rec_move(Head_s *dst, int i, Head_s *src, int j)
 {
 FN;
-	Lump_s key;
-	Lump_s val;
+	Lump_s	key;
+	Lump_s	val;
 
 	key = get_key(src, j);
 	val = get_val(src, j);
@@ -421,10 +429,9 @@ FN;
 	lf_del_rec(src, j);
 }	
 
-#if 0
 static void br_del_rec(Head_s *head, unint i)
 {
-	Lump_s key;
+	Lump_s	key;
 
 	BR_AUDIT(head);
 	assert(i < head->num_recs);
@@ -439,11 +446,12 @@ static void br_del_rec(Head_s *head, unint i)
 	BR_AUDIT(head);
 }
 
+#if 0
 static void br_rec_copy(Head_s *dst, int i, Head_s *src, int j)
 {
 FN;
-	Lump_s key;
-	u64 block;
+	Lump_s	key;
+	u64	block;
 
 	key = get_key(src, j);
 	block = get_block(src, j);
@@ -452,12 +460,13 @@ FN;
 	store_lump(dst, key);
 	store_end(dst, i);
 }	
+#endif
 
 static void br_rec_move(Head_s *dst, int i, Head_s *src, int j)
 {
 FN;
-	Lump_s key;
-	u64 block;
+	Lump_s	key;
+	u64	block;
 
 	key = get_key(src, j);
 	block = get_block(src, j);
@@ -468,15 +477,14 @@ FN;
 
 	br_del_rec(src, j);
 }	
-#endif
 
 static void lf_compact(Buf_s *lf)
 {
 FN;
-	Head_s *head = lf->d;
-	Buf_s  *b = buf_scratch(lf->cache);
-	Head_s *h = b->d;
-	int i;
+	Head_s	*head = lf->d;
+	Buf_s	*b = buf_scratch(lf->cache);
+	Head_s	*h = b->d;
+	int	i;
 
 	h->kind = LEAF;
 	h->available = SZ_BUF - SZ_HEAD;
@@ -491,16 +499,16 @@ FN;
 	buf_put(b);
 }
 
-static Buf_s *br_new(Btree_s *t)
+static Buf_s *node_new(Btree_s *t, u8 kind)
 {
 FN;
-	Buf_s *br;
-	Head_s *head;
+	Buf_s	*br;
+	Head_s	*head;
 
 	br = buf_new(t->cache);
 	br->user = t;
 	head = br->d;
-	head->kind = BRANCH;
+	head->kind = kind;
 	head->available = SZ_BUF - SZ_HEAD;
 	head->end = SZ_BUF;
 	head->block = br->block;
@@ -509,33 +517,27 @@ FN;
 	return br;
 }
 
+static Buf_s *br_new(Btree_s *t)
+{
+FN;
+	return node_new(t, BRANCH);
+}
+
 static Buf_s *lf_new(Btree_s *t)
 {
 FN;
-	Buf_s *lf;
-	Head_s *head;
-
-	lf = buf_new(t->cache);
-	lf->user = t;
-	head = lf->d;
-	head->kind = LEAF;
-	head->available = SZ_BUF - SZ_HEAD;
-	head->end = SZ_BUF;
-	head->block = lf->block;
-	head->overflow = 0;
-	head->last = 0;
-	return lf;
+	return node_new(t, LEAF);
 }
 
 static Buf_s *lf_split(Buf_s *left)
 {
 FN;
-	Head_s *child = left->d;
-	Btree_s *t  = left->user;
-	Buf_s *right = lf_new(t);
-	Head_s *sibling = right->d;
-	int middle = child->num_recs / 2;
-	int i;
+	Head_s	*child   = left->d;
+	Btree_s	*t       = left->user;
+	Buf_s	*right   = lf_new(t);
+	Head_s	*sibling = right->d;
+	int	middle   = child->num_recs / 2;
+	int	i;
 
 	LF_AUDIT(child);
 	for (i = 0; middle < child->num_recs; i++) {
@@ -550,10 +552,10 @@ FN;
 
 static int lf_insert(Buf_s *lf, Lump_s key, Lump_s val)
 {
-	Head_s *head = lf->d;
-	Buf_s *right;
-	int size = key.size + val.size + SZ_LEAF_OVERHEAD;
-	int i;
+	Buf_s	*right;
+	Head_s	*head = lf->d;
+	int	size  = key.size + val.size + SZ_LEAF_OVERHEAD;
+	int	i;
 
 	LF_AUDIT(head);
 	if (size > head->available) {
@@ -571,13 +573,13 @@ static int lf_insert(Buf_s *lf, Lump_s key, Lump_s val)
 	return 0;
 }
 
-static Buf_s *lf_grow(Buf_s *lf)
+static Buf_s *grow(Buf_s *lf)
 {
-	Btree_s *t = lf->user;
-	Head_s *child = lf->d;
-	Head_s *parent;
-	Buf_s *br;
-	Lump_s key;
+	Btree_s	*t     = lf->user;
+	Head_s	*child = lf->d;
+	Head_s	*parent;
+	Buf_s	*br;
+	Lump_s	key;
 
 	assert(child->overflow);
 
@@ -595,39 +597,14 @@ static Buf_s *lf_grow(Buf_s *lf)
 	return br;
 }	
 
-static Buf_s *br_grow(Buf_s *lf)
-{
-	Btree_s *t = lf->user;
-	Head_s *head = lf->d;
-	Head_s *br_head;
-	Buf_s *br;
-	Lump_s key;
-
-	assert(head->overflow);
-
-	br = br_new(t);
-	br_head = br->d;
-	br_head->last = head->overflow;
-	head->overflow = 0;
-	key = get_key(head, head->num_recs - 1);
-
-	store_block(br_head, head->block);
-	store_lump(br_head, key);
-	store_end(br_head, 0);
-
-	t->root = br_head->block;
-	return br;
-}
-
-#if 0
 static Buf_s *br_split(Buf_s *left)
 {
 FN;
-	Head_s *head = left->d;
-	Btree_s *t  = left->user;
-	Buf_s *right = lf_new(t);
-	int middle = head->num_recs / 2;
-	int i;
+	Head_s	*head  = left->d;
+	Btree_s	*t     = left->user;
+	Buf_s	*right = lf_new(t);
+	int	middle = head->num_recs / 2;
+	int	i;
 
 	BR_AUDIT(head);
 	for (i = 0; middle < head->num_recs; i++) {
@@ -638,62 +615,59 @@ FN;
 	BR_AUDIT(head);
 	return right;
 }
-#endif
 
-static void br_store(Buf_s *br, Buf_s *bchild, int x)
+static void br_store(Buf_s *bparent, Buf_s *bchild, int x)
 {
 FN;
-	Head_s *parent = br->d;
-	Head_s *child = bchild->d;
-	Head_s *sibling;
-	Buf_s *bsibling;
-	Lump_s key;
+	Head_s	*parent = bparent->d;
+	Head_s	*child  = bchild->d;
+	int	size;
+	Lump_s	key;
 
-// Need to make sure we have room, if not split branch
+	key = get_key(child, child->num_recs - 1);
+	size = key.size + SZ_U64 + SZ_LEAF_OVERHEAD;
 
-	bsibling = buf_get(br->cache, child->overflow);
-	sibling = bsibling->d;
-	key = get_key(sibling, 0);
+	if (size > parent->available) {
+		Buf_s	*right = br_split(bparent);
 
-	assert(child->overflow == sibling->block);
+		if (!isLE(right->d, key, 0)) {
+			bparent = right;
+			parent  = bparent->d;
+		}
+		x = find_le(parent, key);
+	}
 	store_block(parent, child->overflow);
 	child->overflow = 0;
 	store_lump(parent, key);
-	if (x == parent->num_recs) {
-		store_end(parent, x);
-		parent->last = sibling->block;
-	} else {
-		store_end(parent, x);
-	}
+	store_end(parent, x);
 }
 
 static int br_insert(Buf_s *br, Lump_s key, Lump_s val)
 {
-	Head_s *head = br->d;
-	Buf_s *node;
-	Head_s *child;
-	u64 block;
-	int x;
+	Head_s	*parent = br->d;
+	Buf_s	*node;
+	Head_s	*child;
+	u64	block;
+	int	x;
 
 	for(;;) {
-		x = find_le(head, key);
-		if (x == head->num_recs) {
-			block = head->last;
+		x = find_le(parent, key);
+		if (x == parent->num_recs) {
+			block = parent->last;
 		} else {
-			block = get_block(head, x);
+			block = get_block(parent, x);
 		}
 		node = buf_get(br->cache, block);
 		child = node->d;
 		if (child->overflow) {
 			br_store(br, node, x);
-			fatal("Child split. Implement");
 		}
 		if (child->kind == LEAF) {
 			lf_insert(node, key, val);
 			return 0;
 		}
 		br = node;
-		head = br->d;
+		parent = br->d;
 	}
 }
 
@@ -707,40 +681,32 @@ Lump_s t_find(Btree_s *t, Lump_s key)
 
 int t_insert(Btree_s *t, Lump_s key, Lump_s val)
 {
-	Buf_s *node;
-	Head_s *head;
-	int rc;
+	Buf_s	*node;
+	Head_s	*head;
+	int	rc;
 FN;
-	if (t->root == 0) {
-		node = lf_new(t);
-		if (!node) fatal("root new");
-		t->root = node->block;
-	} else {
+	if (t->root) {
 		node = buf_get(t->cache, t->root);
-		if (!node) fatal("root %lld:", t->root);
+	} else {
+		node = lf_new(t);
+		t->root = node->block;
 	}
 	head = node->d;
-	if (head->kind == LEAF) {
-		if (head->overflow) {
-			node = lf_grow(node);
-			head = node->d;
-		} else {
-			rc = lf_insert(node, key, val);
-			goto exit;
-		}
-	}
-	assert(head->kind == BRANCH);
 	if (head->overflow) {
-		node = br_grow(node);
+		node = grow(node);
 		head = node->d;
 	}
-	rc = br_insert(node, key, val);
-exit:
+	if (head->kind == LEAF) {
+		rc = lf_insert(node, key, val);
+	} else {
+		rc = br_insert(node, key, val);
+	}
 	return rc;
 }
 
-Btree_s *t_new(char *file, int num_bufs) {
-	Btree_s *t;
+Btree_s *t_new(char *file, int num_bufs)
+{
+	Btree_s	*t;
 FN;
 	t = ezalloc(sizeof(*t));
 	t->cache = cache_new(file, num_bufs, SZ_BUF);
@@ -752,7 +718,8 @@ static void node_dump(Btree_s *t, u64 block, int indent);
 static void lump_dump(Lump_s a)
 {
 #if 0
-	int i;
+	int	i;
+
 	for (i = 0; i < a.size; i++) {
 		putchar(a.d[i]);
 	}
@@ -763,10 +730,12 @@ static void lump_dump(Lump_s a)
 
 static void lf_dump(Buf_s *node, int indent)
 {
-	Head_s *head = node->d;
-	unint i;
+	Head_s	*head = node->d;
+	unint	i;
 
-	pr_buf(node, indent);
+	if (Dump_buf) {
+		pr_buf(node, indent);
+	}
 	pr_head(head, indent);
 	for (i = 0; i < head->num_recs; i++) {
 		Lump_s key;
@@ -790,9 +759,10 @@ static void lf_dump(Buf_s *node, int indent)
 
 static void br_dump(Buf_s *node, int indent)
 {
-	Head_s *head = node->d;
-	unint i;
+	Head_s	*head = node->d;
+	unint	i;
 
+	pr_head(head, indent);
 	for (i = 0; i < head->num_recs; i++) {
 		Lump_s key;
 		u64 block;
@@ -800,10 +770,13 @@ static void br_dump(Buf_s *node, int indent)
 		key   = get_key(head, i);
 		block = get_block(head, i);
 		pr_indent(indent);
+		printf("%ld. ", i);
 		lump_dump(key);
 		printf(" = %llx\n", block);
 		node_dump(node->user, block, indent + 1);
 	}
+	pr_indent(indent);
+	printf("%ld. <last> = %llx\n", i, head->last);
 	node_dump(node->user, head->last, indent + 1);
 	if (head->overflow) {
 		pr_indent(i);
@@ -814,8 +787,8 @@ static void br_dump(Buf_s *node, int indent)
 
 static void node_dump(Btree_s *t, u64 block, int indent)
 {
-	Buf_s *node;
-	Head_s *head;
+	Buf_s	*node;
+	Head_s	*head;
 
 	if (!block) return;
 	node = buf_get(t->cache, block);
