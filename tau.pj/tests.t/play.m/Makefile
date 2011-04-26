@@ -26,4 +26,4 @@ LIBS += ../../libq.b/$(objdir)/libq -lm
 #endif
 LIBS += -lrt
 LIBS += -lpthread
-#LIBS += -luuid
+LIBS += -luuid

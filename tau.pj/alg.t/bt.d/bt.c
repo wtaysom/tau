@@ -622,6 +622,7 @@ int lf_insert(Buf_s *lf, Lump_s key, Lump_s val)
 
 	LF_AUDIT(head);
 	while (size > head->available) {
+HERE;
 		right = lf_split(lf);
 		if (!isLE(right->d, key, 0)) {
 			lf = right;
@@ -700,6 +701,7 @@ void br_store(Buf_s *bfather, Buf_s *bchild, int x)
 	size = key.size + SZ_U64 + SZ_LEAF_OVERHEAD;
 
 	while (size > father->available) {
+HERE;
 		Buf_s	*bmother = br_split(bfather);
 
 		if (!isLE(father, key, father->num_recs - 1)) {
@@ -733,6 +735,7 @@ int br_insert(Buf_s *br, Lump_s key, Lump_s val)
 	int	x;
 
 	for(;;) {
+HERE;
 		x = find_le(parent, key);
 		if (x == parent->num_recs) {
 			block = parent->last;

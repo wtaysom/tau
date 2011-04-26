@@ -14,7 +14,7 @@
 
 #include "bt.h"
 
-enum {	NUM_BUFS = 10 };
+enum {	NUM_BUFS = 20 };
 
 #include <execinfo.h>
 

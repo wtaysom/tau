@@ -14,12 +14,18 @@ typedef struct Cache_s Cache_s;
 
 typedef struct Buf_s {
 	Cache_s *cache;
-	u64 block;
-	int inuse;
-	bool dirty;
-	void *user;
-	void *d;
+	u64	block;
+	int	inuse;
+	bool	dirty;
+	bool	clock;
+	void	*user;
+	void	*d;
 } Buf_s;
+
+static inline void buf_dirty(Buf_s *b)
+{
+	b->dirty = TRUE;
+}
 
 Cache_s *cache_new(char *filename, u64 num_bufs, u64 blockSize);
 Buf_s *buf_new(Cache_s *cache);

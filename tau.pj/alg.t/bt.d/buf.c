@@ -127,6 +127,10 @@ static Buf_s *victim(Cache_s *cache)
 		if (cache->clock >= cache->numbufs) {
 			cache->clock = 0;
 		}
+		if (cache->buf[cache->clock].clock) {
+			cache->buf[cache->clock].clock = FALSE;
+			continue;
+		}
 		b = &cache->buf[cache->clock];
 		if (!b->inuse) return b;
 		// This is not a clock alg yet
@@ -152,6 +156,7 @@ Buf_s *buf_get(Cache_s *cache, u64 block)
 	if (b) return b;
 	b = victim(cache);
 	++b->inuse;
+	b->clock = TRUE;
 	b->block = block;
 	dev_fill(b);
 	return b;
