@@ -22,6 +22,11 @@
 #include <errno.h>
 #include <eprintf.h>
 
+#include <debug.h>
+#include <style.h>
+
+bool Stacktrace = TRUE;
+
 /* pr_display: print debug message */
 void pr_display (const char *file, const char *func, int line, const char *fmt, ...)
 {
@@ -65,6 +70,7 @@ void pr_fatal (const char *file, const char *func, int line, const char *fmt, ..
 		}
 	}
 	fprintf(stderr, "\n");
+	if (Stacktrace) stacktrace();
 	exit(2); /* conventional value for failed execution */
 }
 

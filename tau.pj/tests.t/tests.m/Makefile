@@ -13,7 +13,6 @@
 ############################################################################
 
 include ../../mk/multi.mk
-##INC += -Iinclude
-LIBS +=  ../../libq.b/$(objdir)/libq -lm -lrt
 
+LIBS += ../../libq.b/$(objdir)/libq -lm -lrt
 CFLAGS += -rdynamic

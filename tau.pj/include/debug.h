@@ -78,6 +78,8 @@ extern int assertError(const char *what);
 #define assert(_e_)	((void)((_e_) || assertError(WHERE " (" # _e_ ")")))
 #endif
 
+void stacktrace(void);
+
 #ifdef __cplusplus
 }
 #endif

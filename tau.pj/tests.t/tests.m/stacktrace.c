@@ -1,26 +1,18 @@
+/*
+ * Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that
+ * can be found in the LICENSE file.
+ */
+
 #include <stdio.h>
-#include <signal.h>
-#include <execinfo.h>
 
-void show_stackframe(void)
-{
-	void	*trace[16];
-	char	**messages = (char **)NULL;
-	int	trace_size = 0;
-	int	i;
-
-	trace_size = backtrace(trace, 16);
-	messages = backtrace_symbols(trace, trace_size);
-	printf("[bt] Execution path:\n");
-	for (i=0; i<trace_size; ++i)
-		printf("[bt] %s\n", messages[i]);
-}
-
+#include <debug.h>
+#include <eprintf.h>
 
 int func_low(int p1, int p2)
 {
 	p1 = p1 - p2;
-	show_stackframe();
+	stacktrace();
 
 	return 2*p1;
 }
@@ -29,7 +21,7 @@ int func_high(int p1, int p2)
 {
 
 	p1 = p1 + p2;
-	show_stackframe();
+	stacktrace();
 
 	return 2*p1;
 }
@@ -46,12 +38,55 @@ int test(int p1)
 	return res;
 }
 
+int fib(int n)
+{
+	if (n > 1) {
+		return fib(n-1) + fib(n-2);
+	} else {
+		stacktrace();
+		return 1;
+	}
+}
 
+int fact(int n)
+{
+	if (n > 1) {
+		return n * fact(n-1);
+	} else {
+		stacktrace();
+		return 1;
+	}
+}
+
+void a(void)
+{
+	fatal("end of the line");
+}
+
+void b(void)
+{
+	a();
+}
+
+void c(void)
+{
+	b();
+}
+
+void d(void)
+{
+	c();
+}
 
 int main(int argc, char *argv[])
 {
 	printf("First call: %d\n\n", test(27));
-	printf("Second call: %d\n", test(4));
+	printf("Second call: %d\n\n", test(4));
+
+	printf("Fib %d\n\n", fib(1));
+	printf("Fib %d\n\n", fib(9));
+
+	d();
 
 	return 0;
 }

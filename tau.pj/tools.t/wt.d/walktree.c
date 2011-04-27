@@ -2,6 +2,12 @@
  * Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
  * Distributed under the terms of the GNU General Public License v2
  */
+
+// To do:
+//   Need to be able to include funny file systems
+//   I want to fold Stat into Ftw
+//   Log10 plot of histogram
+
 #define _XOPEN_SOURCE 500
 #include <ftw.h>
 #include <stdio.h>
@@ -43,10 +49,13 @@ Ftw_s Ftw;
 Stat_s Stat;
 Histogram_s Histogram;
 
-bool By_device = FALSE;
-bool Print_hardlinks = FALSE;
-bool Print_files = FALSE;
-int This_mount_point = 0;
+struct option_s {
+	bool	by_device;
+	bool	print_hardlinks;
+	bool	print_files;
+	int	largest;
+	int	this_mount_point;
+} Option;
 
 static int highbit(u64 val)
 {
@@ -85,7 +94,9 @@ void pr_histogram(Histogram_s *h)
 			found = TRUE;
 		}
 	}
-	printf("Number %lld average %lld\n", h->num, h->sum / h->num);
+	if (h->num) {
+		printf("Number %lld average %lld\n", h->num, h->sum / h->num);
+	}
 }
 
 void pr_ftw_flag(const char *dir)
@@ -184,9 +195,15 @@ void find_median(void)
 	void **set;
 	void **next;
 	info_s *s;
-	u64 avg = (Histogram.sum + Histogram.num / 2) / Histogram.num;
+	u64 avg;
 	int i;
 
+	if (Histogram.num) {
+		avg = (Histogram.sum + Histogram.num / 2) / Histogram.num;
+	} else {
+		printf("No files\n");
+		return;
+	}
 	next = set = emalloc(NumInfo * sizeof(info_s *));
 	for (i = 0; i < HASH_BUCKETS; i++) {
 		s = Bucket[i];
@@ -196,7 +213,7 @@ void find_median(void)
 		}
 	}
 	quickSort(set, NumInfo, info_cmp);
-	if (Print_files) {
+	if (Option.print_files) {
 		for (i = 0; i < NumInfo; i++) {
 			pr_info(" ", set[i]);
 		}
@@ -210,7 +227,18 @@ void find_median(void)
 		}
 	}
 	pr_info("Median File: ", set[NumInfo / 2]);
-	
+
+	if (Option.largest) {
+		if (Option.largest > NumInfo) {
+			i = 0;
+		} else {
+			i = NumInfo - Option.largest;
+		}
+		printf("Printing the %ld largest files\n", NumInfo - i);
+		for (; i < NumInfo; i++) {
+			pr_info(" ", set[i]);
+		}
+	}
 	free(set);
 }		
 
@@ -242,7 +270,7 @@ int do_entry(
 		++Ftw.files;
 		if (sb->st_nlink > 1) {
 			++Stat.gt1link;
-			if (Print_hardlinks) {
+			if (Option.print_hardlinks) {
 				printf("%s\n", fpath);
 			}
 		}
@@ -289,7 +317,7 @@ void nftw_walk_tree(char *dir)
 	tick_t total;
 
 	start = nsecs();
-	nftw(dir, do_entry, 200, FTW_CHDIR | FTW_PHYS | This_mount_point);
+	nftw(dir, do_entry, 200, FTW_CHDIR | FTW_PHYS | Option.this_mount_point);
 	finish = nsecs();
 	total = finish - start;
 	printf("%lld nsecs %g secs\n", total, (double)total/1000000000.0);
@@ -302,12 +330,14 @@ void nftw_walk_tree(char *dir)
 
 void usage(void)
 {
-	pr_usage("[-mx?] {<dir>}\n"
+	pr_usage("[-hmpx?] [-l<num>] {<dir>}\n"
 		"\th - print hard links\n"
 		"\tm - only traverse the device represented by dir\n"
 		"\tp - print all the files\n"
 		"\tx - sort result by device\n"
-		"\t? - this message\n");
+		"\t? - this message\n"
+		"\tl<num> - print the <num> largest files."
+		" <num> defaults to 10\n");
 }
 
 int main(int argc, char *argv[])
@@ -316,19 +346,26 @@ int main(int argc, char *argv[])
 	int i;
 
 	setprogname(argv[0]);
-	while ((c = getopt(argc, argv, "hmpx?")) != -1) {
+	while ((c = getopt(argc, argv, "hl::mpx?")) != -1) {
 		switch (c) {
 		case 'h':
-			Print_hardlinks = TRUE;
+			Option.print_hardlinks = TRUE;
+			break;
+		case 'l':
+			if (optarg) {
+				Option.largest = strtol(optarg, NULL, 0);
+			} else {
+				Option.largest = 10;
+			}
 			break;
 		case 'm':
-			This_mount_point = FTW_MOUNT;
+			Option.this_mount_point = FTW_MOUNT;
 			break;
 		case 'p':
-			Print_files = TRUE;
+			Option.print_files = TRUE;
 			break;
 		case 'x':
-			By_device = TRUE;
+			Option.by_device = TRUE;
 			break;
 		case '?':
 			usage();
