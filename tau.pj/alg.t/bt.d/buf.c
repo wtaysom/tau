@@ -21,24 +21,27 @@
 #include "buf.h"
 
 typedef struct Dev_s {
-	int fd;
-	u64 next;	// Next block num to allocate
-	u64 block_size;
-	char *name;
+	int	fd;
+	u64	next;	// Next block num to allocate
+	u64	block_size;
+	char	*name;
 } Dev_s;
 
 struct Cache_s {
-	Dev_s *dev;
-	int clock;
-	int numbufs;
-	Buf_s *buf;
+	Dev_s	*dev;
+	int	clock;
+	int	numbufs;
+	Buf_s	*buf;
+	s64	gets;
+	s64	puts;
 };
 
 
 Dev_s *dev_open(char *name, u64 block_size)
 {
-	Dev_s *dev;
-	int fd;
+FN;
+	Dev_s	*dev;
+	int	fd;
 
 	fd = open(name, O_RDWR | O_CREAT, 0666);
 	if (fd == -1) {
@@ -54,24 +57,25 @@ Dev_s *dev_open(char *name, u64 block_size)
 
 void dev_block(Dev_s *dev, Buf_s *b)
 {
+FN;
 	b->block = dev->next++;
 	memset(b->d, 0, dev->block_size);
 }
 
-static void dev_flush(Buf_s *b)
+void dev_flush(Buf_s *b)
 {
-	if (b->dirty) {
-		Dev_s *dev = b->cache->dev;
-		int rc = pwrite(dev->fd, b->d, dev->block_size,
-				b->block * dev->block_size);
-		if (rc == -1) {
-			fatal("pwrite of %s at %lld:", dev->name, b->block);
-		}
+FN;
+	Dev_s *dev = b->cache->dev;
+	int rc = pwrite(dev->fd, b->d, dev->block_size,
+			b->block * dev->block_size);
+	if (rc == -1) {
+		fatal("pwrite of %s at %lld:", dev->name, b->block);
 	}
 }
 
-static void dev_fill(Buf_s *b)
+void dev_fill(Buf_s *b)
 {
+FN;
 	Dev_s *dev = b->cache->dev;
 	int rc = pread(dev->fd, b->d, dev->block_size, b->block * dev->block_size);
 
@@ -82,6 +86,7 @@ static void dev_fill(Buf_s *b)
 
 Cache_s *cache_new(char *filename, u64 numbufs, u64 block_size)
 {
+FN;
 	Cache_s *cache;
 	Buf_s *b;
 	Dev_s *dev;
@@ -107,6 +112,7 @@ Cache_s *cache_new(char *filename, u64 numbufs, u64 block_size)
 // TODO(taysom) Implement a hash lookup
 Buf_s *lookup(Cache_s *cache, u64 block)
 {
+FN;
 	int i;
 
 	for (i = 0; i < cache->numbufs; i++) {
@@ -118,8 +124,9 @@ Buf_s *lookup(Cache_s *cache, u64 block)
 	return NULL;
 }
 
-static Buf_s *victim(Cache_s *cache)
+Buf_s *victim(Cache_s *cache)
 {
+FN;
 	Buf_s *b;
 
 	for (;;) {
@@ -139,31 +146,37 @@ static Buf_s *victim(Cache_s *cache)
 
 Buf_s *buf_new(Cache_s *cache)
 {
+FN;
 	Buf_s *b;
 
 	b = victim(cache);
 	dev_block(cache->dev, b);
 	++b->inuse;
 	b->dirty = TRUE;
+	++cache->gets;
 	return b;
 }
 
 Buf_s *buf_get(Cache_s *cache, u64 block)
 {
+FN;
 	Buf_s *b;
 
 	b = lookup(cache, block);
-	if (b) return b;
-	b = victim(cache);
-	++b->inuse;
-	b->clock = TRUE;
-	b->block = block;
-	dev_fill(b);
+	if (!b) {
+		b = victim(cache);
+		++b->inuse;
+		b->clock = TRUE;
+		b->block = block;
+		dev_fill(b);
+	}
+	++cache->gets;
 	return b;
 }
 
 Buf_s *buf_scratch(Cache_s *cache)
 {
+FN;
 	Buf_s *b;
 	
 	b = victim(cache);
@@ -173,6 +186,27 @@ Buf_s *buf_scratch(Cache_s *cache)
 
 void buf_put(Buf_s *b)
 {
-	dev_flush(b);
+FN;
+	Cache_s	*cache = b->cache;
+
+	assert(b->inuse > 0);
+	++cache->puts;
+	if (b->dirty) {
+		dev_flush(b);
+	}
 	--b->inuse;
 }
+
+#include <stdio.h>
+
+bool cache_balanced(Cache_s *cache)
+{
+FN;
+	if (cache->gets != cache->puts) {
+		warn("gets != puts %d", cache->gets - cache->puts);
+		return FALSE;
+	}
+	printf("gets=%lld puts=%lld\n", cache->gets, cache->puts);
+	return TRUE;
+}
+

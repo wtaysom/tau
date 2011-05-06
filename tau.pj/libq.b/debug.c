@@ -296,6 +296,7 @@ int assertError (const char *what)
 	if (AssertIsOn) {
 		prbug("ASSERT FAILED: %s\n", what);
 		flushbug();
+		stacktrace();
 		exit(2);
 	}
 	return 0;

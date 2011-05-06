@@ -334,7 +334,7 @@ static unint parse_buf(u8 *buf)
 	ring_event_s *r;
 	unint commit;
 	unint length;
-	unint size;
+	unint size = 0;
 	u64 time;
 	u8 *end;
 
@@ -370,6 +370,7 @@ static unint parse_buf(u8 *buf)
 			time += (((u64)r->array[0]) << 28) | r->time_delta;
 		} else if (r->type_len == 31) {
 			/* Sync time with external clock (NOT IMMPLEMENTED) */
+			size = 12;
 			time = r->array[0];
 			time += *(u64 *)&(r->array[1]) * A_BILLION;
 		} else {

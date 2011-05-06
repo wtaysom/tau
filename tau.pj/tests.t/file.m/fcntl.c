@@ -475,6 +475,7 @@
 #include <style.h>
 #include <mylib.h>
 #include <eprintf.h>
+#include <puny.h>
 
 typedef enum Cmd_t {
 	cEND = 0,
@@ -639,27 +640,17 @@ printf("going to wait\n");
 	printf("pid:%d status=%d\n", pid, status>>8);
 }
 
-void usage (char *name)
+void usage (void)
 {
-	fprintf(stderr, "%s [<file_name> [<num_iterations>]]\n", name);
-	exit(1);
+	pr_usage("-f<file_name> -i<num_iterations>");
 }
 
 int main (int argc, char *argv[])
 {
-	char		*name = "xyzzy";
-	pid_t		pid;
-	int		rc;
-	unsigned	n = 1;
+	pid_t	pid;
+	int	rc;
 
-	setprogname(argv[0]);
-
-	if (argc > 1) {
-		name = argv[1];
-	}
-	if (argc > 2) {
-		n = atoi(argv[2]);
-	}
+	punyopt(argc, argv, NULL, NULL);
 
 	rc = pipe(Command);
 	if (rc == -1) {
@@ -676,9 +667,9 @@ int main (int argc, char *argv[])
 		return 1;
 	}
 	if (pid) {
-		parent(name, n);
+		parent(Option.file, Option.iterations);
 	} else {
-		child(name, n);
+		child(Option.file, Option.iterations);
 	}
 	return 0;
 }

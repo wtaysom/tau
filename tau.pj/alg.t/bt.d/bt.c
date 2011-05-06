@@ -52,11 +52,13 @@ bool Dump_buf = FALSE;
 
 int allocatable(Head_s *head)
 {
+FN;
 	return head->end - SZ_HEAD - SZ_U16 * head->num_recs;
 }
 
 void pr_indent(int indent)
 {
+FN;
 	int	i;
 
 	for (i = 0; i < indent; i++) {
@@ -66,6 +68,7 @@ void pr_indent(int indent)
 
 void pr_head(Head_s *head, int indent)
 {
+FN;
 	pr_indent(indent);
 	printf("%s "
 		"%s"
@@ -84,6 +87,7 @@ void pr_head(Head_s *head, int indent)
 
 void pr_buf(Buf_s *buf, int indent)
 {
+FN;
 	unint	i;
 	unint	j;
 	u8	*d = buf->d;
@@ -107,6 +111,7 @@ void pr_buf(Buf_s *buf, int indent)
 
 void init_node(Buf_s *node, Btree_s *t, u8 kind)
 {
+FN;
 	Head_s	*head;
 
 	node->user = t;
@@ -119,7 +124,7 @@ void init_node(Buf_s *node, Btree_s *t, u8 kind)
 	head->last      = 0;
 }
 
-Lump_s get_key(Head_s *head, unint i)
+Lump_s get_key (Head_s *head, unint i)
 {
 	Lump_s	key;
 	unint	x;
@@ -136,7 +141,7 @@ Lump_s get_key(Head_s *head, unint i)
 	return key;
 }
 
-Lump_s get_val(Head_s *head, unint i)
+Lump_s get_val (Head_s *head, unint i)
 {
 	Lump_s	val;
 	unint	x;
@@ -159,6 +164,7 @@ Lump_s get_val(Head_s *head, unint i)
 
 u64 get_block(Head_s *head, unint i)
 {
+FN;
 	u64	block;
 	unint	x;
 	u8	*start;
@@ -187,6 +193,7 @@ void node_dump(Btree_s *t, u64 block, int indent);
 
 void lump_dump(Lump_s a)
 {
+FN;
 #if 0
 	int	i;
 
@@ -200,6 +207,7 @@ void lump_dump(Lump_s a)
 
 void lf_dump(Buf_s *node, int indent)
 {
+FN;
 	Head_s	*head = node->d;
 	unint	i;
 
@@ -229,6 +237,7 @@ void lf_dump(Buf_s *node, int indent)
 
 void br_dump(Buf_s *node, int indent)
 {
+FN;
 	Head_s	*head = node->d;
 	unint	i;
 
@@ -258,6 +267,7 @@ void br_dump(Buf_s *node, int indent)
 
 void node_dump(Btree_s *t, u64 block, int indent)
 {
+FN;
 	Buf_s	*node;
 	Head_s	*head;
 
@@ -275,11 +285,13 @@ void node_dump(Btree_s *t, u64 block, int indent)
 		printf("unknown kind %d\n", head->kind);
 		break;
 	}
+	buf_put(node);
 }
 
 #if 0
 bool isGE(Head_s *head, Lump_s key, unint i)
 {
+FN;
 	Lump_s	target;
 
 	target = get_key(head, i);
@@ -289,6 +301,7 @@ bool isGE(Head_s *head, Lump_s key, unint i)
 
 bool isLE(Head_s *head, Lump_s key, unint i)
 {
+FN;
 	Lump_s	target;
 
 	target = get_key(head, i);
@@ -297,6 +310,7 @@ bool isLE(Head_s *head, Lump_s key, unint i)
 
 void store_lump(Head_s *head, Lump_s lump)
 {
+FN;
 	int	total = lump.size + SZ_U16;
 	u8	*start;
 
@@ -314,6 +328,7 @@ void store_lump(Head_s *head, Lump_s lump)
 
 void store_block(Head_s *head, u64 block)
 {
+FN;
 	int	total = SZ_U64;
 	u8	*start;
 
@@ -335,6 +350,7 @@ void store_block(Head_s *head, u64 block)
 
 void store_end(Head_s *head, unint i)
 {
+FN;
 	assert(i <= head->num_recs);
 	if (i < head->num_recs) {
 		memmove(&head->rec[i+1], &head->rec[i],
@@ -347,6 +363,7 @@ void store_end(Head_s *head, unint i)
 
 void lf_audit(const char *fn, unsigned line, Head_s *head)
 {
+FN;
 	int	i;
 	int	avail = SZ_BUF - SZ_HEAD;
 
@@ -368,6 +385,7 @@ void lf_audit(const char *fn, unsigned line, Head_s *head)
 
 void br_audit(const char *fn, unsigned line, Head_s *head)
 {
+FN;
 	int	i;
 	int	avail = SZ_BUF - SZ_HEAD;
 
@@ -387,6 +405,7 @@ void br_audit(const char *fn, unsigned line, Head_s *head)
 
 int find_le(Head_s *head, Lump_s key)
 {
+FN;
 	int	x;
 	int	left;
 	int	right;
@@ -407,6 +426,7 @@ int find_le(Head_s *head, Lump_s key)
 #if 0
 int find_ge(Head_s *head, Lump_s key)
 {
+FN;
 	int	x;
 	int	left;
 	int	right;
@@ -428,6 +448,7 @@ int find_ge(Head_s *head, Lump_s key)
 #if 0
 int find_eq(Head_s *head, Lump_s key)
 {
+FN;
 	int	x;
 	int	left;
 	int	right;
@@ -448,6 +469,7 @@ int find_eq(Head_s *head, Lump_s key)
 
 void lf_del_rec(Head_s *head, unint i)
 {
+FN;
 	Lump_s	key;
 	Lump_s	val;
 
@@ -467,6 +489,7 @@ void lf_del_rec(Head_s *head, unint i)
 
 void lf_rec_copy(Head_s *dst, int i, Head_s *src, int j)
 {
+FN;
 	Lump_s	key;
 	Lump_s	val;
 
@@ -480,6 +503,7 @@ void lf_rec_copy(Head_s *dst, int i, Head_s *src, int j)
 
 void lf_rec_move(Head_s *dst, int i, Head_s *src, int j)
 {
+FN;
 	Lump_s	key;
 	Lump_s	val;
 
@@ -495,6 +519,7 @@ void lf_rec_move(Head_s *dst, int i, Head_s *src, int j)
 
 void lf_compact(Buf_s *lf)
 {
+FN;
 	Head_s	*head = lf->d;
 	Buf_s	*b = buf_scratch(lf->cache);
 	Head_s	*h = b->d;
@@ -513,6 +538,7 @@ void lf_compact(Buf_s *lf)
 
 void br_del_rec(Head_s *head, unint i)
 {
+FN;
 	Lump_s	key;
 
 	BR_AUDIT(head);
@@ -530,6 +556,7 @@ void br_del_rec(Head_s *head, unint i)
 
 void br_rec_copy(Head_s *dst, int i, Head_s *src, int j)
 {
+FN;
 	Lump_s	key;
 	u64	block;
 
@@ -543,6 +570,7 @@ void br_rec_copy(Head_s *dst, int i, Head_s *src, int j)
 
 void br_rec_move(Head_s *dst, int i, Head_s *src, int j)
 {
+FN;
 	Lump_s	key;
 	u64	block;
 
@@ -558,6 +586,7 @@ void br_rec_move(Head_s *dst, int i, Head_s *src, int j)
 
 void br_compact(Buf_s *br)
 {
+FN;
 	Head_s	*head = br->d;
 	Buf_s	*b = buf_scratch(br->cache);
 	Head_s	*h = b->d;
@@ -576,6 +605,7 @@ void br_compact(Buf_s *br)
 
 Buf_s *node_new(Btree_s *t, u8 kind)
 {
+FN;
 	Buf_s	*node;
 
 	node = buf_new(t->cache);
@@ -585,16 +615,19 @@ Buf_s *node_new(Btree_s *t, u8 kind)
 
 Buf_s *br_new(Btree_s *t)
 {
+FN;
 	return node_new(t, BRANCH);
 }
 
 Buf_s *lf_new(Btree_s *t)
 {
+FN;
 	return node_new(t, LEAF);
 }
 
 Buf_s *lf_split(Buf_s *bchild)
 {
+FN;
 	Head_s	*child    = bchild->d;
 	Btree_s	*t        = bchild->user;
 	Buf_s	*bsibling = lf_new(t);
@@ -615,6 +648,7 @@ Buf_s *lf_split(Buf_s *bchild)
 
 int lf_insert(Buf_s *lf, Lump_s key, Lump_s val)
 {
+FN;
 	Buf_s	*right;
 	Head_s	*head = lf->d;
 	int	size  = key.size + val.size + SZ_LEAF_OVERHEAD;
@@ -622,9 +656,13 @@ int lf_insert(Buf_s *lf, Lump_s key, Lump_s val)
 
 	LF_AUDIT(head);
 	while (size > head->available) {
-HERE;
 		right = lf_split(lf);
-		if (!isLE(right->d, key, 0)) {
+		if (isLE(right->d, key, 0)) {
+			buf_put(right);
+		} else {
+// Because we put lf away here, we will put it again
+// in the caller and never put away right.
+			buf_put(lf);
 			lf = right;
 			head = lf->d;
 		}
@@ -642,6 +680,7 @@ HERE;
 
 Buf_s *grow(Buf_s *bchild)
 {
+FN;
 	Btree_s	*t     = bchild->user;
 	Head_s	*child = bchild->d;
 	Head_s	*parent;
@@ -670,6 +709,7 @@ Buf_s *grow(Buf_s *bchild)
 
 Buf_s *br_split(Buf_s *bchild)
 {
+FN;
 	Head_s	*child    = bchild->d;
 	Btree_s	*t        = bchild->user;
 	Buf_s	*bsibling = br_new(t);
@@ -692,6 +732,7 @@ Buf_s *br_split(Buf_s *bchild)
 
 void br_store(Buf_s *bfather, Buf_s *bchild, int x)
 {
+FN;
 	Head_s	*father = bfather->d;
 	Head_s	*child  = bchild->d;
 	int	size;
@@ -701,7 +742,6 @@ void br_store(Buf_s *bfather, Buf_s *bchild, int x)
 	size = key.size + SZ_U64 + SZ_LEAF_OVERHEAD;
 
 	while (size > father->available) {
-HERE;
 		Buf_s	*bmother = br_split(bfather);
 
 		if (!isLE(father, key, father->num_recs - 1)) {
@@ -728,6 +768,7 @@ HERE;
 
 int br_insert(Buf_s *br, Lump_s key, Lump_s val)
 {
+FN;
 	Head_s	*parent = br->d;
 	Buf_s	*bchild;
 	Head_s	*child;
@@ -735,7 +776,6 @@ int br_insert(Buf_s *br, Lump_s key, Lump_s val)
 	int	x;
 
 	for(;;) {
-HERE;
 		x = find_le(parent, key);
 		if (x == parent->num_recs) {
 			block = parent->last;
@@ -746,12 +786,14 @@ HERE;
 		child = bchild->d;
 		if (child->is_split) {
 			br_store(br, bchild, x);
+			buf_put(bchild);
 			continue;	/* Try again */
 		}
 		if (child->kind == LEAF) {
 			lf_insert(bchild, key, val);
 			return 0;
 		}
+		buf_put(br);
 		br = bchild;
 		parent = br->d;
 	}
@@ -759,6 +801,7 @@ HERE;
 
 Lump_s t_find(Btree_s *t, Lump_s key)
 {
+FN;
 	if (t->root == 0) {
 		fatal("btree empty");
 		return Nil;
@@ -768,6 +811,7 @@ Lump_s t_find(Btree_s *t, Lump_s key)
 
 int t_insert(Btree_s *t, Lump_s key, Lump_s val)
 {
+FN;
 	Buf_s	*node;
 	Head_s	*head;
 	int	rc;
@@ -780,7 +824,9 @@ int t_insert(Btree_s *t, Lump_s key, Lump_s val)
 	}
 	head = node->d;
 	if (head->is_split) {
-		node = grow(node);
+		Buf_s *new_node = grow(node);
+		buf_put(node);
+		node = new_node;
 		head = node->d;
 	}
 	if (head->kind == LEAF) {
@@ -788,11 +834,14 @@ int t_insert(Btree_s *t, Lump_s key, Lump_s val)
 	} else {
 		rc = br_insert(node, key, val);
 	}
+	buf_put(node);
+	cache_balanced(t->cache);
 	return rc;
 }
 
 Btree_s *t_new(char *file, int num_bufs)
 {
+FN;
 	Btree_s	*t;
 
 	t = ezalloc(sizeof(*t));
@@ -802,5 +851,7 @@ Btree_s *t_new(char *file, int num_bufs)
 
 void t_dump(Btree_s *t)
 {
+FN;
 	node_dump(t, t->root, 0);
+	cache_balanced(t->cache);
 }

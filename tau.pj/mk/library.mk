@@ -34,7 +34,8 @@ include $(makedir)/$(target).mk
 INC+=-I. -I../include -I../../include
 
 # -pg -O -g -DUNOPT -DNDEBUG
-CFLAGS+=-O -pg -g -Wall -Wstrict-prototypes -Werror \
+CFLAGS += -rdynamic
+CFLAGS += -O -pg -g -Wall -Wstrict-prototypes -Werror \
 	-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 \
 	$(.INCLUDES) $(INC)
 

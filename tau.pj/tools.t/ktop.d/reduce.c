@@ -4,13 +4,13 @@
  */
 
 #include <pthread.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
 
 #include <debug.h>
 #include <eprintf.h>
-#include <qsort.h>
 #include <style.h>
 
 #include "ktop.h"
@@ -36,10 +36,10 @@ TickCounter_s TotalDelta;
 
 static int compare_pidcall(const void *a, const void *b)
 {
-	const Pidcall_s *p = a;
-	const Pidcall_s *q = b;
+	const Pidcall_s *p = *(const Pidcall_s **)a;
+	const Pidcall_s *q = *(const Pidcall_s **)b;
 
-	if (p->save.count > q->save.count) return -11;
+	if (p->save.count > q->save.count) return -1;
 	if (p->save.count == q->save.count) return 0;
 	return 1;
 }
@@ -62,7 +62,7 @@ static void reduce_pidcall(void)
 	pthread_mutex_unlock(&Count_lock);
 	Num_rank = j;
 	if (1) {
-		quickSort(Rank_pidcall, j, compare_pidcall);
+		qsort(Rank_pidcall, j, sizeof(void *), compare_pidcall);
 	}
 }
 

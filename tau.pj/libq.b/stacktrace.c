@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void stacktrace(void)
+void stacktrace (void)
 {
 	enum { MAX_DEPTH = 20 };
 	void	*trace[MAX_DEPTH];

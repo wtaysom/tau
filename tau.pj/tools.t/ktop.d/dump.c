@@ -83,7 +83,7 @@ static void dump_buf(u8 *buf)
 	ring_header_s *rh = (ring_header_s *)buf;
 	ring_event_s *r;
 	unint length;
-	unint size;
+	unint size = 0;
 	u64 time;
 	u8 *end;
 
@@ -118,8 +118,9 @@ static void dump_buf(u8 *buf)
 			time += (((u64)r->array[0]) << 28) | r->time_delta;
 		} else if (r->type_len == 31) {
 			/* Sync time with external clock (NOT IMMPLEMENTED) */
-			//tv_nsec = r->array[0];
-			//tv_sec  = *(u64 *)&(r->array[1]);
+			size = 12;
+			time = r->array[0];
+			time += *(u64 *)&(r->array[1]) * A_BILLION;
 		} else {
 			printf(" Unknown event %d\n", r->type_len);
 			/* Unknown - ignore */
