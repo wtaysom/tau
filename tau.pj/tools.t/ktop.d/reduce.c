@@ -20,7 +20,6 @@
 
 extern pthread_mutex_t Count_lock;
 
-
 struct timespec Sleep = { 1, 0 };
 
 static u64 A[NUM_SYS_CALLS];
