@@ -130,7 +130,7 @@ Lump_s get_key (Head_s *head, unint i)
 	unint	x;
 	u8	*start;
 
-	if (i >= head->num_recs) show_stackframe();
+	if (i >= head->num_recs) stacktrace();
 	assert(i < head->num_recs);
 	x = head->rec[i];
 	assert(x < SZ_BUF);
@@ -660,8 +660,6 @@ FN;
 		if (isLE(right->d, key, 0)) {
 			buf_put(right);
 		} else {
-// Because we put lf away here, we will put it again
-// in the caller and never put away right.
 			buf_put(lf);
 			lf = right;
 			head = lf->d;
@@ -675,6 +673,7 @@ FN;
 	store_lump(head, key);
 	store_end(head, i);
 	LF_AUDIT(head);
+	buf_put(lf);
 	return 0;
 }
 
@@ -730,7 +729,7 @@ FN;
 	return bsibling;
 }
 
-void br_store(Buf_s *bfather, Buf_s *bchild, int x)
+Buf_s *br_store(Buf_s *bfather, Buf_s *bchild, int x)
 {
 FN;
 	Head_s	*father = bfather->d;
@@ -744,7 +743,10 @@ FN;
 	while (size > father->available) {
 		Buf_s	*bmother = br_split(bfather);
 
-		if (!isLE(father, key, father->num_recs - 1)) {
+		if (isLE(father, key, father->num_recs - 1)) {
+			buf_put(bmother);
+		} else {
+			buf_put(bfather);
 			bfather = bmother;
 			father  = bfather->d;
 		}
@@ -764,6 +766,7 @@ FN;
 		br_del_rec(child, child->num_recs - 1);	
 	}
 	child->is_split = FALSE;
+	return bfather;
 }
 
 int br_insert(Buf_s *br, Lump_s key, Lump_s val)
@@ -785,11 +788,13 @@ FN;
 		bchild = buf_get(br->cache, block);
 		child = bchild->d;
 		if (child->is_split) {
-			br_store(br, bchild, x);
+			br = br_store(br, bchild, x);
+			parent = br->d;
 			buf_put(bchild);
-			continue;	/* Try again */
+			continue;	/* Try again: this won't work */
 		}
 		if (child->kind == LEAF) {
+			buf_put(br);
 			lf_insert(bchild, key, val);
 			return 0;
 		}
@@ -834,7 +839,6 @@ FN;
 	} else {
 		rc = br_insert(node, key, val);
 	}
-	buf_put(node);
 	cache_balanced(t->cache);
 	return rc;
 }

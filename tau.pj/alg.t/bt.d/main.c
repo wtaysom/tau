@@ -3,8 +3,10 @@
  * Distributed under the terms of the GNU General Public License v2
  */
 
+#include <locale.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include <crc.h>
 #include <debug.h>
@@ -16,21 +18,12 @@
 
 enum {	NUM_BUFS = 20 };
 
-#include <execinfo.h>
-
-void show_stackframe(void)
-{
-	void *trace[16];
-	char **messages = (char **)NULL;
-	int i, trace_size = 0;
-
-	trace_size = backtrace(trace, 16);
-	messages = backtrace_symbols(trace, trace_size);
-	printf("[bt] Execution path:\n");
-	for (i = 0; i < trace_size; ++i)
-		printf("[bt] %s\n", messages[i]);
-}
-
+struct {
+	int	iterations;
+	bool	debug;
+} static Option = {
+	.iterations = 23,
+	.debug = FALSE };
 
 char *rndstring(unint n)
 {
@@ -213,14 +206,44 @@ void test4(int n)
 	t_dump(t);
 }
 
+void usage(void)
+{
+	pr_usage("[-dh] [-i<iterations>]\n"
+		"\t-d - turn on debugging\n"
+		"\t-h - print this help message\n"
+		"\t-i - num iterations");
+}
+
+void myoptions(int argc, char *argv[])
+{
+	int	c;
+
+	fdebugoff();
+	setprogname(argv[0]);
+	setlocale(LC_NUMERIC, "en_US");
+	while ((c = getopt(argc, argv, "dhi:")) != -1) {
+		switch (c) {
+		case 'h':
+		case '?':
+			usage();
+			break;
+		case 'd':
+			Option.debug = TRUE;
+			fdebugon();
+			break;
+		case 'i':
+			Option.iterations = strtoll(optarg, NULL, 0);
+			break;
+		default:
+			fatal("unexpected option %c", c);
+			break;
+		}
+	}
+}
+
 int main(int argc, char *argv[])
 {
-	int	n = 13;
-
-	if (argc > 1) {
-		n = atoi(argv[1]);
-	}
-	fdebugon();
-	test3(n);
+	myoptions(argc, argv);
+	test3(Option.iterations);
 	return 0;
 }
