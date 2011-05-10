@@ -27,6 +27,7 @@ typedef struct Option_s {
 	char	*file;		/* -f<file> */
 	char	*dir;		/* -d<dir> */
 	char	*dest;		/* -e<file/dir> */
+	char	*results;	/* -r<results files> */
 	char	*xattr;		/* -x<extended attribute> */
 	char	*value;		/* -v<value for extended attribute */
 } Option_s;

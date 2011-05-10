@@ -10,6 +10,7 @@
  */
 
 #include <limits.h>
+#include <locale.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -26,10 +27,11 @@ Option_s Option = {
 	.sleep_secs  = 1,
 	.file_size   = 1457,
 	.name_size   = 17,
-	.print       = TRUE,
+	.print       = FALSE,
 	.file        = "_test.out",
 	.dir         = "_dir",
 	.dest        = "_dest",
+	.results     = NULL,	/* NULL -> use stdout */
 	.xattr       = "attribute",
 	.value       = "value" };
 
@@ -64,6 +66,7 @@ void punyopt (
 		options = Default;
 	}
 	setprogname(argv[0]);
+	setlocale(LC_NUMERIC, "en_US");
 	while ((c = getopt(argc, argv, options)) != -1) {
 		switch (c) {
 		case 'h':
@@ -93,6 +96,9 @@ void punyopt (
 			break;
 		case 'p':
 			Option.print = TRUE;
+			break;
+		case 'r':
+			Option.results = optarg;
 			break;
 		case 's':
 			Option.sleep_secs = strtoll(optarg, NULL, 0);

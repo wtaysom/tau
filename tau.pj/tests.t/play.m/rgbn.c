@@ -58,17 +58,10 @@
  * zero can be used to measure the overhead of the loop.
  */
 
-#ifdef __linux__
-	#define DEBUG	0
-	#define SPIN	1
-	#define MUTEX	0
-	#define TSPIN	0
-#else
-	#define DEBUG	0
-	#define SPIN	0
-	#define MUTEX	1
-	#define TSPIN	0
-#endif
+#define DEBUG	0
+#define SPIN	1
+#define MUTEX	0
+#define TSPIN	0
 
 #if SPIN
 	#include <spinlock.h>
@@ -89,6 +82,7 @@
 #include <eprintf.h>
 #include <timer.h>
 #include <debug.h>
+#include <puny.h>
 
 typedef struct arg_s {
 	char	name[128];
@@ -122,8 +116,8 @@ typedef struct lock_s {
 raw_spinlock_t	Init_spin_lock = __RAW_SPIN_LOCK_UNLOCKED;
 #endif
 
-unint	Loops = 100000;
-unint	Num_locks = 10;
+unint	Loops;
+unint	Num_locks = 3;
 lock_s	*Lock;
 lock_s	StartLock;
 lock_s	CountLock;
@@ -258,36 +252,36 @@ void start_threads (unsigned threads)
 
 void usage (void)
 {
-	printf("Usage: %s [loops [num_locks [threads]]]\n", getprogname());
-	exit(2);
+	pr_usage("-i<iterations> -k<num_locks> -t<threads>");
+}
+
+void myopt (int c)
+{
+	switch (c) {
+	case 'k':
+		Num_locks = strtoll(optarg, NULL, 0);
+		break;
+	default:
+		usage();
+		break;
+	}
 }
 
 int main (int argc, char *argv[])
 {
 	unsigned	threads = 2;
 
-	setprogname(argv[0]);
-	if (argc > 1) {
-		Loops = atoi(argv[1]);
-	}
-	if (argc > 2) {
-		Num_locks = atoi(argv[2]);
-	}
-	if (argc > 3) {
-		threads = atoi(argv[3]);
-	}
-	if (argc > 4) {
-		usage();
-	}
+	Option.numthreads = 2;
+	punyopt(argc, argv, myopt, "k:");
+	Loops   = Option.iterations;
+	threads = Option.numthreads;
 	if (!threads) {
-		usage();
+		fatal("Must have at least one thread");
 	}
 	if (threads >= Num_locks) {
-		printf("Must have one more locks(%ld) than threads(%d)\n",
+		fatal("Must have at least one more locks(%ld) than threads(%d)",
 			Num_locks, threads);
-		exit(2);
 	}
-
 	init_locks(Num_locks);
 
 #if MUTEX
