@@ -51,13 +51,19 @@ Ftw_s Ftw;
 Stat_s Stat;
 Histogram_s Histogram;
 
-static struct option_s {
+static struct {
+	bool	all;
 	bool	by_device;
 	bool	print_hardlinks;
 	bool	print_files;
-	int	bigest;
+	int	biggest;
 	int	this_mount_point;
-} Option;
+} Option = {
+	.all              = FALSE,
+	.by_device        = FALSE,
+	.print_hardlinks  = FALSE,
+	.biggest           = 5,
+	.this_mount_point = FALSE };
 
 int dostatfs(const char *path);
 
@@ -79,7 +85,7 @@ void histogram_record(Histogram_s *h, u64 val)
 void pr_histogram(Histogram_s *h)
 {
 	int i;
-	int last;
+	int last = 0;
 	bool found = FALSE;
 	u64 total = 0;
 	u64 median = 0;
@@ -91,7 +97,7 @@ void pr_histogram(Histogram_s *h)
 		}
 	}
 	for (i = 0; i <= last; i++) {
-		printf("%2d. %5ld\n", i, h->bucket[i]);
+		printf("%2d. %7ld\n", i, h->bucket[i]);
 		median += h->bucket[i];
 		if (median >= total / 2) {
 			if (!found) printf("---median---\n");
@@ -106,8 +112,10 @@ void pr_histogram(Histogram_s *h)
 void pr_ftw_flag(const char *dir)
 {
 	printf("%s:\n"
-		"\tfiles=%lld dirs=%lld dir_no_read=%lld no_stat=%lld"
-		" dir_path=%lld symlink=%lld broken_symlink=%lld total=%lld\n",
+		"  files   = %'10lld dirs = %'8lld dir_no_read = %'lld "
+		"no_stat = %'lld dir_path = %'lld\n"
+		"  symlink = %'10lld broken_symlink = %'lld\n"
+		"  total   = %'10lld\n",
 		dir,
 		Ftw.files, Ftw.dirs, Ftw.dir_no_read, Ftw.no_stat,
 		Ftw.dir_path, Ftw.symlink, Ftw.broken_symlink,
@@ -117,7 +125,7 @@ void pr_ftw_flag(const char *dir)
 
 void pr_Stat(void)
 {
-	printf("hardlinks > 1 = %lld regular=%lld special=%lld\n",
+	printf("  hardlinks > 1 = %'lld regula r= %'lld special = %'lld\n",
 		Stat.gt1link, Stat.reg, Stat.special);
 }
 
@@ -137,9 +145,15 @@ unint NumInfo;
 
 void pr_info(char *label, info_s *s)
 {
-	printf("%s ino=%6jd dev=%5jd size=%8jd %s\n",
-		label,
-		s->s_ino, s->s_dev, s->s_size, s->s_name);
+	if (0) {
+		printf("%s ino=%6jd dev=%5jd size=%'8jd %s\n",
+			label,
+			s->s_ino, s->s_dev, s->s_size, s->s_name);
+	} else {
+		printf("%s size=%'8jd %s\n",
+			label,
+			s->s_size, s->s_name);
+	}
 }
 
 info_s *hash(ino_t ino, dev_t dev)
@@ -225,20 +239,20 @@ void find_median(void)
 	for (i = 0; i < NumInfo; i++) {
 		s = set[i];
 		if (s->s_size > avg) {
-			printf("%d. n=%ld avg=%lld", i, NumInfo, avg);
+			printf("%d. n=%'ld avg=%'lld", i, NumInfo, avg);
 			pr_info(" Average File:", s);
 			break;
 		}
 	}
 	pr_info("Median File: ", set[NumInfo / 2]);
 
-	if (Option.bigest) {
-		if (Option.bigest > NumInfo) {
+	if (Option.biggest) {
+		if (Option.biggest > NumInfo) {
 			i = 0;
 		} else {
-			i = NumInfo - Option.bigest;
+			i = NumInfo - Option.biggest;
 		}
-		printf("Printing the %ld bigest files\n", NumInfo - i);
+		printf("The %ld biggest files:\n", NumInfo - i);
 		for (; i < NumInfo; i++) {
 			pr_info(" ", set[i]);
 		}
@@ -263,7 +277,7 @@ int do_entry(
 	}
 
 	if (1) {
-		printf("%s\n", fpath);
+		if (Option.print_files) printf("%s\n", fpath);
 		if (sb->st_dev != current) {
 			current = sb->st_dev;
 			printf("%4jd %s\n", current, fpath);
@@ -325,7 +339,7 @@ void nftw_walk_tree(char *dir)
 	nftw(dir, do_entry, 200, FTW_CHDIR | FTW_PHYS | Option.this_mount_point);
 	finish = nsecs();
 	total = finish - start;
-	printf("%lld nsecs %g secs\n", total, (double)total/1000000000.0);
+	printf("%'lld nsecs %g secs\n", total, (double)total/1000000000.0);
 
 	pr_ftw_flag(dir);
 	pr_Stat();
@@ -335,13 +349,14 @@ void nftw_walk_tree(char *dir)
 
 void usage(void)
 {
-	pr_usage("[-lmpxh] [-b<num>] {<dir>}\n"
+	pr_usage("[-almpxh] [-b<num>] {<dir>}\n"
+		"\ta - all file systems including special file systems like /proc\n"
 		"\tl - print hard links\n"
 		"\tm - only traverse the device represented by dir\n"
 		"\tp - print all the files\n"
 		"\tx - sort result by device\n"
 		"\th - this message\n"
-		"\tb<num> - print the <num> bigest files."
+		"\tb<num> - print the <num> biggest files."
 		" <num> defaults to 10\n");
 }
 
@@ -352,16 +367,17 @@ int main(int argc, char *argv[])
 
 	setprogname(argv[0]);
 	setlocale(LC_NUMERIC, "en_US");
-	while ((c = getopt(argc, argv, "lb::mpxh")) != -1) {
+	while ((c = getopt(argc, argv, "lb:mpxh?")) != -1) {
 		switch (c) {
+		case 'a':
+			Option.all = TRUE;
+			break;
 		case 'l':
 			Option.print_hardlinks = TRUE;
 			break;
 		case 'b':
 			if (optarg) {
-				Option.bigest = strtol(optarg, NULL, 0);
-			} else {
-				Option.bigest = 10;
+				Option.biggest = strtol(optarg, NULL, 0);
 			}
 			break;
 		case 'm':
@@ -373,16 +389,16 @@ int main(int argc, char *argv[])
 		case 'x':
 			Option.by_device = TRUE;
 			break;
+		case '?':
 		case 'h':
 			usage();
 			break;
 		default:
-			fprintf(stderr, "unknown option %c\n", c);
 			usage();
 			break;
 		}
 	}
-	if (!argv[optind]) {
+	if (argc == optind) {
 		nftw_walk_tree(".");
 	} else {
 		for (i = optind; i < argc; i++) {

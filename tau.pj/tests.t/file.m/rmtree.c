@@ -25,6 +25,8 @@
 #include <sys/errno.h>
 
 #include <myio.h>
+#include <puny.h>
+#include <eprintf.h>
 
 static void error (const char *what, const char *who)
 {
@@ -43,7 +45,6 @@ void rmlevel (void)
 {
 	DIR		*dir;
 	struct dirent	*entry;
-	char		name[255];
 
 	dir = opendir(".");
 	if (!dir) {
@@ -54,24 +55,19 @@ void rmlevel (void)
 		if (entry == NULL) {
 			break;
 		}
-printf("%s\n", entry->d_name);
 		if (strcmp(entry->d_name, ".") == 0) {
 			continue;
 		}
 		if (strcmp(entry->d_name, "..") == 0) {
 			continue;
 		}
-		unlink(name);
-		strcpy(name, entry->d_name);
-		#if 0
-		if (chdir(entry->d_name)) {
+		if (chdir(entry->d_name) == -1) {
 			unlinkq(entry->d_name);
 		} else {
 			rmlevel();
 			chdirq("..");
 			rmdirq(entry->d_name);
 		}
-		#endif
 	}
 	closedir(dir);
 }
@@ -89,23 +85,14 @@ void rmtreeq (const char *path)
 	rmdirq(path);
 }
 
-void usage (char *name)
+void usage (void)
 {
-	fprintf(stderr, "%s <directory>\n",
-		name);
-	exit(1);
+	pr_usage("-d<directory>");
 }
 
 int main (int argc, char *argv[])
 {
-	char		*directory = "";
-
-	if (argc < 2) {
-		usage(argv[0]);
-	}
-	if (argc > 1) {
-		directory = argv[1];
-	}
-	rmtreeq(directory);
+	punyopt(argc, argv, NULL, NULL);
+	rmtreeq(Option.dir);
 	return 0;
 }

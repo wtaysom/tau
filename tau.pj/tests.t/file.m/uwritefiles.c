@@ -26,6 +26,8 @@
 #include <style.h>
 #include <mylib.h>
 #include <myio.h>
+#include <puny.h>
+#include <eprintf.h>
 
 #define BUF_SIZE	(1<<16)
 
@@ -61,51 +63,42 @@ void write_test (char *name, u64 size)
 	closeq(fd);
 }
 
-void usage (char *name)
+void usage (void)
 {
-	fprintf(stderr, "%s <directory> [<file_size> [<num_iterations>]]\n",
-		name);
-	exit(1);
+	pr_usage("-d<directory> -z<file_size> -i<num_iterations> -l<loops>");
 }
 
 int main (int argc, char *argv[])
 {
-	char		*directory = "";
-	char		name[256];
-	unsigned	i, j;
-	unsigned	n = 1000;
-	u64		size = (1<<20);
+	char	*directory = "";
+	char	name[256];
+	unint	i, j;
+	unint	n = 1000;
+	u64	size = (1<<20);
 
-	if (argc < 2) {
-		usage(argv[0]);
-	}
-	if (argc > 1) {
-		directory = argv[1];
-	}
-	if (argc > 2) {
-		size = atoll(argv[2]);
-	}
-	if (argc > 3) {
-		n = atoi(argv[3]);
-	}
-	for (i = 0; i < BUF_SIZE; ++i)
+	punyopt(argc, argv, NULL, NULL);
+	directory = Option.dir;
+	size = Option.file_size;
+	n = Option.iterations;
+	for (i = 0; i < BUF_SIZE; i++)
 	{
 		Buf[i] = random();
 	}
-	mkdirq(directory);
+	mkdir(directory, 0777);
 	chdirq(directory);
-	for (j = 0; ; ++j) {
-		sprintf(name, "dir_%d", j);
+	for (j = 0; j < Option.loops; j++) {
+		sprintf(name, "dir_%ld", j);
 		mkdirq(name);
 		chdirq(name);
 		startTimer();
-		for (i = 0; i < n; ++i) {
-			sprintf(name, "file_%d", i);
+		for (i = 0; i < n; i++) {
+			sprintf(name, "file_%ld", i);
 			write_test(name, size);
 		}
 		stopTimer();
 		prTimer();
-		printf(" size=%lld n=%d\n", size, n);
+		printf(" size=%lld n=%ld\n", size, n);
 		if (chdir("..")) perror("chdir ..");
 	}
+	return 0;
 }

@@ -169,11 +169,15 @@
 #include <unistd.h>
 
 #include <style.h>
+#include <debug.h>
+#include <puny.h>
+
+bool Wait = FALSE;
 
 void prDirentry (struct dirent *d)
 {
-	printf("\t%10qu %s\n", (u64)d->d_ino, d->d_name);
-	getchar();
+	printf("\t%10llu %s\n", (u64)d->d_ino, d->d_name);
+	if (Wait) getchar();
 }
 
 int doDirectory (char *name)
@@ -190,7 +194,8 @@ int doDirectory (char *name)
 		dir = opendir(name);
 		if (!dir) {
 			rc = errno;
-			fprintf(stderr, "opendir:%s %s\n", name, strerror(errno));
+			fprintf(stderr,
+				"opendir:%s %s\n", name, strerror(errno));
 			return rc;
 		}
 		seekdir(dir, pos);
@@ -203,23 +208,35 @@ int doDirectory (char *name)
 			prDirentry(d);
 		}
 		pos = telldir(dir);
-printf("pos=%qu\n", (u64)pos);
 		closedir(dir);
 	}
 	closedir(dir);
 	return 0;
 }
 
+void myopt (int c)
+{
+	switch (c) {
+	case 'w':
+		Wait = TRUE;
+		break;
+	default:
+		usage();
+		break;
+	}
+}
+
 int main (int argc, char *argv[])
 {
-	int		i;
-	int		rc;
+	int	i;
+	int	rc;
 
-	if (argc == 1) {
-		rc = doDirectory("/mnt/nss");
+	punyopt(argc, argv, myopt, "w");
+	if (argc == optind) {
+		rc = doDirectory(Option.dir);
 		return rc;
 	}
-	for (i = 1; i < argc; ++i) {
+	for (i = optind; i < argc; ++i) {
 		rc = doDirectory(argv[i]);
 		if (rc != 0) return rc;
 	}

@@ -27,13 +27,34 @@
 #include <style.h>
 #include <mylib.h>
 #include <myio.h>
+#include <puny.h>
+#include <eprintf.h>
 
-void usage (char *name)
+struct {
+	char		*prefix;
+	unsigned	start;
+} Myopt = {
+	.prefix = "",
+	.start  = 0 };
+
+void usage (void)
 {
-	fprintf(stderr,
-		"%s <directory> [<num_iterations> [<prefix> [<start>]]]\n",
-		name);
-	exit(1);
+	pr_usage("-d<directory> -i<num_iterations> -q<prefix> -k<start>");
+}
+
+void myopt (int c)
+{
+	switch (c) {
+	case 'q':
+		Myopt.prefix = optarg;
+		break;
+	case 'k':
+		Myopt.start = strtoll(optarg, NULL, 0);
+		break;
+	default:
+		usage();
+		break;
+	}
 }
 
 int main (int argc, char *argv[])
@@ -46,28 +67,18 @@ int main (int argc, char *argv[])
 	unsigned	start = 0;
 	unsigned	n = 1000;
 
-	if (argc < 2) {
-		usage(argv[0]);
-	}
-	if (argc > 1) {
-		directory = argv[1];
-	}
-	if (argc > 2) {
-		n = atoi(argv[2]);
-	}
-	if (argc > 3) {
-		prefix = argv[3];
-	}
-	if (argc > 4) {
-		start = atoi(argv[4]);
-	}
+	punyopt(argc, argv, myopt, "q:k:");
+	directory = Option.dir;
+	n = Option.iterations;
+	prefix = Myopt.prefix;
+	start  = Myopt.start;
 	seed_random();
 
 	mkdir(directory, 0777);
 	chdirq(directory);
-	for (j = 0; ; ++j) {
+	for (j = 0; j < Option.loops; j++) {
 		startTimer();
-		for (i = 0; i < n; ++i) {
+		for (i = 0; i < n; i++) {
 			if (start) {
 				sprintf(name, "%s%x", prefix, ++start);
 			} else {
@@ -84,4 +95,5 @@ int main (int argc, char *argv[])
 		prTimer();
 		printf(" n=%d\n", n);
 	}
+	return 0;
 }

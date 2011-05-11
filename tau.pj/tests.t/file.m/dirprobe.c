@@ -59,6 +59,8 @@
 
 #include <style.h>
 #include <debug.h>
+#include <eprintf.h>
+#include <puny.h>
 
 enum { BUF_SZ = 300 };
 
@@ -89,13 +91,8 @@ int probe (char *name)
 		return rc;
 	}
 	for (base = 0;;) {
-PRu(base);
 		rc = lseek(fd, base, 0);
-PRd(rc);
-PRd(errno);
 		rc = getdirentries(fd, buf, BUF_SZ, &base);
-PRd(rc);
-PRd(errno);
 		if (rc == 0) break;
 		if (rc == -1) {
 			rc = errno;
@@ -105,17 +102,15 @@ PRd(errno);
 			return rc;
 		}
 		base = lseek(fd, 0, 1);
-PRu(base);
 		prDirentries(buf, rc);
 	}
 	close(fd);
 	return 0;
 }
 
-void usage (char *cmd)
+void usage (void)
 {
-	fprintf(stderr, "Usage: %s <directory> [<dir2> . . .]\n", cmd);
-	exit(1);
+	pr_usage("<directory> [<dir2> . . .]");
 }
 
 int main (int argc, char *argv[])
@@ -123,8 +118,9 @@ int main (int argc, char *argv[])
 	int	i;
 	int	rc;
 
-	if (argc == 1) {
-		usage(argv[0]);
+	punyopt(argc, argv, NULL, NULL);
+	if (argc == optind) {
+		usage();
 	}
 	for (i = 1; i < argc; ++i) {
 		rc = probe(argv[i]);

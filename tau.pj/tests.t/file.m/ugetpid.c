@@ -26,28 +26,23 @@
 #include <style.h>
 #include <mylib.h>
 #include <eprintf.h>
+#include <puny.h>
 
-void usage (char *name)
+void usage (void)
 {
-	fprintf(stderr,
-		"%s <num_iterations>\n",
-		name);
-	exit(1);
+	pr_usage("-i<num_iterations> -l<loops>");
 }
 
 int main (int argc, char *argv[])
 {
 	unsigned	i;
-	unsigned	n = 1000;
+	unsigned	n;
 	pid_t		pid;
+	u64		l;
 
-	if (argc < 2) {
-		usage(argv[0]);
-	}
-	if (argc > 1) {
-		n = atoi(argv[1]);
-	}
-	for (;;) {
+	punyopt(argc, argv, NULL, NULL);
+	n = Option.iterations;
+	for (l = 0; l < Option.loops; l++) {
 		startTimer();
 		for (i = 0; i < n; ++i) {
 			pid = getpid();

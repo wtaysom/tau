@@ -11,10 +11,6 @@
  |  GNU General Public License for more details.
  +-------------------------------------------------------------------------*/
 
-#include <unistd.h>
-#include <stdlib.h>
-#include <stdio.h>
-
 /*
  * LINK(2)             Linux Programmer's Manual             LINK(2)
  *
@@ -34,7 +30,7 @@
  *     If newpath exists it will not be overwritten.
  *
  *     This new name may be used exactly as the old one for any operation; both
- *     names  refer to the same file (and so have the same permissions and own
+ *     names  refer to the same file (and so have the same permissions and own-
  *     ership) and it is impossible to tell which name was the `original'.
  *
  * RETURN VALUE
@@ -104,19 +100,21 @@
  * Linux 2.0.30                1997-12-10                    LINK(2)
  */
 
+#include <unistd.h>
+#include <stdlib.h>
+#include <stdio.h>
+
+#include <puny.h>
+
 int main (int argc, char *argv[])
 {
-	int		rc;
+	int	rc;
 	char	*src;
 	char	*dst;
 
-	if (argc > 2) {
-		src = argv[1];
-		dst = argv[2];
-	} else {
-		src = "/mnt/nss1/xyzzy";
-		dst = "/mnt/nss1/pluge";
-	}
+	punyopt(argc, argv, NULL, NULL);
+	src = Option.file;
+	dst = Option.dest;
 
 	rc = link(src, dst);
 	if (rc == -1) {

@@ -100,6 +100,7 @@
 #include <sys/xattr.h>
 
 #include <eprintf.h>
+#include <puny.h>
 
 /* dumpmem: dumps an n byte area of memory to screen */
 void dumpmem (const void *mem, unsigned int n)
@@ -143,9 +144,7 @@ void dumpmem (const void *mem, unsigned int n)
 
 void usage (void)
 {
-	fprintf(stderr, "%s file attribute\n",
-		getprogname());
-	exit(1);
+	pr_usage("-f<file> -x<attribute>");
 }
 
 int main (int argc, char *argv[])
@@ -155,17 +154,9 @@ int main (int argc, char *argv[])
 	ssize_t	size;
 	char	value[1024];
 
-	setprogname(argv[0]);
-
-	if (argc < 3) {
-		usage();
-	}
-	if (argc < 4) {
-		file = argv[1];
-		xattr = argv[2];
-	} else {
-		usage();
-	}
+	punyopt(argc, argv, NULL, NULL);
+	file = Option.file;
+	xattr = Option.xattr;
 
 	size = getxattr(file, xattr, value, sizeof(value));
 	if (size < 0) {

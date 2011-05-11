@@ -13,6 +13,10 @@
 
 #include <sys/time.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+#include <puny.h>
 
 enum { NUM_TIMERS = 2048 };
 
@@ -110,9 +114,6 @@ void dumpTimers (void)
 	}
 }
 
-#include <stdlib.h>
-#include <unistd.h>
-
 long range (long x)
 {
 	return random() % x;
@@ -121,8 +122,9 @@ long range (long x)
 int main (int argc, char *argv[])
 {
 	void	*key;
-	int		i;
+	int	i;
 
+	punyopt(argc, argv, NULL, NULL);
 	for (i = 0; i < 10; ++i)
 	{
 		key = (void *)range(200000);

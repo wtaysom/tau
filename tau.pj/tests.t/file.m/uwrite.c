@@ -26,52 +26,55 @@
 #include <style.h>
 #include <mylib.h>
 #include <eprintf.h>
+#include <puny.h>
 
-void usage (char *name)
+void usage (void)
 {
-	fprintf(stderr,
-		"%s <file_name> <file_size> <num_iterations> <bufsize_log2>\n",
-		name);
-	exit(1);
+	pr_usage("-f<file_name> -z<file_size> -i<num_iterations> -b<bufsize_log2>");
+}
+
+int Bufsize_log2 = 12;
+
+void myopt (int c)
+{
+	switch (c) {
+	case 'b':
+		Bufsize_log2 = strtoll(optarg, NULL, 0);
+		break;
+	default:
+		usage();
+		break;
+	}
 }
 
 int main (int argc, char *argv[])
 {
-	char		*name = "";
-	u8		*buf;
-	int		fd;
-	ssize_t		written;
-	size_t		toWrite;
-	unsigned	i;
-	unsigned	bufsize = (1<<12);
-	unsigned	n = 1000;
-	u64		size = (1<<20);
-	u64		rest;
+	char	*name = "";
+	u8	*buf;
+	int	fd;
+	ssize_t	written;
+	size_t	toWrite;
+	u32	i;
+	u32	bufsize = (1<<12);
+	u32	n = 1000;
+	u64	size = (1<<20);
+	u64	rest;
+	u64	l;
 
-	if (argc < 2) {
-		usage(argv[0]);
-	}
-	if (argc > 1) {
-		name = argv[1];
-	}
-	if (argc > 2) {
-		size = atoll(argv[2]);
-	}
-	if (argc > 3) {
-		n = atoi(argv[3]);
-	}
-	if (argc > 4) {
-		bufsize = 1 << atoi(argv[4]);
-	}
+	punyopt(argc, argv, myopt, "b:");
+	name = Option.file;
+	bufsize = (1 << Bufsize_log2);
+	size = Option.file_size;
+	n = Option.iterations;
+
 	buf = emalloc(bufsize);
-	for (i = 0; i < bufsize; ++i)
-	{
+	for (i = 0; i < bufsize; ++i) {
 		buf[i] = random();
 	}
 	fd = open(name, O_RDWR | O_CREAT | O_TRUNC, 0666);
-	for (;;) {
+	for (l = 0; l < Option.loops; l++) {
 		startTimer();
-		for (i = 0; i < n; ++i) {
+		for (i = 0; i < n; i++) {
 			for (rest = size; rest; rest -= written) {
 				if (rest > bufsize) {
 					toWrite = bufsize;

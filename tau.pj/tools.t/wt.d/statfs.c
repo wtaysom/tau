@@ -89,24 +89,28 @@ int dostatfs (const char *path)
 		return rc;
 	}
  	printf("statfs for %s:\n"
-		"\ttype of file system: %14lx %s\n"
-		"\tblock size         : %'14ld\n"
-		"\ttotal data blocks  : %'14ld\n"
-		"\tfree blocks        : %'14ld\n"
-		"\tavailable blocks   : %'14ld\n"
-		"\ttotal inodes       : %'14ld\n"
-		"\tfree inodes        : %'14ld\n"
+		"\ttype of file system: %14llx %s\n"
+		"\tblock size         : %'14lld\n"
+		"\ttotal data blocks  : %'14lld\n"
+		"\tfree blocks        : %'14lld\n"
+		"\tinuse (total-free) : %'14lld\n"
+		"\tavailable blocks   : %'14lld\n"
+		"\ttotal inodes       : %'14lld\n"
+		"\tfree inodes        : %'14lld\n"
+		"\tinuse (total-free) : %'14lld\n"
 		"\tfile system id     :     0x%.8x 0x%.8x\n"
-		"\tmax file name len  : %'14ld\n",
+		"\tmax file name len  : %'14lld\n",
 		path,
-		fs.f_type, lookup_fstype(fs.f_type),
-		fs.f_bsize,
-		fs.f_blocks,
-		fs.f_bfree,
-		fs.f_bavail,
-		fs.f_files,
-		fs.f_ffree,
+		(s64)fs.f_type, lookup_fstype(fs.f_type),
+		(s64)fs.f_bsize,
+		(s64)fs.f_blocks,
+		(s64)fs.f_bfree,
+		(s64)fs.f_blocks - (s64)fs.f_bfree,
+		(s64)fs.f_bavail,
+		(s64)fs.f_files,
+		(s64)fs.f_ffree,
+		(s64)fs.f_files - (s64)fs.f_ffree,
 		fs.f_fsid.__val[0], fs.f_fsid.__val[1],
-		fs.f_namelen);
+		(s64)fs.f_namelen);
 	return 0;
 }

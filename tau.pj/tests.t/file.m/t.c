@@ -18,13 +18,15 @@
                                                                                 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <puny.h>
 
 int main (int argc, char *argv[])
 {
 	int	fd;
 	int	rc;
 
-	fd = open(argv[1], O_RDWR | O_CREAT | O_TRUNC, 0666);
+	punyopt(argc, argv, NULL, NULL);
+	fd = open(Option.file, O_RDWR | O_CREAT | O_TRUNC, 0666);
 	rc = lseek(fd, 0x1000000000LL, 0);
 	if (rc == -1) {
 		perror("lseek");

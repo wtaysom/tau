@@ -13,20 +13,20 @@
 
 /*
  *
- *EXECVE(2)           Linux Programmer's Manual           EXECVE(2)
+ * EXECVE(2)           Linux Programmer's Manual           EXECVE(2)
  *
  *
  *
- *NAME
+ * NAME
  *     execve - execute program
  *
- *SYNOPSIS
+ * SYNOPSIS
  *     #include <unistd.h>
  *
  *     int  execve(const  char  *filename,  char  *const  argv  [], char *const
  *     envp[]);
  *
- *DESCRIPTION
+ * DESCRIPTION
  *     execve() executes the program pointed to by filename.  filename must  be
  *     either a binary executable, or a script starting with a line of the form
  *     "#! interpreter [arg]".  In the latter case, the interpreter must  be  a
@@ -57,22 +57,22 @@
  *     file  is set the effective group ID of the calling process is set to the
  *     group of the program file.
  *
- *     If the executable is an a.out dynamically-linked binary executable  con
+ *     If the executable is an a.out dynamically-linked binary executable  con-
  *     taining  shared-library  stubs,  the  Linux  dynamic  linker ld.so(8) is
  *     called at the start of execution to bring needed shared  libraries  into
  *     core and link the executable with them.
  *
- *     If  the  executable  is  a dynamically-linked ELF executable, the inter
+ *     If  the  executable  is  a dynamically-linked ELF executable, the inter-
  *     preter named in the PT_INTERP segment is used to load the needed  shared
- *     libraries.   This  interpreter is typically /lib/ld-linux.so.1 for bina
+ *     libraries.   This  interpreter is typically /lib/ld-linux.so.1 for bina-
  *     ries linked with the Linux libc version  5,  or  /lib/ld-linux.so.2  for
  *     binaries linked with the GNU libc version 2.
  *
- *RETURN VALUE
+ * RETURN VALUE
  *     On success, execve() does not return, on error -1 is returned, and errno
  *     is set appropriately.
  *
- *ERRORS
+ * ERRORS
  *     EACCES The file or a script interpreter is not a regular file.
  *
  *     EACCES Execute permission is denied for the file  or  a  script  or  ELF
@@ -132,14 +132,14 @@
  *     ELIBBAD
  *            An ELF interpreter was not in a recognised format.
  *
- *CONFORMING TO
+ * CONFORMING TO
  *     SVr4, SVID, X/OPEN, BSD 4.3.  POSIX does not document the  #!   behavior
  *     but is otherwise compatible.  SVr4 documents additional error conditions
  *     EAGAIN, EINTR, ELIBACC, ENOLINK,  EMULTIHOP;  POSIX  does  not  document
  *     ETXTBSY,  EPERM,  EFAULT,  ELOOP, EIO, ENFILE, EMFILE, EINVAL, EISDIR or
  *     ELIBBAD error conditions.
  *
- *NOTES
+ * NOTES
  *     SUID and SGID processes can not be ptrace()d.
  *
  *     Linux ignores the SUID and SGID bits on scripts.
@@ -152,24 +152,21 @@
  *     A maximum line length of 127 characters is allowed for the first line in
  *     a #! executable shell script.
  *
- *SEE ALSO
+ * SEE ALSO
  *     chmod(2), fork(2), execl(3), environ(5), ld.so(8)
  */
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <puny.h>
 
 int main (int argc, char *argv[], char *envp[])
 {
-	int		rc;
-	char	*filename = "hello";
+	int	rc;
 
-	if (argc == 2)
-	{
-		filename = argv[1];
-	}
-	rc = execve(filename, argv, envp);
+	punyopt(argc, argv, NULL, NULL);
+	rc = execve(Option.file, argv, envp);
 	if (rc != 0)
 	{
 		perror("execve");

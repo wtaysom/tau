@@ -25,6 +25,7 @@
 #include <style.h>
 #include <mylib.h>
 #include <eprintf.h>
+#include <puny.h>
 
 
 enum { MAX_PATH = 1024, MAX_NAME = 32, BLK_SIZE = 4096 };
@@ -309,7 +310,7 @@ void *test (void *arg)
 	snprintf(dir, MAX_NAME-1, "fiddle_dir_%ld", a->id);
 	cr_dir(dir);
 	
-	// create the number of files with the specific amount of data (close them)
+	// create the number of files with the specific amount of data
 	for (i = 0; i < a->num_files; i++) {
 		mk_path(path, dir, i);
 		rc = cr_file(path, a->size, a);
@@ -366,38 +367,45 @@ void start_threads (
 	}
 }
 
+u64	Numfiles = 2;
+u64	Fiddle = 2;
+
+void myopt (int c)
+{
+	switch (c) {
+	case 'k':
+		Numfiles = strtoll(optarg, NULL, 0);
+		break;
+	case 'q':
+		Fiddle = strtoll(optarg, NULL, 0);
+		break;
+	default:
+		usage();
+		break;
+	}
+}
+
 void usage (void)
 {
-	printf("Usage: %s [threads [num [size [fiddle [iterations]]]]]\n",
-			getprogname());
-	exit(2);
+	pr_usage("-t<threads> -k<num_files> -z<size>"
+		" -q<fiddle> -i<iterations>");
 }
 
 int main (int argc, char *argv[])
 {
-	unsigned	threads = 11;
-	unsigned	num_files = 2;
-	unsigned	size = 100;
-	unsigned	fiddle = 2;
-	unsigned	iterations = 1;
+	unsigned	threads;
+	unsigned	num_files;
+	unsigned	size;
+	unsigned	fiddle;
+	unsigned	iterations;
 	unsigned	i;
 
-	setprogname(argv[0]);
-	if (argc > 1) {
-		threads = atoi(argv[1]);
-	}
-	if (argc > 2) {
-		num_files = atoi(argv[2]);
-	}
-	if (argc > 3) {
-		size = atoi(argv[3]);
-	}
-	if (argc > 4) {
-		fiddle = atoi(argv[4]);
-	}
-	if (argc > 5) {
-		iterations = atoi(argv[5]);
-	}
+	punyopt(argc, argv, myopt, "k:q:");
+	threads    = Option.numthreads;
+	num_files  = Numfiles;
+	size       = Option.file_size;
+	iterations = Option.iterations;
+	fiddle     = Fiddle;
 	if (!threads || !num_files || !size || !fiddle || !iterations) {
 		usage();
 	}

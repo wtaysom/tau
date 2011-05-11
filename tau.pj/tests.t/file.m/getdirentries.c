@@ -58,6 +58,7 @@
 
 #include <style.h>
 #include <debug.h>
+#include <puny.h>
 
 enum { BUF_SZ = 40 };
 
@@ -74,8 +75,8 @@ void prDirentries (char *buf, int numBytes)
 
 int doGetdirentries (char *name)	// Need to test getdirentries too.
 {
-	int		fd;
-	int		rc;
+	int	fd;
+	int	rc;
 	char	buf[BUF_SZ];
 	off_t	base = 0;
 
@@ -88,11 +89,9 @@ int doGetdirentries (char *name)	// Need to test getdirentries too.
 		return rc;
 	}
 	for (;;) {
-PRu(base);
 		lseek(fd, base, 0);
 		rc = getdirentries(fd, buf, BUF_SZ, &base);
 		base = lseek(fd, 0, 1);
-PRu(base);
 		if (rc == 0) break;
 		if (rc == -1) {
 			rc = errno;
@@ -112,11 +111,12 @@ int main (int argc, char *argv[])
 	int		i;
 	int		rc;
 
-	if (argc == 1) {
-		rc = doGetdirentries("/mnt/nss");
+	punyopt(argc, argv, NULL, NULL);
+	if (argc == optind) {
+		rc = doGetdirentries(Option.dir);
 		return rc;
 	}
-	for (i = 1; i < argc; ++i) {
+	for (i = optind; i < argc; ++i) {
 		rc = doGetdirentries(argv[i]);
 		if (rc != 0) return rc;
 	}

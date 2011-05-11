@@ -70,9 +70,11 @@
 #include <dirent.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include <style.h>
 #include <eprintf.h>
+#include <puny.h>
 
 void pr_dirent (struct dirent *d)
 {
@@ -100,21 +102,19 @@ void do_readdir (char *name)
 	}
 }
 
-void usage (char *name)
+void usage (void)
 {
-	fprintf(stderr, "%s [<directory>]\n",
-		name);
-	exit(1);
+	pr_usage("[<directory>]*");
 }
 
 int main (int argc, char *argv[])
 {
-	int		i;
+	int	i;
 
-	if (argc == 1) {
-		do_readdir(".");
-	}
-	for (i = 1; i < argc; ++i) {
+	punyopt(argc, argv, NULL, NULL);
+	if (argc == optind) {
+		do_readdir(Option.dir);
+	} else for (i = optind; i < argc; ++i) {
 		do_readdir(argv[i]);
 	}
 	return 0;

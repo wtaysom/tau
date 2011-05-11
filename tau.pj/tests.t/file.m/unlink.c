@@ -11,17 +11,6 @@
  |  GNU General Public License for more details.
  +-------------------------------------------------------------------------*/
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-
-#include <stddef.h>
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
-
-#include <unistd.h>
-
 /*
  * NAME
  *      unlink - remove directory entry
@@ -46,20 +35,31 @@
  *      of -1 is returned and errno is set to indicate the error.
  */
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <string.h>
+#include <errno.h>
+
+#include <puny.h>
 
 int main (int argc, char *argv[])
 {
 	int		rc;
 
+	punyopt(argc, argv, NULL, NULL);
 	if (argc != 2) {
 		fprintf(stderr, "unlink file\n");
 		return 1;
 	}
-	rc = unlink(argv[1]);
+	rc = unlink(Option.file);
 	if (rc == -1) {
 		rc = errno;
 		fprintf(stderr, "unlink %s: %s\n",
-				argv[1], strerror(errno));
+				Option.file, strerror(errno));
 		return rc;
 	}
 	return 0;

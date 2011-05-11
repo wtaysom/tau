@@ -26,38 +26,42 @@
 #include <style.h>
 #include <mylib.h>
 #include <myio.h>
+#include <puny.h>
+#include <eprintf.h>
 
-void usage (char *name)
+void usage (void)
 {
-	fprintf(stderr, "%s <directory> [<files_per_iteration> [<num_iterations>]]\n",
-		name);
-	exit(1);
+	pr_usage("-d<directory> -k<files_per_iteration> -i<num_iterations>");
+}
+
+int Numfiles = 1000;
+
+void myopt (int c)
+{
+	switch (c) {
+	case 'k':
+		Numfiles = strtoll(optarg, NULL, 0);
+		break;
+	default:
+		usage();
+		break;
+	}
 }
 
 int main (int argc, char *argv[])
 {
-	char		*directory = "";
+	char		*directory;
 	char		name[256];
 	unsigned	i, j;
-	unsigned	n = 1000;
-	unsigned	iterations = 1000;
+	unsigned	n;
 	int		fd;
 
-	if (argc < 2) {
-		usage(argv[0]);
-	}
-	if (argc > 1) {
-		directory = argv[1];
-	}
-	if (argc > 2) {
-		n = atoi(argv[2]);
-	}
-	if (argc > 3) {
-		iterations = atoi(argv[3]);
-	}
+	punyopt(argc, argv, myopt, "k:");
+	directory = Option.dir;
+	n = Numfiles;
 	mkdirq(directory);
 	chdirq(directory);
-	for (j = 0; j < iterations; ++j) {
+	for (j = 0; j < Option.iterations; ++j) {
 		startTimer();
 		for (i = 0; i < n; ++i) {
 			sprintf(name, "f_%d_%d", j, i);

@@ -11,15 +11,6 @@
  |  GNU General Public License for more details.
  +-------------------------------------------------------------------------*/
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-
-#include <stddef.h>
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
-
 /*
  * NAME
  *      rename - change the name of a file
@@ -61,21 +52,26 @@
  *      Rename() will fail and neither of the argument files will be affected if:
  */
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+#include <stddef.h>
+#include <stdio.h>
+#include <string.h>
+#include <errno.h>
+
+#include <puny.h>
+#include <eprintf.h>
 
 int main (int argc, char *argv[])
 {
-	int		rc;
+	int	rc;
 
-	if (argc != 3) {
-		fprintf(stderr, "rename from to\n");
-		return 1;
-	}
-	rc = rename(argv[1], argv[2]);
+	punyopt(argc, argv, NULL, NULL);
+	rc = rename(Option.file, Option.dest);
 	if (rc == -1) {
-		rc = errno;
-		fprintf(stderr, "rename %s to %s: %s\n",
-				argv[1], argv[2], strerror(errno));
-		return rc;
+		fatal("rename %s to %s:", Option.file, Option.dir);
 	}
 	return 0;
 }

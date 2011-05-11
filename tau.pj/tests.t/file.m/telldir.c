@@ -19,6 +19,7 @@
 #include <dirent.h>
 
 #include <style.h>
+#include <puny.h>
 
 /*
  * turning on htrees:  tune2fs -O dir_index /dev/what_ever_device
@@ -96,12 +97,11 @@ void tst_telldir (void)
 
 int main (int argc, char *argv[])
 {
-	char	*dir = ".mytestdir";
+	char	*dir;
 	int	rc;
 
-	if (argc > 1) {
-		dir = argv[1];
-	}
+	punyopt(argc, argv, NULL, NULL);
+	dir = Option.dir;
 	rc = chdir(dir);
 	if (rc) {
 		perror(dir);

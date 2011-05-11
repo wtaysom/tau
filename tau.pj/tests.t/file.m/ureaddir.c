@@ -70,6 +70,10 @@
 #include <style.h>
 #include <mylib.h>
 #include <myio.h>
+#include <eprintf.h>
+#include <puny.h>
+
+u64 Numfiles = 10000;
 
 void create_files (unsigned n)
 {
@@ -88,38 +92,37 @@ void create_files (unsigned n)
 	}
 }
 
-void usage (char *name)
+void myopt (int c)
 {
-	fprintf(stderr, "%s <directory> [num_files [<num_iterations]]\n",
-		name);
-	exit(1);
+	switch (c) {
+	case 'k':
+		Numfiles = strtoll(optarg, NULL, 0);
+		break;
+	default:
+		usage();
+		break;
+	}
+}
+
+void usage (void)
+{
+	pr_usage("-d<directory> -k<num_files> -i<num_iterations> -l<loops>");
 }
 
 int main (int argc, char *argv[])
 {
 	struct dirent	*de;
-	char		*directory = "";
 	DIR		*dir;
 	unsigned	i, j;
-	unsigned	numfiles = 10000;
-	unsigned	n = 1000;
+	unsigned	n;
+	u64		l;
 
-	if (argc < 2) {
-		usage(argv[0]);
-	}
-	if (argc > 1) {
-		directory = argv[1];
-	}
-	if (argc > 2) {
-		numfiles = atoi(argv[2]);
-	}
-	if (argc > 3) {
-		n = atoi(argv[3]);
-	}
-	mkdir(directory, 0777);
-	chdirq(directory);
-	create_files(numfiles);
-	for (i = 0;; i++) {
+	punyopt(argc, argv, myopt, "k:");
+	n = Option.iterations;
+	mkdir(Option.dir, 0777);
+	chdirq(Option.dir);
+	create_files(Numfiles);
+	for (l = 0; l < Option.loops; l++) {
 		startTimer();
 		for (j = 0; j < n; ++j) {
 			dir = opendir(".");
@@ -135,8 +138,9 @@ int main (int argc, char *argv[])
 		}
 		stopTimer();
 		prTimer();
-		printf(" n=%d i=%d\n", n, i);
+		printf(" n=%d l=%lld\n", n, l);
 	}
+	return 0;
 }
 
 /*

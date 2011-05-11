@@ -21,6 +21,7 @@
 #include <string.h>
 
 #include <eprintf.h>
+#include <puny.h>
 
 char	Data[] = "This is a test";
 char	Buf[sizeof(Data)];
@@ -38,11 +39,8 @@ int main (int argc, char *argv[])
 	char	*name;
 	ssize_t	bytes;
 
-	if (argc > 1) {
-		name = argv[1];
-	} else {
-		name = "/mnt/tau/xyzzy";
-	}
+	punyopt(argc, argv, NULL, NULL);
+	name = Option.file;
 
 	prompt("open");
 	fd = open(name, O_RDWR | O_CREAT | O_TRUNC, 0666);

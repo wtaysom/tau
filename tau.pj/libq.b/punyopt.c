@@ -119,8 +119,6 @@ void punyopt (
 			if (myfun) {
 				myfun(c);
 			} else {
-				fprintf(stderr,
-					"Unexpected option %c\n", c);
 				usage();
 			}
 			break;

@@ -11,16 +11,6 @@
  |  GNU General Public License for more details.
  +-------------------------------------------------------------------------*/
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <stdio.h>
-
-#include <style.h>
-#include <mylib.h>
-
 /*
  * STAT(2)                    System calls                   STAT(2)
  *
@@ -238,6 +228,17 @@
  * Linux                       1998-05-13                    STAT(2)
  */
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <stdio.h>
+
+#include <style.h>
+#include <mylib.h>
+#include <puny.h>
+
 enum {
 	SECS_PER_MIN  = 60,
 	SECS_PER_HR   = SECS_PER_MIN * 60,
@@ -308,15 +309,12 @@ void prStatSizes (struct stat *sb)
 
 int main (int argc, char *argv[])
 {
-	int		fd;
+	int	fd;
 	char	*name;
 	struct stat	sb;
 
-	if (argc > 1) {
-		name = argv[1];
-	} else {
-		name = "/mnt/nss/xyzzy";
-	}
+	punyopt(argc, argv, NULL, NULL);
+	name = Option.file;
 	prStatSizes( &sb);
 	fd = stat(name, &sb);
 	if (fd == -1) {

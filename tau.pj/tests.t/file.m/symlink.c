@@ -107,6 +107,7 @@
 
 #include <eprintf.h>
 #include <mylib.h>
+#include <puny.h>
 
 char *gen_name (int len)
 {
@@ -129,10 +130,12 @@ char *gen_name (int len)
 int main (int argc, char *argv[])
 {
 	int	rc;
-	char	*oldpath = "a";
-	char	*newpath = "b";
+	char	*oldpath;
+	char	*newpath;
 
-	oldpath = gen_name(5000);
+	punyopt(argc, argv, NULL, NULL);
+	newpath = Option.dest;
+	oldpath = gen_name(Option.name_size);
 	rc = symlink(oldpath, newpath);
 	if (rc) eprintf("symlink %s -> %s failed:", oldpath, newpath);
 

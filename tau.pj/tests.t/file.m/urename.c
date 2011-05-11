@@ -25,6 +25,8 @@
 
 #include <style.h>
 #include <mylib.h>
+#include <eprintf.h>
+#include <puny.h>
 
 enum { MAX_NAME = 255 };
 
@@ -36,9 +38,9 @@ void make_names (char *name)
 {
 	int	fd;
 
-	cat(NameA, name, "_A");
-	cat(NameB, name, "_B");
-	cat(NameC, name, "_C");
+	cat(NameA, name, "_A", NULL);
+	cat(NameB, name, "_B", NULL);
+	cat(NameC, name, "_C", NULL);
 	fd = open(NameA, O_RDWR | O_CREAT | O_TRUNC, 0666);
 	if (fd == -1) {
 		perror("open");
@@ -47,30 +49,22 @@ void make_names (char *name)
 	close(fd);
 }
 
-void usage (char *name)
+void usage (void)
 {
-	fprintf(stderr, "%s <base_file_name> <num_iterations>\n", name);
-	exit(1);
+	pr_usage("-f<base_file_name> -i<num_iterations> -l<loops>");
 }
 
 int main (int argc, char *argv[])
 {
-	char		*name = "";
 	int		rc;
 	unsigned	i;
 	unsigned	n = 1000;
+	u64		l;
 
-	if (argc < 2) {
-		usage(argv[0]);
-	}
-	if (argc > 1) {
-		name = argv[1];
-	}
-	if (argc > 2) {
-		n = atoi(argv[2]);
-	}
-	make_names(name);
-	for (;;) {
+	punyopt(argc, argv, NULL, NULL);
+	n = Option.iterations;
+	make_names(Option.file);
+	for (l = 0; l < Option.loops; l++) {
 		startTimer();
 		for (i = 0; i < n; ++i) {
 			rc = rename(NameA, NameB);

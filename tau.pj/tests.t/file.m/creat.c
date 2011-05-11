@@ -18,6 +18,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include <puny.h>
+
 /*
  * NAME
  *     open, creat - open and possibly create a file or device
@@ -43,7 +45,7 @@
  *     file.
  *
  *     The parameter flags is one of O_RDONLY, O_WRONLY or O_RDWR which request
- *     opening the file read-only, write-only or read/write, respectively, bit
+ *     opening the file read-only, write-only or read/write, respectively, bit-
  *     wise-or'd with zero or more of the following:
  *
  *     O_CREAT
@@ -197,8 +199,8 @@
  *            writing.
  *
  *     EACCES The  requested  access  to the file is not allowed, or one of the
- *            directories in pathname did not allow  search  (execute)  permis
- *            sion,  or the file did not exist yet and write access to the par
+ *            directories in pathname did not allow  search  (execute)  permis-
+ *            sion,  or the file did not exist yet and write access to the par-
  *            ent directory is not allowed.
  *
  *     ENAMETOOLONG
@@ -263,7 +265,7 @@
  *     There are many infelicities in the protocol  underlying  NFS,  affecting
  *     amongst others O_SYNC and O_NDELAY.
  *
- *     POSIX  provides for three different variants of synchronised I/O, corre
+ *     POSIX  provides for three different variants of synchronised I/O, corre-
  *     sponding to the flags O_SYNC, O_DSYNC and O_RSYNC.  Currently  (2.1.130)
  *     these are all synonymous under Linux.
  *
@@ -276,18 +278,12 @@
 
 int main (int argc, char *argv[])
 {
-	int		fd;
-	char	*name;
+	int	fd;
 
-	if (argc > 1) {
-		name = argv[1];
-	} else {
-		name = "/mnt/tau/xyzzy";
-	}
-
-	fd = creat(name, 0666);
+	punyopt(argc, argv, NULL, NULL);
+	fd = creat(Option.file, 0666);
 	if (fd == -1) {
-		perror(name);
+		perror(Option.file);
 		exit(1);
 	}
 	close(fd);

@@ -10,13 +10,6 @@
  |  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  |  GNU General Public License for more details.
  +-------------------------------------------------------------------------*/
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <stdio.h>
 /*
  * TRUNCATE(2)               Linux Programmer's Manual              TRUNCATE(2)
  * 
@@ -124,6 +117,16 @@
  * 
  *                                  1998-12-21                      TRUNCATE(2)
  */
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <stdio.h>
+
+#include <puny.h>
+
 #define BUF_SIZE	(1<<16)
 
 int	Buf[BUF_SIZE];
@@ -138,11 +141,8 @@ int main (int argc, char *argv[])
 	ssize_t	bytes;
 	long	i, j;
 
-	if (argc > 1) {
-		name = argv[1];
-	} else {
-		name = "BigFile";
-	}
+	punyopt(argc, argv, NULL, NULL);
+	name = Option.file;
 
 	for (i = 0; i < BUF_SIZE; ++i) {
 		Buf[i] = random();
@@ -152,7 +152,7 @@ int main (int argc, char *argv[])
 		perror("open");
 		exit(1);
 	}
-	for (j = 0; j < 1000000000; ++j) {
+	for (j = 0; j < Option.iterations; ++j) {
 		for (i = 0; i < NUM_BUFS; ++i) {
 			bytes = write(fd, Buf, sizeof(Buf));
 			if (bytes == -1) {

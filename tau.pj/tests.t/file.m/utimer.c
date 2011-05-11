@@ -26,21 +26,22 @@
 
 #include <style.h>
 #include <mylib.h>
+#include <puny.h>
 
 int main (int argc, char *argv[])
 {
 	struct timeval	seed;
-	int		x = 0;
-	int		rc;
-	unsigned	i;
-	unsigned	n = 1;
+	int	x = 0;
+	int	rc;
+	u32	i;
+	u32	n;
+	u64	l;
 
-	if (argc > 1) {
-		n = atoi(argv[1]);
-	}
+	punyopt(argc, argv, NULL, NULL);
+	n = Option.iterations;
 	gettimeofday( &seed, NULL);
 	srandom(seed.tv_sec ^ seed.tv_usec);
-	for (;;) {
+	for (l = 0; l < Option.loops; l++) {
 		startTimer();
 		for (i = 0; i < n; ++i) {
 			x = range(1000000);

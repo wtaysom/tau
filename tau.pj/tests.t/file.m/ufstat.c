@@ -25,37 +25,33 @@
 
 #include <style.h>
 #include <mylib.h>
+#include <puny.h>
+#include <eprintf.h>
 
-void usage (char *name)
+void usage (void)
 {
-	fprintf(stderr, "%s <file_name> <num_iterations>\n", name);
-	exit(1);
+	pr_usage("-f<file_name> -i<num_iterations> -l<loops>");
 }
 
 int main (int argc, char *argv[])
 {
 	struct stat	sb;
-	char		*name = "";
+	char		*name;
 	int		fd;
 	int		rc;
 	unsigned	i;
-	unsigned	n = 1000;
+	unsigned	n;
+	u64		l;
 
-	if (argc < 2) {
-		usage(argv[0]);
-	}
-	if (argc > 1) {
-		name = argv[1];
-	}
-	if (argc > 2) {
-		n = atoi(argv[2]);
-	}
+	punyopt(argc, argv, NULL, NULL);
+	name = Option.file;
+	n = Option.iterations;
 	fd = open(name, O_RDONLY);
 	if (fd == -1) {
 		perror("open");
 		exit(1);
 	}
-	for (;;) {
+	for (l = 0; l < Option.loops; l++) {
 		startTimer();
 		for (i = 0; i < n; ++i) {
 			rc = stat(name, &sb);

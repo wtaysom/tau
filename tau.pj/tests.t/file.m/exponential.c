@@ -14,6 +14,8 @@
 #include <stdlib.h>
 #include <mylib.h>
 
+#include <puny.h>
+
 long exp_dist (long range)
 {
 	return range / (random()%range + 1);
@@ -25,9 +27,11 @@ int main (int argc, char *argv[])
 {
 	int	i;
 	long	x;
+	u64	l;
 
-	for (;;) {
-		for (i = 0; i < 1000; ++i) {
+	punyopt(argc, argv, NULL, NULL);
+	for (l = 0; l < Option.loops; l++) {
+		for (i = 0; i < Option.iterations; ++i) {
 			x = exp_dist(1<<10);
 			q_sum(x);
 		}

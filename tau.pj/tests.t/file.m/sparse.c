@@ -24,6 +24,7 @@
 #include <style.h>
 #include <debug.h>
 #include <eprintf.h>
+#include <puny.h>
 
 enum {	MAX_FILE  = 1ULL << 41,
 	FILE_MASK = MAX_FILE - 1,
@@ -144,8 +145,7 @@ void t2 (int fd)
 
 void usage (void)
 {
-	printf("Usage: %s [path]\n", getprogname());
-	exit(2);
+	pr_usage("-f<file>");
 }
 
 int main (int argc, char *argv[])
@@ -153,12 +153,8 @@ int main (int argc, char *argv[])
 	char	*file = "sparse_file";
 	int	fd;
 
-	setprogname(argv[0]);
-	if (argc > 1) {
-		file = argv[1];
-	} else if (argc > 2) {
-		usage();
-	}
+	punyopt(argc, argv, NULL, NULL);
+	file = Option.file;
 
 	fd = open(file, O_CREAT|O_RDWR/*|O_TRUNC|O_DIRECT*/, 0666);
 	if (fd == -1) {

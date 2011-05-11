@@ -17,6 +17,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <crc.h>
+#include <puny.h>
 #include "randrw.h"
 
 Buf_s	Buf;
@@ -43,15 +45,9 @@ int main (int argc, char *argv[])
 	off_t	max_size;
 	ssize_t	bytes;
 
-	name = "/mnt/nss1/xyzzy";
-	max_size = NUM_BUFS;
-	if (argc > 1) {
-		name = argv[1];
-	}
-	if (argc > 2) {
-		max_size = atoi(argv[2]);
-	}
-
+	punyopt(argc, argv, NULL, NULL);
+	name = Option.file;
+	max_size = Option.file_size;
 	fd = open(name, O_RDWR | O_CREAT | O_TRUNC, 0666);
 	if (fd == -1) {
 		perror("open");

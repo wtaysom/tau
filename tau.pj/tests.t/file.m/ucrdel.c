@@ -27,10 +27,10 @@
 
 #include <eprintf.h>
 #include <debug.h>
-
 #include <mylib.h>
 #include <myio.h>
 #include <timer.h>
+#include <puny.h>
 
 enum { BLK_SIZE = 1<<12 };
 
@@ -107,16 +107,8 @@ void loop (unsigned cnt)
 
 int main (int argc, char *argv[])
 {
-	unsigned	cnt = 10000;
-
-	setprogname(argv[0]);
-        setlocale(LC_NUMERIC, "en_US");
-	if (argc > 1) {
-		cnt = strtoul(argv[1], NULL, 0);
-	}
-	if (argc > 2) {
-		usage();
-	}
-	loop(cnt);
+	punyopt(argc, argv, NULL, NULL);
+	chdirq(Option.dir);
+	loop(Option.iterations);
 	return 0;
 }

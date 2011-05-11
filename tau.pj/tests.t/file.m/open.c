@@ -11,15 +11,6 @@
  |  GNU General Public License for more details.
  +-------------------------------------------------------------------------*/
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <stdio.h>
-
-#include <eprintf.h>
-
 /*
  * OPEN(2)                       System calls                       OPEN(2)
  * 
@@ -324,19 +315,47 @@
  * Linux                          1999-06-03                        OPEN(2)
  */
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <stdio.h>
+
+#include <eprintf.h>
+#include <puny.h>
+
+int Flags = O_CREAT | O_TRUNC | O_WRONLY;
+int Mode = 0660;
+
+void myopt (int c)
+{
+	switch (c) {
+	case 'g':
+		Flags = strtoll(optarg, NULL, 0);
+		break;
+	case 'm':
+		Mode = strtoll(optarg, NULL, 0);
+		break;
+	default:
+		usage();
+		break;
+	}
+}
 
 void usage (void)
 {
-	fprintf(stderr, "%s [file]\n",
-		getprogname());
-	exit(1);
+	pr_usage("-f<file> -g<flags> -m<mode>");
 }
 
 int main (int argc, char *argv[])
 {
-	setprogname(argv[0]);
+	int	fd;
 
-	usage();
+	punyopt(argc, argv, myopt, "g:m:");
+	fd = open(Option.file, Flags, Mode);
+	if (fd == -1) fatal("open %s:", Option.file);
+	close(fd);
 
 	return 0;
 }

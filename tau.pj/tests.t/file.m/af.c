@@ -18,20 +18,17 @@
 #include <fcntl.h>
 
 #include <eprintf.h>
+#include <puny.h>
 
 int main (int argc, char *argv[])
 {
-	char	*name = "xyzzy";
 	int	fd;
 	int	rc;
 
-	if (argc > 1) {
-		name = argv[1];
-	}
-
-	fd = open(name, O_RDWR | O_CREAT | O_TRUNC, 0666);
+	punyopt(argc, argv, NULL, NULL);
+	fd = open(Option.file, O_RDWR | O_CREAT | O_TRUNC, 0666);
 	if (fd == -1) {
-		eprintf("Couldn't create %s:", name);
+		eprintf("Couldn't create %s:", Option.file);
 	}
 	rc = fcntl(fd, F_SETLEASE, F_WRLCK);
 	if (rc == -1) {

@@ -107,6 +107,9 @@
 #include <sys/types.h>
 #include <sys/xattr.h>
 
+#include <eprintf.h>
+#include <puny.h>
+
 void dump_list (char *list, ssize_t size)
 {
 	int	c;
@@ -129,39 +132,26 @@ void dump_list (char *list, ssize_t size)
 	}
 }
 
-char *ProgName;
-
 void usage (void)
 {
-	fprintf(stderr, "%s file\n", ProgName);
-	exit(1);
+	pr_usage("-f<file>");
 }
 
 char	List[1<<17];
 
 int main (int argc, char *argv[])
 {
-	char	*file = "";
 	ssize_t	size;
 
-	ProgName = argv[0];
+	punyopt(argc, argv, NULL, NULL);
 
-	if (argc < 2) {
-		usage();
-	}
-	if (argc < 3) {
-		file = argv[1];
-	} else {
-		usage();
-	}
-
-	size = listxattr(file,List, sizeof(List));
+	size = listxattr(Option.file, List, sizeof(List));
 	if (size == -1) {
-		perror("listxattr");
+		perror(Option.file);
 		exit(2);
 	}
 
-	printf("xattrs for %s:\n", file);
+	printf("xattrs for %s:\n", Option.file);
 	dump_list(List, size);
 
 	return 0;

@@ -19,21 +19,20 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include <puny.h>
+
 char	Data[] = "This is a test\n";
 char	Buf[sizeof(Data)];
 
 int main (int argc, char *argv[])
 {
-	int		fd;
-	int		rc;
+	int	fd;
+	int	rc;
 	char	*name;
 	ssize_t	bytes;
 
-	if (argc > 1) {
-		name = argv[1];
-	} else {
-		name = "/mnt/nss1/xyzzy";
-	}
+	punyopt(argc, argv, NULL, NULL);
+	name = Option.file;
 
 	fd = open(name, O_RDWR | O_CREAT | O_TRUNC, 0666);
 	if (fd == -1) {
@@ -65,6 +64,6 @@ int main (int argc, char *argv[])
 		exit(1);
 	}
 	close(fd);
-//	rc = unlink("xyzzy");
+//	rc = unlink(name);
 	return 0;
 }

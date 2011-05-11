@@ -23,35 +23,31 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include <style.h>
+#include <eprintf.h>
 #include <mylib.h>
+#include <puny.h>
 
-void usage (char *name)
+void usage (void)
 {
-	fprintf(stderr, "%s <file_name> <num_iterations>\n", name);
-	exit(1);
+	pr_usage("-f<file path> -i<num_iterations> -l<loops>");
 }
 
 int main (int argc, char *argv[])
 {
-	char		*name = "";
 	int		fd;
 	unsigned	i;
-	unsigned	n = 1000;
+	unsigned	n;
+	u64		l;
 
-	if (argc < 2) {
-		usage(argv[0]);
-	}
-	if (argc > 1) {
-		name = argv[1];
-	}
-	if (argc > 2) {
-		n = atoi(argv[2]);
-	}
-	for (;;) {
+	punyopt(argc, argv, NULL, NULL);
+	n = Option.iterations;
+	fd = creat(Option.file, 0760);
+	if (fd == -1) fatal(Option.file);
+
+	for (l = 0; l < Option.loops; l++) {
 		startTimer();
 		for (i = 0; i < n; ++i) {
-			fd = open(name, O_RDONLY);
+			fd = open(Option.file, O_RDONLY);
 			if (fd == -1) {
 				perror("open");
 				exit(1);

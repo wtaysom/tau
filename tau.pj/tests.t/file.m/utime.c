@@ -11,17 +11,6 @@
  |  GNU General Public License for more details.
  +-------------------------------------------------------------------------*/
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <utime.h>
-
-#include <style.h>
-#include <mylib.h>
-
 /*
  *UTIME(2)            Linux Programmer's Manual            UTIME(2)
  *
@@ -87,6 +76,18 @@
  *Linux                       1995-06-10                   UTIME(2)
  */
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <utime.h>
+
+#include <style.h>
+#include <mylib.h>
+#include <puny.h>
+
 enum {
 	SECS_PER_MIN  = 60,
 	SECS_PER_HR   = SECS_PER_MIN * 60,
@@ -114,16 +115,13 @@ void prStatNice (struct stat *sb)
 
 int main (int argc, char *argv[])
 {
-	int		rc;
-	char	*name;
 	struct stat	sb;
 	struct utimbuf	utbuf;
+	char	*name;
+	int	rc;
 
-	if (argc > 1) {
-		name = argv[1];
-	} else {
-		name = "/mnt/nss1/xyzzy";
-	}
+	punyopt(argc, argv, NULL, NULL);
+	name = Option.file;
 	rc = stat(name, &sb);
 	if (rc == -1) {
 		perror(name);

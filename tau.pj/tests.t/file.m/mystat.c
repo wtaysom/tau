@@ -11,16 +11,6 @@
  |  GNU General Public License for more details.
  +-------------------------------------------------------------------------*/
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <stdio.h>
-
-#include <style.h>
-#include <mylib.h>
-
 /*
  * STAT(2)                    System calls                   STAT(2)
  *
@@ -74,7 +64,7 @@
  *     The value st_blocks gives the size  of  the  file  in  512-byte  blocks.
  *     (This  may  be  smaller  than st_size/512 e.g. when the file has holes.)
  *     The value st_blksize gives the "preferred" blocksize for efficient  file
- *     system  I/O.   (Writing to a file in smaller chunks may cause an ineffi
+ *     system  I/O.   (Writing to a file in smaller chunks may cause an ineffi-
  *     cient read-modify-rewrite.)
  *
  *     Not all of the Linux filesystems implement all of the time fields.  Some
@@ -190,9 +180,9 @@
  *
  *     hex    name       ls   octal    description
  *     f000   S_IFMT          170000   mask for file type
- *     0000                   000000   SCO out-of-service inode, BSD unknown type
- *                                     SVID-v2 and XPG2 have both 0 and 0100000
- *                                     for ordinary file
+ *     0000                   000000   SCO out-of-service inode, BSD unknown
+ *                                     type SVID-v2 and XPG2 have both 0 and
+ *                                     0100000 for ordinary file
  *     1000   S_IFIFO    p|   010000   fifo (named pipe)
  *     2000   S_IFCHR    c    020000   character special (V7)
  *     3000   S_IFMPC         030000   multiplexed character special (V7)
@@ -238,6 +228,16 @@
  * Linux                       1998-05-13                    STAT(2)
  */
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <stdio.h>
+
+#include <style.h>
+#include <mylib.h>
+
 enum {
 	SECS_PER_MIN  = 60,
 	SECS_PER_HR   = SECS_PER_MIN * 60,
@@ -278,7 +278,7 @@ void prStat (char *name, struct stat *sb)
 		(u64)sb->st_nlink,	/* number or hard links to the file */
 		(u64)sb->st_uid,	/* user-id of owner */
 		(u64)sb->st_gid,	/* group-id of owner */
-		(u64)sb->st_rdev,	/* device type,	for special file inode */
+		(u64)sb->st_rdev,	/* device type,	for special file */
 		(u64)sb->st_size,	/* file size, in bytes */
 		(u64)sb->st_blocks,	/* blocks allocated for file */
 		(u64)sb->st_blksize,	/* optimal file sys I/O ops blocksize */

@@ -50,34 +50,36 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <unistd.h>
 #include <sys/vfs.h>
 
 #include <style.h>
+#include <puny.h>
+#include <eprintf.h>
 
 
-typedef struct FsType_s
-{
+typedef struct FsType_s {
 	long	fs_magic;
 	char	*fs_name;
 } FsType_s;
 
 FsType_s	FsType[] = {
-	{ 0xADFF,		"Amiga Fast FS" },
+	{ 0xADFF,	"Amiga Fast FS" },
 	{ 0x00414A53,	"SGI's Extent FS" },
-	{ 0x137D,		"EXT (not 2 or 3) FS" },
-	{ 0xEF51,		"Old EXT-2 FS" },
-	{ 0xEF53,		"EXT-2 FS" },
+	{ 0x137D,	"EXT (not 2 or 3) FS" },
+	{ 0xEF51,	"Old EXT-2 FS" },
+	{ 0xEF53,	"EXT-2 FS" },
 	{ 0xF995E849,	"OS/2 FS" },
-	{ 0x9660,		"ISO-CD FS" },
-	{ 0x137F,		"Orig. Minix FS" },
-	{ 0x138F,		"30 char Minix FS" },
-	{ 0x2468,		"Minix V2" },
-	{ 0x2478,		"Minix V2, 30 char" },
-	{ 0x4d44,		"MSDOS" },
-	{ 0x564c,		"NCP" },
-	{ 0x6969,		"NFS" },
-	{ 0x9fa0,		"Proc" },
-	{ 0x517B,		"SMB" },
+	{ 0x9660,	"ISO-CD FS" },
+	{ 0x137F,	"Orig. Minix FS" },
+	{ 0x138F,	"30 char Minix FS" },
+	{ 0x2468,	"Minix V2" },
+	{ 0x2478,	"Minix V2, 30 char" },
+	{ 0x4d44,	"MSDOS" },
+	{ 0x564c,	"NCP" },
+	{ 0x6969,	"NFS" },
+	{ 0x9fa0,	"Proc" },
+	{ 0x517B,	"SMB" },
 	{ 0x012FF7B4,	"Xenix SysV" },
 	{ 0x012FF7B5,	"SysV.4" },
 	{ 0x012FF7B6,	"SysV.2" },
@@ -85,7 +87,7 @@ FsType_s	FsType[] = {
 	{ 0x00011954,	"UFS Solaris" },
 	{ 0x58465342,	"XFS (SGI or Berkeley?)" },
 	{ 0x012FD16D,	"Xia FS" },
-	{ 0,			NULL }
+	{ 0,		NULL }
 };
 
 char *findFsName (long magic)
@@ -101,8 +103,8 @@ char *findFsName (long magic)
 void prStatfs (char *name, struct statfs *sfs)
 {
 	printf("%s: type=%s: file system id=%d.%d\n",
-			name, findFsName(sfs->f_type),
-			sfs->f_fsid.__val[0], sfs->f_fsid.__val[1]);
+		name, findFsName(sfs->f_type),
+		sfs->f_fsid.__val[0], sfs->f_fsid.__val[1]);
 	printf("\t%10lld: optimal transfer block size\n", (u64)sfs->f_bsize);
 	printf("\t%10lld: total data blocks in file system\n", (u64)sfs->f_blocks);
 	printf("\t%10lld: free blocks in fs\n", (u64)sfs->f_bfree);
@@ -129,16 +131,15 @@ int doStatfs (char *name)
 
 int main (int argc, char *argv[])
 {
-	int		i;
-	int		rc;
+	int	i;
+	int	rc = 0;
 
-	if (argc == 1) {
-		rc = doStatfs(".");
-		return rc;
-	}
-	for (i = 1; i < argc; ++i) {
+	punyopt(argc, argv, NULL, NULL);
+	if (argc == optind) {
+		rc = doStatfs(Option.dir);
+	} else for (i = optind; i < argc && !rc; ++i) {
 		rc = doStatfs(argv[i]);
-		if (rc != 0) return rc;
 	}
+	if (rc) fatal("doStatfs:");
 	return 0;
 }

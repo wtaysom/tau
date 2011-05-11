@@ -26,34 +26,25 @@
 #include <style.h>
 #include <mylib.h>
 #include <eprintf.h>
+#include <puny.h>
 
-void usage (char *name)
+void usage (void)
 {
-	fprintf(stderr,
-		"%s <file_name> <num_iterations>\n",
-		name);
-	exit(1);
+	pr_usage("-f<file_name> -i<num_iterations> -l<loops>");
 }
 
 int main (int argc, char *argv[])
 {
-	char		*name = "";
 	int		fd;
 	unsigned	i;
-	unsigned	n = 1000;
+	unsigned	n;
 	off_t		rc;
+	u64		l;
 
-	if (argc < 2) {
-		usage(argv[0]);
-	}
-	if (argc > 1) {
-		name = argv[1];
-	}
-	if (argc > 2) {
-		n = atoi(argv[2]);
-	}
-	fd = open(name, O_RDWR | O_CREAT | O_TRUNC, 0666);
-	for (;;) {
+	punyopt(argc, argv, NULL, NULL);
+	n = Option.iterations;
+	fd = open(Option.file, O_RDWR | O_CREAT | O_TRUNC, 0666);
+	for (l = 0; l < Option.loops; l++) {
 		startTimer();
 		for (i = 0; i < n; ++i) {
 			rc = lseek(fd, i, 0);

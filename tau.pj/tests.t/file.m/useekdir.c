@@ -70,6 +70,8 @@
 #include <style.h>
 #include <mylib.h>
 #include <myio.h>
+#include <puny.h>
+#include <eprintf.h>
 
 typedef struct Vector_v {
 	unsigned	v_size;
@@ -82,7 +84,7 @@ inline void *vget (Vector_v *v, unsigned i)
 	return v->v_data[i];
 }
 
-void _vgrow (Vector_v *v)
+void vgrow (Vector_v *v)
 {
 	void	**array;
 
@@ -98,7 +100,7 @@ void _vgrow (Vector_v *v)
 inline void vput (Vector_v *v, void *value, unsigned i)
 {
 	while (i >= v->v_size) {
-		_vgrow(v);
+		vgrow(v);
 	}
 	v->v_data[i] = value;
 }
@@ -121,40 +123,39 @@ void create_files (unsigned n)
 	}
 }
 
-void usage (char *name)
+void usage (void)
 {
-	fprintf(stderr, "%s <directory> [num_files [<num_iterations]]\n",
-		name);
-	exit(1);
+	pr_usage("-d<directory> -k<num_files> -l<loops>");
+}
+
+int Numfiles = 10000;
+
+void myopt (int c)
+{
+	switch (c) {
+	case 'k':
+		Numfiles = strtoll(optarg, NULL, 0);
+		break;
+	default:
+		usage();
+		break;
+	}
 }
 
 int main (int argc, char *argv[])
 {
 	struct dirent	*de;
-	char		*directory = "";
-	DIR		*dir;
-	unsigned	i;
-	unsigned	numfiles = 10000;
-	unsigned	n = 1000;
+	DIR	*dir;
+	unint	i;
+	u64	l;
 
-	if (argc < 2) {
-		usage(argv[0]);
-	}
-	if (argc > 1) {
-		directory = argv[1];
-	}
-	if (argc > 2) {
-		numfiles = atoi(argv[2]);
-	}
-	if (argc > 3) {
-		n = atoi(argv[3]);
-	}
+	punyopt(argc, argv, myopt, "k:");
 	seed_random();
 
-	mkdir(directory, 0777);
-	chdirq(directory);
-	create_files(numfiles);
-	for (;;) {
+	mkdir(Option.dir, 0777);
+	chdirq(Option.dir);
+	create_files(Numfiles);
+	for (l = 0; l < Option.loops; l++) {
 		dir = opendir(".");
 		if (!dir) {
 			perror(".");
@@ -167,7 +168,8 @@ int main (int argc, char *argv[])
 		}
 		stopTimer();
 		prTimer();
-		printf(" i=%d\n", i);
+		printf(" i=%ld\n", i);
 		closedir(dir);
 	}
+	return 0;
 }

@@ -26,6 +26,7 @@
 #include <eprintf.h>
 #include <mylib.h>
 #include <myio.h>
+#include <puny.h>
 
 char FileTypes[] = {	'0', 'p', 'c', '3', 'd', '5', 'b', '7',
 			 '-', '9', 'l', 'B', 's', 'D', 'E', 'F' };
@@ -53,9 +54,7 @@ void mystat (int fd, char *msg)
 
 void usage (void)
 {
-	fprintf(stderr, "%s [file]\n",
-		getprogname());
-	exit(1);
+	pr_usage("-f<file>");
 }
 
 char	Write[] = "Hello, my name is Charlie\n";
@@ -64,10 +63,11 @@ char	Test[] = "test";
 
 int main (int argc, char *argv[])
 {
-	char		*file = "xyzzy";
+	char		*file;
 	int		fd;
 
-	setprogname(argv[0]);
+	punyopt(argc, argv, NULL, NULL);
+	file = Option.file;
 
 	fd = openq(file, O_RDWR | O_CREAT);
 	mystat(fd, "after open/create");

@@ -19,14 +19,16 @@
 #include <stdio.h>
 
 #include <style.h>
+#include <crc.h>
 #include <histogram.h>
+#include <puny.h>
 #include "randrw.h"
 
 Buf_s	Buf;
 	
 bool checkBuf (void)
 {
-	int		i;
+	int	i;
 	long	x;
 
 	if (Buf.crc == crc32((unsigned char *)Buf.data, sizeof(Buf.data)))
@@ -48,21 +50,15 @@ bool checkBuf (void)
 
 int main (int argc, char *argv[])
 {
-	int		fd;
+	int	fd;
 	char	*name;
 	off_t	size;
 	off_t	max_size;
 	ssize_t	bytes;
 
-	name = "/mnt/nss1/xyzzy";
-	max_size = NUM_BUFS;
-	if (argc > 1) {
-		name = argv[1];
-	}
-	if (argc > 2) {
-		max_size = atoi(argv[2]);
-	}
-
+	punyopt(argc, argv, NULL, NULL);
+	name = Option.file;
+	max_size = Option.file_size;
 	fd = open(name, O_RDONLY);
 	if (fd == -1) {
 		perror("open");

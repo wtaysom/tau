@@ -13,7 +13,8 @@
 #include <time.h>
 #include <unistd.h>
 
-typedef unsigned long long	u64;
+#include <eprintf.h>
+#include <puny.h>
 
 FILE *Results;
 
@@ -81,54 +82,34 @@ static void report(char *label, u64 total, size_t n, int iterations)
 		label, total, iterations, avg, avg / n);
 }
 
-static void usage(char *progname)
+void usage(void)
 {
-	fprintf(stderr, "usage: %s [-?]"
-		" [<file size> [<iterations> [<file name> [<results>]]]]\n"
-		"\tdefaults: 1 1000000 .scratch stdout\n"
-		"\t? - usage\n",
-		progname);
-	exit(2);
+	pr_usage("-f<file> -x<file size> -i<iterations> -r<results_file>");
 }
 
 int main(int argc, char *argv[])
 {
-	char *name = ".scratch";
-	char *results = "stdout";
+	char *name;
+	char *results;
 	int fd;
 	void *buf;
-	size_t size = 1;
+	size_t size;
 	u64 start;
 	u64 finish;
 	u64 total;
-	int iterations = 1000000;
-	int c;
+	int iterations;
 
-	Results = stdout;
-	while ((c = getopt(argc, argv, "?")) != -1) {
-		switch (c) {
-		case '?':
-			usage(argv[0]);
-			break;
-		default:
-			fprintf(stderr, "unknown option %c\n", c);
-			usage(argv[0]);
-			break;
-		}
-	}
-	if (argc > 1) {
-		size = strtol(argv[1], NULL, 0);
-	}
-	if (argc > 2) {
-		iterations = strtol(argv[2], NULL, 0);
-	}
-	if (argc > 3) {
-		name = argv[3];
-	}
-	if (argc > 4) {
-		results = argv[4];
-		Results = fopen(results, "a");
+	punyopt(argc, argv, NULL, NULL);
+	name = Option.file;
+	size = Option.file_size;
+	iterations = Option.iterations;
+	if (Option.results) {
+		results = Option.results;
+		Results = fopen(Option.results, "a");
 		if (!Results) return 3;
+	} else {
+		results = "stdout";
+		Results = stdout;
 	}
 	time_t timestamp;
 	timestamp = time(NULL);

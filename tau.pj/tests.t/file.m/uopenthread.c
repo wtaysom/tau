@@ -25,8 +25,10 @@
 #include <sys/stat.h>
 
 #include <style.h>
+#include <myio.h>
 #include <mylib.h>
 #include <eprintf.h>
+#include <puny.h>
 
 typedef struct arg_s {
 	char		name[256];
@@ -40,7 +42,7 @@ void *do_opens (void *arg)
 	int	i;
 	int	fd;
 
-	fd = creat(a->name, 755);
+	fd = creat(a->name, 0755);
 	if (fd == -1) eprintf("creat %s:", a->name);
 	close(fd);
 
@@ -82,32 +84,20 @@ void start_threads (unsigned threads, unsigned n)
 
 void usage (void)
 {
-	fprintf(stderr, "Usage: %s [<iterations> [<threads> [<num opens>]]]\n",
-		getprogname());
-	exit(2);
+	pr_usage("-d<dir> -i<num opens> -t <threads> -l<loops>");
 }
 
 int main (int argc, char *argv[])
 {
 	unsigned	i;
-	unsigned	iterations = 1;
-	unsigned	threads = 11;
-	unsigned	n = 1000;
+	unsigned	threads;
+	unsigned	n;
 
-	setprogname(argv[0]);
-	if (argc > 1) {
-		iterations = atoi(argv[1]);
-	}
-	if (argc > 2) {
-		threads = atoi(argv[2]);
-	}
-	if (argc > 3) {
-		n = atoi(argv[3]);
-	}
-	if ((argc > 4) || !iterations || !threads || !n) {
-		usage();
-	}
-	for (i = 0; i < iterations; i++) {
+	punyopt(argc, argv, NULL, NULL);
+	n = Option.iterations;
+	threads = Option.numthreads;
+	chdirq(Option.dir);
+	for (i = 0; i < Option.loops; i++) {
 		startTimer();
 		start_threads(threads, n);
 		stopTimer();

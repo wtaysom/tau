@@ -28,13 +28,14 @@
 #include <style.h>
 #include <mylib.h>
 #include <timer.h>
+#include <puny.h>
+#include <eprintf.h>
 
 enum { BLK_SIZE = 1<<12 };
 
 void usage (void)
 {
-	printf("Usage: %s [<file name> [<iterations>]]\n",
-		getprogname());
+	pr_usage("-f<file name> -i<iterations>");
 }
 
 off_t Range (off_t max)
@@ -92,18 +93,14 @@ int main (int argc, char *argv[])
 	u64		end;
 	ssize_t		rc;
 
-	setprogname(argv[0]);
-	if (argc > 1) {
-		file = argv[1];
-	}
-	if (argc > 2) {
-		cnt = strtoul(argv[2], NULL, 0);
-	}
-	if (argc > 3) {
-		usage();
-	}
+	punyopt(argc, argv, NULL, NULL);
+	file = Option.file;
+	cnt  = Option.iterations;
 	seed_random();
 	fd = setup_file(file, &num_blks);
+	if (num_blks == 0) {
+		fatal("file %s is too small for test", file);
+	}
 	for (i = 0; i < cnt; i++) {
 		offset = Range(num_blks);
 		start = nsecs();

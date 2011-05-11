@@ -25,6 +25,7 @@
 #include <style.h>
 #include <mylib.h>
 #include <eprintf.h>
+#include <puny.h>
 
 
 enum { MAX_PATH = 1024, MAX_NAME = 8 };
@@ -484,7 +485,12 @@ void rate (void)
 	}
 }
 
-void start_threads (unsigned threads, unsigned width, unsigned depth, char *from, char *to)
+void start_threads (
+	unsigned threads,
+	unsigned width,
+	unsigned depth,
+	char *from,
+	char *to)
 {
 	pthread_t	*thread;
 	unsigned	i;
@@ -514,52 +520,63 @@ void start_threads (unsigned threads, unsigned width, unsigned depth, char *from
 
 void usage (void)
 {
-	printf("Usage: %s "
-		"[iterations [threads [width [depth [start [from [to]]]]]]]\n",
-		getprogname());
-	exit(2);
+	pr_usage("-i<iterations> -t<threads> -w<width> -k<depth>"
+		" -d<start> -r<from> -o<to>");
+}
+
+struct {
+	unsigned	width;
+	unsigned	depth;
+	char		*from;
+	char		*to;
+} Myopt = {
+	.width = 2,
+	.depth = 3,
+	.from  = "ztree",
+	.to    = "copy" };
+
+void myopt (int c)
+{
+	switch (c) {
+	case 'k':
+		Myopt.depth = strtoll(optarg, NULL, 0);
+		break;
+	case 'w':
+		Myopt.width = strtoll(optarg, NULL, 0);
+		break;
+	case 'r':
+		Myopt.from = optarg;
+		break;
+	case 'o':
+		Myopt.to = optarg;
+		break;
+	default:
+		usage();
+		break;
+	}
 }
 
 int main (int argc, char *argv[])
 {
-	char		*start = ".";
-	char		*from = "ztree";
-	char		*to = "copy";
-	unsigned	iterations = 1;
-	unsigned	threads = 1;
-	unsigned	width = 100000;
-	unsigned	depth = 0;
+	char		*start;
+	char		*from;
+	char		*to;
+	unsigned	threads;
+	unsigned	width;
+	unsigned	depth;
 	unsigned	i;
 
-	setprogname(argv[0]);
-	if (argc > 1) {
-		iterations = atoi(argv[1]);
-	}
-	if (argc > 2) {
-		threads = atoi(argv[2]);
-	}
-	if (argc > 3) {
-		width = atoi(argv[3]);
-	}
-	if (argc > 4) {
-		depth = atoi(argv[4]);
-	}
-	if (argc > 5) {
-		start = argv[5];
-	}
-	if (argc > 6) {
-		from = argv[6];
-	}
-	if (argc > 7) {
-		to = argv[7];
-	}
-	if (!iterations || !threads || !width || !start || !from || !to) {
-		usage();
-	}
+	punyopt(argc, argv, myopt, "k:w:r:o:");
+	threads = Option.numthreads;
+	start   = Option.dir;
+	width   = Myopt.width;
+	depth   = Myopt.depth;
+	from    = Myopt.from;
+	to      = Myopt.to;
 
 	init(start);
 
-	for (i = 0; i < iterations; i++) {
+	for (i = 0; i < Option.iterations; i++) {
 		srandom(137);
 
 		startTimer();

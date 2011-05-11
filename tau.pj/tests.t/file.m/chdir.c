@@ -14,99 +14,101 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
-
 #include <unistd.h>
 
+#include <puny.h>
+
 /*
- * CHDIR(2)                      Linux Programmer's Manual                      CHDIR(2)
- *
- *
+ * CHDIR(2)                   Linux Programmer's Manual                CHDIR(2)
  *
  * NAME
- *       chdir, fchdir - change working directory
+ *     chdir, fchdir - change working directory
  *
  * SYNOPSIS
- *       #include <unistd.h>
+ *     #include <unistd.h>
  *
- *       int chdir(const char *path);
- *       int fchdir(int fd);
+ *     int chdir(const char *path);
+ *     int fchdir(int fd);
+ *
+ * Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+ *
+ *     fchdir(): _BSD_SOURCE || _XOPEN_SOURCE >= 500
  *
  * DESCRIPTION
- *       chdir changes the current directory to that specified in path.
+ *     chdir() changes the current working directory of the calling process to
+ *     the directory specified in path.
  *
- *       fchdir is identical to chdir, only that the directory is given as an open file
- *       descriptor.
+ *     fchdir() is identical to chdir();  the  only  difference  is  that  the
+ *     directory is given as an open file descriptor.
  *
  * RETURN VALUE
- *       On success, zero is returned.  On error, -1 is  returned,  and  errno  is  set
- *       appropriately.
+ *     On  success,  zero is returned.  On error, -1 is returned, and errno is
+ *     set appropriately.
  *
  * ERRORS
- *       Depending  on the file system, other errors can be returned.  The more general
- *       errors for chdir are listed below:
+ *     Depending on the file system, other errors can be returned.   The  more
+ *     general errors for chdir() are listed below:
  *
- *       EFAULT path points outside your accessible address space.
+ *     EACCES Search  permission  is denied for one of the components of path.
+ *            (See also path_resolution(7).)
  *
- *       ENAMETOOLONG
- *              path is too long.
+ *     EFAULT path points outside your accessible address space.
  *
- *       ENOENT The file does not exist.
+ *     EIO    An I/O error occurred.
  *
- *       ENOMEM Insufficient kernel memory was available.
+ *     ELOOP  Too many symbolic links were encountered in resolving path.
  *
- *       ENOTDIR
- *              A component of path is not a directory.
+ *     ENAMETOOLONG
+ *            path is too long.
  *
- *       EACCES Search permission is denied on a component of path.
+ *     ENOENT The file does not exist.
  *
- *       ELOOP  Too many symbolic links were encountered in resolving path.
+ *     ENOMEM Insufficient kernel memory was available.
  *
- *       EIO    An I/O error occurred.
+ *     ENOTDIR
+ *            A component of path is not a directory.
  *
- *       The general errors for fchdir are listed below:
+ *     The general errors for fchdir() are listed below:
  *
- *       EBADF  fd is not a valid file descriptor.
+ *     EACCES Search permission was denied on the directory open on fd.
  *
- *       EACCES Search permission was denied on the directory open on fd.
- *
- * NOTES
- *       The prototype for fchdir is only available if _BSD_SOURCE is  defined  (either
- *       explicitly, or implicitly, by not defining _POSIX_SOURCE or compiling with the
- *       -ansi flag).
+ *     EBADF  fd is not a valid file descriptor.
  *
  * CONFORMING TO
- *       The chdir call is compatible with SVr4, SVID,  POSIX,  X/OPEN,  4.4BSD.   SVr4
- *       documents additional EINTR, ENOLINK, and EMULTIHOP error conditions but has no
- *       ENOMEM.  POSIX.1 does not have ENOMEM or ELOOP error conditions.  X/OPEN  does
- *       not have EFAULT, ENOMEM or EIO error conditions.
+ *     SVr4, 4.4BSD, POSIX.1-2001.
  *
- *       The  fchdir  call  is compatible with SVr4, 4.4BSD and X/OPEN.  SVr4 documents
- *       additional EIO, EINTR, and ENOLINK error conditions.  X/OPEN  documents  addi?
- *       tional EINTR and EIO error conditions.
+ * NOTES
+ *     The current working directory is the starting  point  for  interpreting
+ *     relative pathnames (those not starting with '/').
+ *
+ *     A child process created via fork(2) inherits its parent's current work‐
+ *     ing directory.  The current working  directory  is  left  unchanged  by
+ *     execve(2).
+ *
+ *     The prototype for fchdir() is only available if _BSD_SOURCE is defined,
+ *     or _XOPEN_SOURCE is defined with the value 500.
  *
  * SEE ALSO
- *       getcwd(3), chroot(2)
+ *     chroot(2), getcwd(3), path_resolution(7)
  *
+ * COLOPHON
+ *     This page is part of release 3.23 of the Linux  man-pages  project.   A
+ *     description  of  the project, and information about reporting bugs, can
+ *     be found at http://www.kernel.org/doc/man-pages/.
  *
- *
- * Linux 2.0.30                          1997-08-21                             CHDIR(2)
- */
-
+ * Linux                           2007-07-26                          CHDIR(2)
+ */ 
 
 int main (int argc, char *argv[])
 {
 	int		rc;
 
-	if (argc != 2) {
-		fprintf(stderr, "chdir file\n");
-		return 1;
-	}
-	rc = chdir(argv[1]);
+	punyopt(argc, argv, NULL, NULL);
+	rc = chdir(Option.dir);
 	if (rc == -1) {
 		rc = errno;
 		fprintf(stderr, "chdir %s: %s\n",

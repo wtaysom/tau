@@ -18,6 +18,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include <puny.h>
+
 #define BUF_SIZE	(1<<16)
 
 int	Buf[BUF_SIZE];
@@ -27,21 +29,15 @@ int	Buf[BUF_SIZE];
 int main (int argc, char *argv[])
 {
 	int	fd;
-	char	*name;
 	ssize_t	bytes;
 	long	i;
 
-	if (argc > 1) {
-		name = argv[1];
-	} else {
-		name = "BigFile";
-	}
-
+	punyopt(argc, argv, NULL, NULL);
 	for (i = 0; i < BUF_SIZE; ++i)
 	{
 		Buf[i] = random();
 	}
-	fd = open(name, O_RDWR | O_CREAT | O_TRUNC, 0666);
+	fd = open(Option.file, O_RDWR | O_CREAT | O_TRUNC, 0666);
 	if (fd == -1)
 	{
 		perror("open");
