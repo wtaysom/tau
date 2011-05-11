@@ -20,22 +20,22 @@
 int Level = 200;
 int Count = 0;
 
+#if 1
 int should_dec(void)
 {
 	enum { RANGE = 1<<20, MASK = (2*RANGE) - 1 };
-	int x = random();
-	if (Option.print) printf("%10d ", x);
-	x &= MASK;
-	if (Option.print) printf("%10d ", x);
-	x *= Count;
-	if (Option.print) printf("%10d ", x);
-	x /= Level;
-	if (Option.print) printf("%10d ", x);
-	x /= RANGE;
-	if (Option.print) printf("%3d ", x);
-
-	return x;
+	return (random() & MASK) * Count / Level / RANGE;
 }
+#else
+int should_dec(void)
+{
+	double	x;
+
+	x = drand48();
+	x = x * Count / Level;
+	return x >= 0.5;
+}
+#endif
 
 void test1(int n)
 {
@@ -53,7 +53,8 @@ void test1(int n)
 		if (Option.print) printf("%5d ", Count);
 		if (Option.print) printf("%g\n", ((double)sum) / (i+1));
 	}
-	printf("Level = %d avg = %g\n", Level, ((double)sum) / n);
+	printf("Level = %d Count = %d avg = %g\n",
+		Level, Count, ((double)sum) / n);
 }
 
 void myopt(int c)

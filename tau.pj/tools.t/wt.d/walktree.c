@@ -125,7 +125,7 @@ void pr_ftw_flag(const char *dir)
 
 void pr_Stat(void)
 {
-	printf("  hardlinks > 1 = %'lld regula r= %'lld special = %'lld\n",
+	printf("  hardlinks > 1 = %'lld regular = %'lld special = %'lld\n",
 		Stat.gt1link, Stat.reg, Stat.special);
 }
 
@@ -241,7 +241,7 @@ void find_median(void)
 		if (s->s_size > avg) {
 			printf("%d. n=%'ld avg=%'lld", i, NumInfo, avg);
 			pr_info(" Average File:", s);
-			printf("%g%% of files contain more than 50%% of data\n",
+			printf("%3.2g%% of files contain more than 50%% of data\n",
 				(1.0 - (double)i/(double)NumInfo) * 100.0);
 			break;
 		}
@@ -341,12 +341,12 @@ void nftw_walk_tree(char *dir)
 	nftw(dir, do_entry, 200, FTW_CHDIR | FTW_PHYS | Option.this_mount_point);
 	finish = nsecs();
 	total = finish - start;
-	printf("%'lld nsecs %g secs\n", total, (double)total/1000000000.0);
 
 	pr_ftw_flag(dir);
 	pr_Stat();
 	pr_histogram(&Histogram);
 	find_median();
+	printf("%3.2g secs\n", (double)total/1000000000.0);
 }
 
 void usage(void)
@@ -356,7 +356,7 @@ void usage(void)
 		"\tl - print hard links\n"
 		"\tm - only traverse the device represented by dir\n"
 		"\tp - print all the files\n"
-		"\tx - sort result by device\n"
+		"\tx - sort result by device (not implemented)\n"
 		"\th - this message\n"
 		"\tb<num> - print the <num> biggest files."
 		" <num> defaults to 10\n");
