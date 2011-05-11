@@ -241,6 +241,8 @@ void find_median(void)
 		if (s->s_size > avg) {
 			printf("%d. n=%'ld avg=%'lld", i, NumInfo, avg);
 			pr_info(" Average File:", s);
+			printf("%g%% of files contain more than 50%% of data\n",
+				(1.0 - (double)i/(double)NumInfo) * 100.0);
 			break;
 		}
 	}
