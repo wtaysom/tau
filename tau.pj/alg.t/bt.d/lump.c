@@ -3,10 +3,12 @@
  * Distributed under the terms of the GNU General Public License v2
  */
 
+#include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include <lump.h>
+#include <debug.h>
 
 const Lump_s Nil = { -1, NULL };
 
@@ -42,3 +44,22 @@ void freelump(Lump_s a)
 	if (a.d) free(a.d);
 }
 
+bool prlump(const char *fn, unsigned line, const char *label, Lump_s x)
+{
+	enum { MAX_LUMP = 32 };
+	char	buf[MAX_LUMP+1];
+	int	i;
+	int	size;
+
+	size = x.size;
+	if (size > MAX_LUMP) size = MAX_LUMP;
+	for (i = 0; i < size; i++) {
+		if (isprint(x.d[i])) {
+			buf[i] = x.d[i];
+		} else {
+			buf[i] = '.';
+		}
+	}
+	buf[size] = '\0';
+	return print(fn, line, "%s=%d:%s", label, x.size, buf);
+}

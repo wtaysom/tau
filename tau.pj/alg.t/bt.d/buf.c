@@ -117,6 +117,7 @@ FN;
 
 	for (i = 0; i < cache->numbufs; i++) {
 		if (cache->buf[i].block == block) {
+			++cache->gets;
 			++cache->buf[i].inuse;
 			return &cache->buf[i];
 		}
@@ -139,7 +140,12 @@ FN;
 			continue;
 		}
 		b = &cache->buf[cache->clock];
-		if (!b->inuse) return b;
+		if (!b->inuse) {
+			memset(b->d, 0, cache->dev->block_size);
+			++b->inuse;
+			++cache->gets;
+			return b;
+		}
 		// This is not a clock alg yet
 	}
 }
@@ -151,9 +157,7 @@ FN;
 
 	b = victim(cache);
 	dev_block(cache->dev, b);
-	++b->inuse;
 	b->dirty = TRUE;
-	++cache->gets;
 	return b;
 }
 
@@ -165,12 +169,10 @@ FN;
 	b = lookup(cache, block);
 	if (!b) {
 		b = victim(cache);
-		++b->inuse;
 		b->clock = TRUE;
 		b->block = block;
 		dev_fill(b);
 	}
-	++cache->gets;
 	return b;
 }
 
@@ -180,7 +182,6 @@ FN;
 	Buf_s *b;
 	
 	b = victim(cache);
-	++b->inuse;
 	return b;
 }
 
@@ -206,7 +207,7 @@ FN;
 		warn("gets != puts %d", cache->gets - cache->puts);
 		return FALSE;
 	}
-	printf("gets=%lld puts=%lld\n", cache->gets, cache->puts);
+//	printf("gets=%lld puts=%lld\n", cache->gets, cache->puts);
 	return TRUE;
 }
 

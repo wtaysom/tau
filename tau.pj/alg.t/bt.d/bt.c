@@ -48,6 +48,14 @@ enum {	MAX_U16 = (1 << 16) - 1,
 	SZ_LEAF_OVERHEAD   = 3 * SZ_U16,
 	SZ_BRANCH_OVERHEAD = 2 * SZ_U16 };
 
+void lump_dump(Lump_s a);
+void lf_dump(Buf_s *node, int indent);
+void br_dump(Buf_s *node, int indent);
+void node_dump(Btree_s *t, u64 block, int indent);
+void pr_leaf(Head_s *head);
+void pr_branch(Head_s *head);
+void pr_node(Head_s *head);
+
 bool Dump_buf = FALSE;
 
 int allocatable(Head_s *head)
@@ -58,7 +66,6 @@ FN;
 
 void pr_indent(int indent)
 {
-FN;
 	int	i;
 
 	for (i = 0; i < indent; i++) {
@@ -68,7 +75,6 @@ FN;
 
 void pr_head(Head_s *head, int indent)
 {
-FN;
 	pr_indent(indent);
 	printf("%s "
 		"%s"
@@ -87,7 +93,6 @@ FN;
 
 void pr_buf(Buf_s *buf, int indent)
 {
-FN;
 	unint	i;
 	unint	j;
 	u8	*d = buf->d;
@@ -117,6 +122,7 @@ FN;
 	node->user = t;
 	head = node->d;
 	head->kind      = kind;
+	head->num_recs  = 0;
 	head->is_split  = FALSE;
 	head->available = SZ_BUF - SZ_HEAD;
 	head->end       = SZ_BUF;
@@ -189,8 +195,6 @@ FN;
 	return block;
 }
 
-void node_dump(Btree_s *t, u64 block, int indent);
-
 void lump_dump(Lump_s a)
 {
 FN;
@@ -207,7 +211,6 @@ FN;
 
 void lf_dump(Buf_s *node, int indent)
 {
-FN;
 	Head_s	*head = node->d;
 	unint	i;
 
@@ -237,7 +240,6 @@ FN;
 
 void br_dump(Buf_s *node, int indent)
 {
-FN;
 	Head_s	*head = node->d;
 	unint	i;
 
@@ -267,7 +269,6 @@ FN;
 
 void node_dump(Btree_s *t, u64 block, int indent)
 {
-FN;
 	Buf_s	*node;
 	Head_s	*head;
 
@@ -729,36 +730,40 @@ FN;
 	return bsibling;
 }
 
-Buf_s *br_store(Buf_s *bfather, Buf_s *bchild, int x)
+Buf_s *br_store(Buf_s *bparent, Buf_s *bchild, int x)
 {
 FN;
-	Head_s	*father = bfather->d;
+	Head_s	*parent = bparent->d;
 	Head_s	*child  = bchild->d;
 	int	size;
 	Lump_s	key;
 
+PRd(x);
 	key = get_key(child, child->num_recs - 1);
 	size = key.size + SZ_U64 + SZ_LEAF_OVERHEAD;
 
-	while (size > father->available) {
-		Buf_s	*bmother = br_split(bfather);
+	while (size > parent->available) {
+		Buf_s	*right = br_split(bparent);
 
-		if (isLE(father, key, father->num_recs - 1)) {
-			buf_put(bmother);
+		if (isLE(parent, key, parent->num_recs - 1)) {
+			buf_put(right);
 		} else {
-			buf_put(bfather);
-			bfather = bmother;
-			father  = bfather->d;
+			buf_put(bparent);
+			bparent = right;
+			parent  = bparent->d;
 		}
-		x = find_le(father, key);
+		x = find_le(parent, key);
+PRd(x);
 	}
-	if (size > allocatable(father)) {
-		br_compact(bfather);
+	if (size > allocatable(parent)) {
+		br_compact(bparent);
 	}
-	store_block(father, father->last);
-	store_lump(father, key);
-	store_end(father, x);
-	father->last = child->last;
+HERE;pr_node(parent);
+	store_block(parent, parent->last);
+	store_lump(parent, key);
+	store_end(parent, x);
+HERE;pr_node(parent);
+	parent->last = child->last;
 	if (child->kind == LEAF) {
 		child->last = 0;
 	} else {
@@ -766,41 +771,52 @@ FN;
 		br_del_rec(child, child->num_recs - 1);	
 	}
 	child->is_split = FALSE;
-	return bfather;
+	return bparent;
 }
 
-int br_insert(Buf_s *br, Lump_s key, Lump_s val)
+int br_insert(Buf_s *bparent, Lump_s key, Lump_s val)
 {
 FN;
-	Head_s	*parent = br->d;
+	Head_s	*parent = bparent->d;
 	Buf_s	*bchild;
 	Head_s	*child;
 	u64	block;
 	int	x;
 
 	for(;;) {
+PRlp(key);
 		x = find_le(parent, key);
+PRd(x);
 		if (x == parent->num_recs) {
 			block = parent->last;
 		} else {
 			block = get_block(parent, x);
 		}
-		bchild = buf_get(br->cache, block);
+		bchild = buf_get(bparent->cache, block);
+if (bchild == bparent) {
+	pr_node(parent);
+	assert(bchild != bparent);
+}
 		child = bchild->d;
 		if (child->is_split) {
-			br = br_store(br, bchild, x);
-			parent = br->d;
+PRd(x);
+			bparent = br_store(bparent, bchild, x);
+			parent = bparent->d;
 			buf_put(bchild);
-			continue;	/* Try again: this won't work */
+			continue;	/* Try again: this won't work
+					 * because we may have split
+					 * and need to go to the next
+					 * block. Just need to do that.
+					 */
 		}
 		if (child->kind == LEAF) {
-			buf_put(br);
+			buf_put(bparent);
 			lf_insert(bchild, key, val);
 			return 0;
 		}
-		buf_put(br);
-		br = bchild;
-		parent = br->d;
+		buf_put(bparent);
+		bparent = bchild;
+		parent = bparent->d;
 	}
 }
 
@@ -855,7 +871,221 @@ FN;
 
 void t_dump(Btree_s *t)
 {
-FN;
 	node_dump(t, t->root, 0);
 	cache_balanced(t->cache);
+}
+
+bool pr_key (Head_s *head, unint i)
+{
+	unint	size;
+	unint	x;
+	u8	*start;
+
+	if (i >= head->num_recs) {
+		printf("key index >= num_recs %ld >= %d\n",
+			i, head->num_recs);
+		return FALSE;
+	}
+	x = head->rec[i];
+	if (x >= SZ_BUF) {
+		printf("key offset >= SZ_BUF %ld >= %ld\n",
+			x, i);
+		return FALSE;
+	}
+	start = &((u8 *)head)[x];
+	size = *start++;
+	size |= (*start++) << 8;
+	if (x + size >= SZ_BUF) {
+		printf("key size at %ld offset %ld is too big %ld\n",
+			i, x, size);
+		return FALSE;
+	}
+	printf(" %4ld, %4ld:", x, size);
+	for (i = 0; i < size; i++) {
+		if (isprint(start[i])) {
+			printf("%c", start[i]);
+		} else {
+			putchar('.');
+		}
+	}
+	putchar('\n');
+	return TRUE;
+}
+
+bool pr_val (Head_s *head, unint i)
+{
+	unint	key_size;
+	unint	size;
+	unint	x;
+	u8	*start;
+
+	if (i >= head->num_recs) {
+		printf("key index >= num_recs %ld >= %d\n",
+			i, head->num_recs);
+		return FALSE;
+	}
+	x = head->rec[i];
+	if (x >= SZ_BUF) {
+		printf("key offset >= SZ_BUF %ld >= %ld\n",
+			x, i);
+		return FALSE;
+	}
+	start = &((u8 *)head)[x];
+	key_size = *start++;
+	key_size |= (*start++) << 8;
+	if (x + key_size >= SZ_BUF) {
+		printf("key size at %ld offset %ld is too big %ld\n",
+			i, x, key_size);
+		return FALSE;
+	}
+	start += key_size;
+	size = *start++;
+	size |= (*start++) << 8;
+	if (x + size >= SZ_BUF) {
+		printf("val size at %ld offset %ld is too big %ld\n",
+			i, x, size);
+		return FALSE;
+	}
+	printf(" %4ld, %4ld:", x, size);
+	for (i = 0; i < size; i++) {
+		if (isprint(start[i])) {
+			printf("%c", start[i]);
+		} else {
+			putchar('.');
+		}
+	}
+	putchar('\n');
+	return TRUE;
+}
+
+bool pr_record (Head_s *head, unint i)
+{
+	unint	size;
+	unint	x;
+	u8	*start;
+
+	if (i >= head->num_recs) {
+		printf("key index >= num_recs %ld >= %d\n",
+			i, head->num_recs);
+		return FALSE;
+	}
+	x = head->rec[i];
+	if (x >= SZ_BUF) {
+		printf("key offset >= SZ_BUF %ld >= %ld\n",
+			x, i);
+		return FALSE;
+	}
+	start = &((u8 *)head)[x];
+	size = *start++;
+	size |= (*start++) << 8;
+	if (x + size >= SZ_BUF) {
+		printf("key size at %ld offset %ld is too big %ld\n",
+			i, x, size);
+		return FALSE;
+	}
+	printf(" %4ld, %4ld:", x, size);
+	for (i = 0; i < size; i++) {
+		if (isprint(start[i])) {
+			printf("%c", start[i]);
+		} else {
+			putchar('.');
+		}
+	}
+	start += size;
+	size = *start++;
+	size |= (*start++) << 8;
+	if (x + size >= SZ_BUF) {
+		printf("val size at %ld offset %ld is too big %ld\n",
+			i, x, size);
+		return FALSE;
+	}
+	printf(" : %4ld:", size);
+	for (i = 0; i < size; i++) {
+		if (isprint(start[i])) {
+			printf("%c", start[i]);
+		} else {
+			putchar('.');
+		}
+	}
+	putchar('\n');
+	return TRUE;
+}
+
+void pr_leaf(Head_s *head)
+{
+	unint	i;
+
+	pr_head(head, 0);
+	for (i = 0; i < head->num_recs; i++) {
+		pr_record(head, i);
+	}
+}
+
+bool pr_index (Head_s *head, unint i)
+{
+	unint	size;
+	unint	x;
+	u8	*start;
+	u64	block;
+
+	if (i >= head->num_recs) {
+		printf("key index >= num_recs %ld >= %d\n",
+			i, head->num_recs);
+		return FALSE;
+	}
+	x = head->rec[i];
+	if (x >= SZ_BUF) {
+		printf("key offset >= SZ_BUF %ld >= %ld\n",
+			x, i);
+		return FALSE;
+	}
+	start = &((u8 *)head)[x];
+	size = *start++;
+	size |= (*start++) << 8;
+	if (x + size >= SZ_BUF) {
+		printf("key size at %ld offset %ld is too big %ld\n",
+			i, x, size);
+		return FALSE;
+	}
+	printf(" %4ld, %4ld:", x, size);
+	for (i = 0; i < size; i++) {
+		if (isprint(start[i])) {
+			printf("%c", start[i]);
+		} else {
+			putchar('.');
+		}
+	}
+	start += size;
+
+	block  = (u64)start[0];
+	block |= (u64)start[1] << 1*BITS_U8;
+	block |= (u64)start[2] << 2*BITS_U8;
+	block |= (u64)start[3] << 3*BITS_U8;
+	block |= (u64)start[4] << 4*BITS_U8;
+	block |= (u64)start[5] << 5*BITS_U8;
+	block |= (u64)start[6] << 6*BITS_U8;
+	block |= (u64)start[7] << 7*BITS_U8;
+	printf(" : %lld", block);
+	putchar('\n');
+	return TRUE;
+}
+
+void pr_branch(Head_s *head)
+{
+	unint	i;
+
+	pr_head(head, 0);
+	for (i = 0; i < head->num_recs; i++) {
+		pr_index(head, i);
+	}
+	printf(" last: %lld\n", head->last);
+}
+
+void pr_node(Head_s *head)
+{
+	if (head->kind == LEAF) {
+		pr_leaf(head);
+	} else {
+		pr_branch(head);
+	}
 }

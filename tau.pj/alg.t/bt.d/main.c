@@ -166,7 +166,7 @@ void test1(int n)
 	}
 }
 
-void test3(int n)
+void test_seq(int n)
 {
 	Btree_s *t;
 	Lump_s key;
@@ -186,7 +186,7 @@ void test3(int n)
 	t_dump(t);
 }
 
-void test4(int n)
+void test_rnd(int n)
 {
 	Btree_s *t;
 	Lump_s key;
@@ -244,6 +244,6 @@ void myoptions(int argc, char *argv[])
 int main(int argc, char *argv[])
 {
 	myoptions(argc, argv);
-	test3(Option.iterations);
+	test_rnd(Option.iterations);
 	return 0;
 }

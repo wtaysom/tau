@@ -10,6 +10,10 @@
 #include <style.h>
 #endif
 
+#ifndef _DEBUG_H_
+#include <debug.h>
+#endif
+
 typedef struct Lump_s {
 	int size;
 	u8 *d;
@@ -23,11 +27,15 @@ void   freelump(Lump_s a);
 
 static inline Lump_s lumpmk(int size, void *data)
 {
-	Lump_s b;
+	Lump_s a;
 
-	b.size = size;
-	b.d = data;
-	return b;
+	a.size = size;
+	a.d = data;
+	return a;
 }
+
+bool prlump(const char *fn, unsigned line, const char *, Lump_s x);
+
+#define PRlp(_x_)	prlump(FN_ARG, # _x_, _x_)
 
 #endif
