@@ -740,14 +740,18 @@ FN;
 
 PRd(x);
 	key = get_key(child, child->num_recs - 1);
+PRlp(key);
 	size = key.size + SZ_U64 + SZ_LEAF_OVERHEAD;
 
 	while (size > parent->available) {
+HERE;
 		Buf_s	*right = br_split(bparent);
 
 		if (isLE(parent, key, parent->num_recs - 1)) {
+HERE;
 			buf_put(right);
 		} else {
+HERE;
 			buf_put(bparent);
 			bparent = right;
 			parent  = bparent->d;
@@ -756,6 +760,7 @@ PRd(x);
 PRd(x);
 	}
 	if (size > allocatable(parent)) {
+HERE;
 		br_compact(bparent);
 	}
 HERE;pr_node(parent);
