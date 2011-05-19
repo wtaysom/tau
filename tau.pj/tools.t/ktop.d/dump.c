@@ -53,23 +53,23 @@ static void pr_sys_exit(void *event)
 	printf(" %-20s ret=%ld\n", Syscall[sy->id], sy->ret);
 }
 
-static void pr_ring_header(ring_header_s *rh)
+void pr_ring_header(ring_header_s *rh)
 {
 	printf("%lld %lld %ld\n",
 		rh->time_stamp / A_BILLION, rh->time_stamp % A_BILLION,
 		rh->commit);
 }
 
-static void dump_event(void *buf)
+void dump_event(void *buf)
 {
 	event_s *event = buf;
 
 	pr_event(event);
 	switch (event->type) {
-	case 21:
+	case SYS_EXIT:
 		pr_sys_exit(event);
 		break;
-	case 22:
+	case SYS_ENTER:
 		pr_sys_enter(event);
 		break;
 	default:
@@ -78,60 +78,9 @@ static void dump_event(void *buf)
 	}
 }
 
-static void dump_buf(u8 *buf)
-{
-	ring_header_s *rh = (ring_header_s *)buf;
-	ring_event_s *r;
-	unint length;
-	unint size = 0;
-	u64 time;
-	u8 *end;
-
-	pr_ring_header(rh);
-	time = rh->time_stamp;
-	buf += sizeof(*rh);
-	end  = &buf[rh->commit];
-	for (; buf < end; buf += size) {
-		r = (ring_event_s *)buf;
-		printf("type_len=%2u time=%9d", r->type_len, r->time_delta);
-		if (r->type_len == 0) {
-			length = r->array[0];
-			size   = 4 + length * 4;
-			time  += r->time_delta;
-		} else if (r->type_len <= 28) {
-			length = r->type_len;
-			size   = 4 + length * 4;
-			time  += r->time_delta;
-			dump_event(buf+4);
-		} else if (r->type_len == 29) {
-			printf("\n");
-			if (r->time_delta == 0) {
-				return;
-			} else {
-				length = r->array[0];
-				size = 4 + length * 4;
-			}
-		} else if (r->type_len == 30) {
-			/* Extended time delta */
-			printf("\n");
-			size = 8;
-			time += (((u64)r->array[0]) << 28) | r->time_delta;
-		} else if (r->type_len == 31) {
-			/* Sync time with external clock (NOT IMMPLEMENTED) */
-			size = 12;
-			time = r->array[0];
-			time += *(u64 *)&(r->array[1]) * A_BILLION;
-		} else {
-			printf(" Unknown event %d\n", r->type_len);
-			/* Unknown - ignore */
-			size = 4;
-		}
-	}
-}
-
 static void dump_raw(int cpu, int sz, u8 buf[sz])
 {
-	dump_buf(buf);	// Need to do something with sz
+	parse_buf(buf);	// Need to do something with sz
 }
 
 void *dump_collector(void *args)

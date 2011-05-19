@@ -168,7 +168,7 @@ Lump_s get_val (Head_s *head, unint i)
 	return val;
 }
 
-u64 get_block(Head_s *head, unint i)
+u64 get_block(Head_s *head, unint a)
 {
 FN;
 	u64	block;
@@ -178,7 +178,7 @@ FN;
 
 	assert(head->kind == BRANCH);
 	assert(i < head->num_recs);
-	x = head->rec[i];
+	x = head->rec[a];
 	assert(x < SZ_BUF);
 	start = &((u8 *)head)[x];
 	key_size = *start++;
@@ -339,6 +339,32 @@ FN;
 	head->end -= total;
 	head->available -= total;
 	start = &((u8 *)head)[head->end];
+	*start++ = block & MASK_U8;
+	*start++ = (block >> 1*BITS_U8) & MASK_U8;
+	*start++ = (block >> 2*BITS_U8) & MASK_U8;
+	*start++ = (block >> 3*BITS_U8) & MASK_U8;
+	*start++ = (block >> 4*BITS_U8) & MASK_U8;
+	*start++ = (block >> 5*BITS_U8) & MASK_U8;
+	*start++ = (block >> 6*BITS_U8) & MASK_U8;
+	*start++ = (block >> 7*BITS_U8) & MASK_U8;
+}
+
+void update_block(Head_s *head, u64 block, unint a)
+{
+FN;
+	u64	block;
+	unint	x;
+	u8	*start;
+	unint	key_size;
+
+	assert(head->kind == BRANCH);
+	assert(i < head->num_recs);
+	x = head->rec[a];
+	assert(x < SZ_BUF);
+	start = &((u8 *)head)[x];
+	key_size = *start++;
+	key_size |= (*start++) << 8;
+	start += key_size;
 	*start++ = block & MASK_U8;
 	*start++ = (block >> 1*BITS_U8) & MASK_U8;
 	*start++ = (block >> 2*BITS_U8) & MASK_U8;
@@ -764,9 +790,13 @@ HERE;
 		br_compact(bparent);
 	}
 HERE;pr_node(parent);
-	store_block(parent, parent->last);
+	if (x == parent->num_recs) {
+		update_block(parent, child->last, x);
+	} else {
+	}
+	store_block(parent, child->last);
 	store_lump(parent, key);
-	store_end(parent, x);
+	store_end(parent, x + 1);
 HERE;pr_node(parent);
 	parent->last = child->last;
 	if (child->kind == LEAF) {
@@ -876,6 +906,7 @@ FN;
 
 void t_dump(Btree_s *t)
 {
+	printf("**************************************************\n");
 	node_dump(t, t->root, 0);
 	cache_balanced(t->cache);
 }

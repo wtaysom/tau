@@ -11,7 +11,6 @@
 
 #include <debug.h>
 #include <eprintf.h>
-#include <qsort.h>
 #include <style.h>
 
 #include "ktop.h"

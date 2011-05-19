@@ -200,10 +200,10 @@ void test_rnd(int n)
 		val = rnd_lump();
 		h_add(key, val);
 		t_insert(t, key, val);
+	t_dump(t);
 		freelump(key);
 		freelump(val);
 	}
-	t_dump(t);
 }
 
 void usage(void)

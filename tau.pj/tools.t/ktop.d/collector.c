@@ -29,7 +29,9 @@
 enum { PIDCALL_BUCKETS = 1543 };
 
 pthread_mutex_t Count_lock = PTHREAD_MUTEX_INITIALIZER;
-
+/*
+ * Count_lock protects these global variables
+ */
 u64 Syscall_count[NUM_SYS_CALLS];
 u64 MyPidCount;
 u64 Slept;
@@ -48,107 +50,88 @@ u64 No_start;
 
 Pidcall_s *Pidcall_bucket[PIDCALL_BUCKETS];
 
+static const char Event_path[] = EVENT_PATH;
+
 static const char *find_debugfs(void)
 {
-       static char debugfs[MAX_PATH+1];
-       static int debugfs_found;
-       char type[100];
-       FILE *fp;
+	static const char tracing[] = "/tracing/";
+	static char debugfs[MAX_PATH + sizeof(tracing) + 1];
+	static int debugfs_found;
+	char type[100];
+	FILE *fp;
 
-       if (debugfs_found)
-	       return debugfs;
-
-       if ((fp = fopen("/proc/mounts","r")) == NULL) {
-	       perror("/proc/mounts");
-	       return NULL;
-       }
-
-       while (fscanf(fp, "%*s %"
-		     STR(MAX_PATH)
-		     "s %99s %*s %*d %*d\n",
-		     debugfs, type) == 2) {
-	       if (strcmp(type, "debugfs") == 0) break;
-       }
-       fclose(fp);
-
-       if (strcmp(type, "debugfs") != 0) {
-	       fprintf(stderr, "debugfs not mounted");
-	       return NULL;
-       }
-
-       strcat(debugfs, "/tracing/");
-       debugfs_found = 1;
-
-       return debugfs;
+	if (debugfs_found) return debugfs;
+	/*
+	 * Have to find where "debugfs" is mounted.
+	 */
+	if (!(fp = fopen("/proc/mounts","r"))) {
+		perror("/proc/mounts");
+		return NULL;
+	}
+	while (fscanf(fp, "%*s %"
+			STR(MAX_PATH)
+			"s %99s %*s %*d %*d\n",
+			debugfs, type) == 2) {
+		if (strcmp(type, "debugfs") == 0) {
+			strcat(debugfs, tracing);
+			debugfs_found = 1;
+			fclose(fp);
+			return debugfs;
+		}
+	}
+	fclose(fp);
+	fprintf(stderr, "debugfs not mounted");
+	return NULL;
 }
 
 static const char *tracing_file(const char *file_name)
 {
-	static char trace_file[MAX_PATH+1];
+	static char trace_file[MAX_PATH];
 	snprintf(trace_file, MAX_PATH, "%s/%s", find_debugfs(), file_name);
 	return trace_file;
 }
 
-static void enable_event(char *name)
+static void update_event(const char *name, const char *update)
 {
-	char file_name[MAX_PATH+1];
+	char file_name[MAX_PATH];
+	const char *trace_file;
 	FILE *file;
 	int rc;
 
-	snprintf(file_name, MAX_PATH, "events/syscalls/%s/enable", name);
-	file = fopen(tracing_file(file_name), "w");
+	snprintf(file_name, MAX_PATH, Event_path, name);
+	trace_file = tracing_file(file_name);
+	file = fopen(trace_file, "w");
 	if (!file) {
-		perror(file_name);
-		exit(2);
+		fatal("fopen %s:", trace_file);
 	}
-	rc = fprintf(file, "1\n");
+	rc = fprintf(file, "%s\n", update);
 	if (rc < 0) {
-		perror(file_name);
-		exit(2);
+		fatal("fprintf %s:", trace_file);
 	}
 	fclose(file);
 }
 
-static void disable_event(char *name)
-{
-	char file_name[MAX_PATH+1];
-	FILE *file;
-	int rc;
-
-	snprintf(file_name, MAX_PATH, "events/syscalls/%s/enable", name);
-	file = fopen(tracing_file(file_name), "w");
-	if (!file) {
-		perror(file_name);
-		exit(2);
-	}
-	rc = fprintf(file, "0\n");
-	if (rc < 0) {
-		perror(file_name);
-		exit(2);
-	}
-	fclose(file);
-}
+static const char Enable[] = "1";
+static const char Disable[] = "0";
 
 static void enable_sys_enter(void)
 {
-
-	enable_event("sys_enter");
+	update_event("sys_enter", Enable);
 }
 
 static void disable_sys_enter (void)
 {
-	disable_event("sys_enter");
+	update_event("sys_enter", Disable);
 }
 
 static void enable_sys_exit(void)
 {
-
-	enable_event("sys_exit");
+	update_event("sys_exit", Enable);
 }
 
 static void disable_sys_exit (void)
 {
-	disable_event("sys_exit");
+	update_event("sys_exit", Disable);
 }
 
 int open_raw(int cpu)
@@ -173,9 +156,9 @@ static Pidcall_s *find_pidcall(u32 pidcall)
 {
 	Pidcall_s *pc = hash_pidcall(pidcall);
 
-++PidcallRecord;
+	++PidcallRecord;
 	for (;;) {
-++PidcallIterations;
+		++PidcallIterations;
 		pc = pc->next;
 		if (!pc) return NULL;
 		if (pc->pidcall == pidcall) {
@@ -184,21 +167,6 @@ static Pidcall_s *find_pidcall(u32 pidcall)
 		}
 	}
 }
-
-#if 0
-static void dump(char *label, Pidcall_s *pc)
-{
-	int i;
-
-	fprintf(stderr, "%s", label);
-	for (i = 0; (i < 10) && pc; i++) {
-		fprintf(stderr, " %p", pc);
-		pc = pc->next;
-	}
-	if (pc) fprintf(stderr, "STUCK");
-	fprintf(stderr, "\n");
-}
-#endif
 
 static void add_pidcall(Pidcall_s *pidcall)
 {
@@ -229,7 +197,7 @@ static Pidcall_s *victim_pidcall(u32 pidcall)
 	Pidcall_s *pc = Pidclock;
 
 	while (pc->clock) {
-++Pidcall_tick;
+		++Pidcall_tick;
 		pc->clock = 0;
 		if (++Pidclock == &Pidcall[MAX_PIDCALLS]) {
 			Pidclock = Pidcall;
@@ -251,10 +219,10 @@ static Pidcall_s *victim_pidcall(u32 pidcall)
 
 static void parse_sys_enter(void *event, u64 time)
 {
-	sys_enter_s *sy = event;
-	int   pid       = sy->ev.pid;
-	snint call_num  = sy->id;
-	u32   pidcall   = mkpidcall(pid, call_num);
+	sys_enter_s *sy  = event;
+	int	pid      = sy->ev.pid;
+	snint	call_num = sy->id;
+	u32	pidcall  = mkpidcall(pid, call_num);
 	Pidcall_s *pc;
 
 	++Pid[pid];
@@ -276,10 +244,10 @@ static void parse_sys_enter(void *event, u64 time)
 
 static void parse_sys_exit(void *event, u64 time)
 {
-	sys_exit_s *sy = event;
-	int   pid      = sy->ev.pid;
-	snint call_num = sy->id;
-	u32   pidcall  = mkpidcall(pid, call_num);
+	sys_exit_s *sy   = event;
+	int	pid      = sy->ev.pid;
+	snint	call_num = sy->id;
+	u32	pidcall  = mkpidcall(pid, call_num);
 	Pidcall_s *pc;
 
 	pc = find_pidcall(pidcall);
@@ -304,6 +272,11 @@ static void parse_event(void *buf, u64 time)
 {
 	event_s *event = buf;
 
+	/*
+	 * Normally, ktop ignores any events relating to threads
+	 * assosiated with itself. The -s option, lets ktop
+	 * monitor itself and ignore everything else.
+	 */
 	if (Trace_self) {
 		if (!do_ignore_pid(event->pid)) {
 			return;
@@ -316,10 +289,10 @@ static void parse_event(void *buf, u64 time)
 		}
 	}
 	switch (event->type) {
-	case 21:
+	case SYS_EXIT:
 		parse_sys_exit(event, time);
 		break;
-	case 22:
+	case SYS_ENTER:
 		parse_sys_enter(event, time);
 		break;
 	default:
@@ -328,7 +301,7 @@ static void parse_event(void *buf, u64 time)
 	}
 }
 
-static unint parse_buf(u8 *buf)
+unint parse_buf(u8 *buf)
 {
 	ring_header_s *rh = (ring_header_s *)buf;
 	ring_event_s *r;
@@ -338,24 +311,29 @@ static unint parse_buf(u8 *buf)
 	u64 time;
 	u8 *end;
 
+	if (Dump) pr_ring_header(rh);
 	time = rh->time_stamp;
 	commit = rh->commit;
 	buf += sizeof(*rh);
-	end  = &buf[commit];
+	end = &buf[commit];
 	pthread_mutex_lock(&Count_lock);
 	for (; buf < end; buf += size) {
 		r = (ring_event_s *)buf;
 		if (r->type_len == 0) {
 			/* Larger record where size is at beginning of record */
 			length = r->array[0];
-			size   = 4 + length * 4;
-			time  += r->time_delta;
+			size	= 4 + length * 4;
+			time	+= r->time_delta;
 		} else if (r->type_len <= 28) {
 			/* Data record */
 			length = r->type_len;
-			size   = 4 + length * 4;
-			time  += r->time_delta;
-			parse_event(buf+4, time);
+			size	= 4 + length * 4;
+			time	+= r->time_delta;
+			if (Dump) {
+				dump_event(buf);
+			} else {
+				parse_event(buf+4, time);
+			}
 		} else if (r->type_len == 29) {
 			/* Left over page padding or discarded event */
 			if (r->time_delta == 0) {
@@ -389,7 +367,7 @@ void *collector(void *args)
 	Collector_args_s *a = args;
 	/*
 	 *  1 ms -> 7% overhead
-	 * 10 ms -> 1% overhead
+	 * 10 ms -> 3% overhead
 	 */
 	struct timespec sleep = { 0, 10 * A_MILLION };
 	u8 buf[BUF_SIZE];
