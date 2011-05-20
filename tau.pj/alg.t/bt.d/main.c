@@ -48,6 +48,11 @@ Lump_s rnd_lump(void)
 	return lumpmk(n, rndstring(n));
 }
 
+Lump_s fixed_lump(unint n)
+{
+	return lumpmk(n, rndstring(n));
+}
+
 Lump_s seq_lump(void)
 {
 	enum { MAX_KEY = 4 };
@@ -196,14 +201,16 @@ void test_rnd(int n)
 	if (FALSE) seed_random();
 	t = t_new(".tfile", NUM_BUFS);
 	for (i = 0; i < n; i++) {
-		key = rnd_lump();
+		key = fixed_lump(7);
 		val = rnd_lump();
 		h_add(key, val);
+PRlp(key);
 		t_insert(t, key, val);
-	t_dump(t);
 		freelump(key);
 		freelump(val);
 	}
+//	t_dump(t);
+	pr_all_records(t);
 }
 
 void usage(void)

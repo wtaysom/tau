@@ -14,24 +14,11 @@
 #include <style.h>
 
 #include "bt.h"
+#include "bt_disk.h"
 #include "buf.h"
 
 #define LF_AUDIT(_h)	lf_audit(FN_ARG, _h)
 #define BR_AUDIT(_h)	br_audit(FN_ARG, _h)
-
-enum { LEAF = 1, BRANCH };
-
-typedef struct Head_s {
-	u8	kind;
-	u8	is_split;
-	u16	num_recs;
-	u16	available;
-	u16	end;
-	u64	block;
-	u64	last;
-	u64	unused;	// XXX: delete when working
-	u16	rec[];
-} Head_s;
 
 struct Btree_s {
 	Cache_s *cache;
@@ -177,7 +164,7 @@ FN;
 	unint	key_size;
 
 	assert(head->kind == BRANCH);
-	assert(i < head->num_recs);
+	assert(a < head->num_recs);
 	x = head->rec[a];
 	assert(x < SZ_BUF);
 	start = &((u8 *)head)[x];
@@ -232,7 +219,7 @@ void lf_dump(Buf_s *node, int indent)
 		printf("\n");
 	}
 	if (head->is_split) {
-		pr_indent(i);
+		pr_indent(indent);
 		printf("Leaf Split:\n");
 		node_dump(node->user, head->last, indent);
 	}
@@ -257,7 +244,7 @@ void br_dump(Buf_s *node, int indent)
 		node_dump(node->user, block, indent + 1);
 	}
 	if (head->is_split) {
-		pr_indent(i);
+		pr_indent(indent);
 		printf("Branch Split:\n");
 		node_dump(node->user, head->last, indent);
 	} else {
@@ -352,13 +339,12 @@ FN;
 void update_block(Head_s *head, u64 block, unint a)
 {
 FN;
-	u64	block;
 	unint	x;
 	u8	*start;
 	unint	key_size;
 
 	assert(head->kind == BRANCH);
-	assert(i < head->num_recs);
+	assert(a < head->num_recs);
 	x = head->rec[a];
 	assert(x < SZ_BUF);
 	start = &((u8 *)head)[x];
@@ -560,7 +546,7 @@ FN;
 		lf_rec_copy(h, i, head, i);
 	}
 	memmove(head, h, SZ_BUF);
-	buf_put(b);
+	buf_toss(b);
 }
 
 void br_del_rec(Head_s *head, unint i)
@@ -627,7 +613,7 @@ FN;
 		br_rec_copy(h, i, head, i);
 	}
 	memmove(head, h, SZ_BUF);
-	buf_put(b);
+	buf_toss(b);
 }
 
 Buf_s *node_new(Btree_s *t, u8 kind)
@@ -764,46 +750,40 @@ FN;
 	int	size;
 	Lump_s	key;
 
-PRd(x);
 	key = get_key(child, child->num_recs - 1);
-PRlp(key);
 	size = key.size + SZ_U64 + SZ_LEAF_OVERHEAD;
 
 	while (size > parent->available) {
-HERE;
 		Buf_s	*right = br_split(bparent);
 
 		if (isLE(parent, key, parent->num_recs - 1)) {
-HERE;
 			buf_put(right);
 		} else {
-HERE;
 			buf_put(bparent);
 			bparent = right;
 			parent  = bparent->d;
 		}
 		x = find_le(parent, key);
-PRd(x);
 	}
 	if (size > allocatable(parent)) {
-HERE;
 		br_compact(bparent);
 	}
-HERE;pr_node(parent);
 	if (x == parent->num_recs) {
+		store_block(parent, parent->last);
+		parent->last = child->last;
+		store_lump(parent, key);
+		store_end(parent, x);
+	} else {
 		update_block(parent, child->last, x);
-	} else {
+		store_block(parent, child->block);
+		store_lump(parent, key);
+		store_end(parent, x);
 	}
-	store_block(parent, child->last);
-	store_lump(parent, key);
-	store_end(parent, x + 1);
-HERE;pr_node(parent);
-	parent->last = child->last;
-	if (child->kind == LEAF) {
-		child->last = 0;
-	} else {
+	if (child->kind == BRANCH) {
 		child->last = get_block(child, child->num_recs - 1);
 		br_del_rec(child, child->num_recs - 1);	
+	} else {
+		child->last = 0;
 	}
 	child->is_split = FALSE;
 	return bparent;
@@ -819,9 +799,7 @@ FN;
 	int	x;
 
 	for(;;) {
-PRlp(key);
 		x = find_le(parent, key);
-PRd(x);
 		if (x == parent->num_recs) {
 			block = parent->last;
 		} else {
@@ -834,7 +812,6 @@ if (bchild == bparent) {
 }
 		child = bchild->d;
 		if (child->is_split) {
-PRd(x);
 			bparent = br_store(bparent, bchild, x);
 			parent = bparent->d;
 			buf_put(bchild);
@@ -1124,4 +1101,73 @@ void pr_node(Head_s *head)
 	} else {
 		pr_branch(head);
 	}
+}
+
+static unint Recnum;
+
+static void pr_all_nodes(Btree_s *t, u64 block);
+
+static void pr_all_leaves(Buf_s *node)
+{
+	Head_s	*head = node->d;
+	unint	i;
+
+	for (i = 0; i < head->num_recs; i++) {
+		Lump_s key;
+		Lump_s val;
+
+		key = get_key(head, i);
+		val = get_val(head, i);
+		printf("%4ld. ", Recnum++);
+		lump_dump(key);
+		printf("\t");
+		lump_dump(val);
+		printf("\n");
+	}
+	if (head->is_split) {
+		pr_all_nodes(node->user, head->last);
+	}
+}
+
+static void pr_all_branches(Buf_s *node)
+{
+	Head_s	*head = node->d;
+	u64	block;
+	unint	i;
+
+	for (i = 0; i < head->num_recs; i++) {
+		block = get_block(head, i);
+		pr_all_nodes(node->user, block);
+	}
+	pr_all_nodes(node->user, head->last);
+}
+
+static void pr_all_nodes(Btree_s *t, u64 block)
+{
+	Buf_s	*node;
+	Head_s	*head;
+
+	if (!block) return;
+	node = buf_get(t->cache, block);
+	head = node->d;
+	switch (head->kind) {
+	case LEAF:
+		pr_all_leaves(node);
+		break;
+	case BRANCH:
+		pr_all_branches(node);
+		break;
+	default:
+		printf("unknown kind %d\n", head->kind);
+		break;
+	}
+	buf_put(node);
+}
+
+void pr_all_records(Btree_s *t)
+{
+	printf("=====All Records in Order=======\n");
+	Recnum = 1;
+	pr_all_nodes(t, t->root);
+	cache_balanced(t->cache);
 }

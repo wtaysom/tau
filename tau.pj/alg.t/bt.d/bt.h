@@ -20,7 +20,6 @@ Btree_s *t_new(char *file, int num_bufs);
 void     t_dump(Btree_s *t);
 int      t_insert(Btree_s *t, Lump_s key, Lump_s val);
 Lump_s   t_find(Btree_s *t, Lump_s key);
-
-void show_stackframe(void);
+void     pr_all_records(Btree_s *t);
 
 #endif

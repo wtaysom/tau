@@ -19,6 +19,7 @@
 #include <style.h>
 
 #include "buf.h"
+#include "bt_disk.h"
 
 typedef struct Dev_s {
 	int	fd;
@@ -173,6 +174,9 @@ FN;
 		b->block = block;
 		dev_fill(b);
 	}
+b->dirty = TRUE;
+	assert(block == b->block);
+	assert(b->block == ((Head_s *)b->d)->block);
 	return b;
 }
 
@@ -182,6 +186,7 @@ FN;
 	Buf_s *b;
 	
 	b = victim(cache);
+	b->block = 0;
 	return b;
 }
 
@@ -190,11 +195,22 @@ void buf_put(Buf_s *b)
 FN;
 	Cache_s	*cache = b->cache;
 
+	assert(b->block == ((Head_s *)b->d)->block);
 	assert(b->inuse > 0);
 	++cache->puts;
 	if (b->dirty) {
 		dev_flush(b);
 	}
+	--b->inuse;
+}
+
+void buf_toss(Buf_s *b)
+{
+FN;
+	Cache_s	*cache = b->cache;
+
+	assert(b->inuse > 0);
+	++cache->puts;
 	--b->inuse;
 }
 

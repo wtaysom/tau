@@ -79,8 +79,8 @@ void *writer (void *arg)
 				printf("fsync done,"
 					" going to sleep for %lld secs\n",
 					Option.sleep_secs);
-				close(fd);
 				sleep(Option.sleep_secs);
+				close(fd);
 				break;
 			}
 			fatal("unexpected write error %s:", Option.file);
@@ -99,13 +99,15 @@ void *timer (void *arg)
 	struct timespec sleep = { 1, 0 * A_MILLION };
 	unint	old_bufs_written;
 	u64	delta;
+	u64	i;
 
-	while (!Done) {
+	for (i = 0; !Done; i++) {
 		old_bufs_written = Bufs_written;
 		nanosleep( &sleep, NULL);
 		delta = Bufs_written - old_bufs_written;
+		printf("%4llu. ", i);
 		pr_human_bytes(delta * sizeof(Buf));
-		printf(" / sec\n");
+		printf("/sec\n");
 	}
 	return NULL;
 }
