@@ -3,6 +3,16 @@
  * Distributed under the terms of the GNU General Public License v2
  */
 
+// XXX: Todo
+// 1. Combine lf_audit and leaf_audit
+// 2. Timer loop to measure rates
+// 3. Measure hit rate in cache
+// 4. Plot results
+// 5. Log
+// 6. Transactions
+// 7. Dependency graph
+// 8. Global statistics
+
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,11 +30,6 @@
 #define LF_AUDIT(_h)	lf_audit(FN_ARG, _h)
 #define BR_AUDIT(_h)	br_audit(FN_ARG, _h)
 
-struct Btree_s {
-	Cache_s *cache;
-	u64 root;
-};
-
 enum {	MAX_U16 = (1 << 16) - 1,
 	BITS_U8 = 8,
 	MASK_U8 = (1 << BITS_U8) - 1,
@@ -34,6 +39,32 @@ enum {	MAX_U16 = (1 << 16) - 1,
 	SZ_HEAD = sizeof(Head_s),
 	SZ_LEAF_OVERHEAD   = 3 * SZ_U16,
 	SZ_BRANCH_OVERHEAD = 2 * SZ_U16 };
+
+struct Btree_s {
+	Cache_s *cache;
+	u64 root;
+};
+
+typedef struct Audit_s {
+	u64	leaves;
+	u64	branches;
+	u64	records;
+	u64	splits;
+} Audit_s;
+
+typedef struct Apply_s {
+	Apply_f	func;
+	void	*user;
+} Apply_s;
+
+static inline Apply_s mk_apply(Apply_f func, void *user)
+{
+	Apply_s	a;
+
+	a.func = func;
+	a.user = user;
+	return a;
+}
 
 void lump_dump(Lump_s a);
 void lf_dump(Buf_s *node, int indent);
@@ -1170,4 +1201,188 @@ void pr_all_records(Btree_s *t)
 	Recnum = 1;
 	pr_all_nodes(t, t->root);
 	cache_balanced(t->cache);
+}
+
+static int node_map(Btree_s *t, u64 block, Apply_s apply);
+
+static int lf_map(Buf_s *node, Apply_s apply)
+{
+	Head_s	*head = node->d;
+	unint	i;
+	Lump_s	key;
+	Lump_s	val;
+	int	rc;
+
+	for (i = 0; i < head->num_recs; i++) {
+		key = get_key(head, i);
+		val = get_val(head, i);
+		rc = apply.func(key, val, apply.user);
+		if (rc) return rc;
+	}
+	if (head->is_split) {
+		return node_map(node->user, head->last, apply);
+	}
+	return 0;
+}
+
+static int br_map(Buf_s *node, Apply_s apply)
+{
+	Head_s	*head = node->d;
+	u64	block;
+	unint	i;
+	int	rc;
+
+	for (i = 0; i < head->num_recs; i++) {
+		block = get_block(head, i);
+		rc = node_map(node->user, block, apply);
+		if (rc) return rc;
+	}
+	return node_map(node->user, head->last, apply);
+}
+
+static int node_map(Btree_s *t, u64 block, Apply_s apply)
+{
+	Buf_s	*node;
+	Head_s	*head;
+	int	rc = 0;
+
+	if (!block) return rc;
+	node = buf_get(t->cache, block);
+	head = node->d;
+	switch (head->kind) {
+	case LEAF:
+		rc = lf_map(node, apply);
+		break;
+	case BRANCH:
+		rc = br_map(node, apply);
+		break;
+	default:
+		warn("unknown kind %d", head->kind);
+		rc = BT_ERR_BAD_NODE;
+		break;
+	}
+	buf_put(node);
+	return rc;
+}
+
+int t_map(Btree_s *t, Apply_f func, void *user)
+{
+	Apply_s	apply = mk_apply(func, user);
+	int	rc = node_map(t, t->root, apply);
+	cache_balanced(t->cache);
+	return rc;
+}
+
+static void pr_lump (Lump_s a) {
+	enum { MAX_PRINT = 32 };
+	int	i;
+	int	size;
+
+	size = a.size;
+	if (size > MAX_PRINT) size = MAX_PRINT;
+	for (i = 0; i < size; i++) {
+		if (isprint(a.d[i])) {
+			putchar(a.d[i]);
+		} else {
+			putchar('.');
+		}
+	}
+}
+	
+static int rec_audit (Lump_s key, Lump_s val, void *user) {
+	Lump_s	*old = user;
+
+	if (cmplump(key, *old) < 0) {
+		pr_lump(key);
+		printf(" < ");
+		pr_lump(*old);
+		printf("  ");
+		fatal("keys out of order");
+		return FAILURE;
+	}
+	freelump(*old);
+	*old = duplump(key);
+	return 0;
+}
+
+static int node_audit(Btree_s *t, u64 block, Audit_s *audit);
+
+static int leaf_audit(Buf_s *node, Audit_s *audit)
+{
+	Head_s	*head = node->d;
+
+	++audit->leaves;
+#if 0
+	unint	i;
+	Lump_s	key;
+	Lump_s	val;
+	int	rc;
+	for (i = 0; i < head->num_recs; i++) {
+		key = get_key(head, i);
+		val = get_val(head, i);
+		rc = apply.func(key, val, apply.user);
+		if (rc) return rc;
+	}
+#endif
+	audit->records += head->num_recs;
+	if (head->is_split) {
+		return node_audit(node->user, head->last, audit);
+	}
+	return 0;
+}
+
+static int branch_audit(Buf_s *node, Audit_s *audit)
+{
+	Head_s	*head = node->d;
+	u64	block;
+	unint	i;
+	int	rc;
+
+	++audit->branches;
+	for (i = 0; i < head->num_recs; i++) {
+		block = get_block(head, i);
+		rc = node_audit(node->user, block, audit);
+		if (rc) return rc;
+	}
+	return node_audit(node->user, head->last, audit);
+}
+
+static int node_audit(Btree_s *t, u64 block, Audit_s *audit)
+{
+	Buf_s	*node;
+	Head_s	*head;
+	int	rc = 0;
+
+	if (!block) return rc;
+	node = buf_get(t->cache, block);
+	head = node->d;
+	if (head->is_split) ++audit->splits;
+	switch (head->kind) {
+	case LEAF:
+		rc = leaf_audit(node, audit);
+		break;
+	case BRANCH:
+		rc = branch_audit(node, audit);
+		break;
+	default:
+		warn("unknown kind %d", head->kind);
+		rc = BT_ERR_BAD_NODE;
+		break;
+	}
+	buf_put(node);
+	return rc;
+}
+
+
+int t_audit (Btree_s *t) {
+	Audit_s	audit = { 0 };
+	Lump_s	old = Nil;
+	int rc = t_map(t, rec_audit, &old);
+
+	if (rc) {
+		printf("AUDIT FAILED %d\n", rc);
+		return rc;
+	}
+	rc = node_audit(t, t->root, &audit);
+	return rc;
 }

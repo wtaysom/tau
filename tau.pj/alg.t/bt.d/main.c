@@ -3,6 +3,7 @@
  * Distributed under the terms of the GNU General Public License v2
  */
 
+#include <ctype.h>
 #include <locale.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -77,6 +78,41 @@ Lump_s seq_lump(void)
 	}
 	return lumpmk(MAX_KEY, s);
 }
+
+void pr_lump (Lump_s a) {
+	enum { MAX_PRINT = 32 };
+	int	i;
+	int	size;
+
+	size = a.size;
+	if (size > MAX_PRINT) size = MAX_PRINT;
+	for (i = 0; i < size; i++) {
+		if (isprint(a.d[i])) {
+			putchar(a.d[i]);
+		} else {
+			putchar('.');
+		}
+	}
+}
+
+int pr_rec (Lump_s key, Lump_s val, void *user) {
+	u64	*recnum = user;
+
+	printf("%4lld. ", ++*recnum);
+	pr_lump(key);
+	printf(" : ");
+	pr_lump(val);
+	printf("\n");
+	return 0;
+}
+
+void pr_tree (Btree_s *t) {
+	u64	recnum = 0;
+
+	printf("******************************\n");
+	t_map(t, pr_rec, &recnum);
+}
+
 
 enum { NUM_BUCKETS = 7 };
 
@@ -204,13 +240,14 @@ void test_rnd(int n)
 		key = fixed_lump(7);
 		val = rnd_lump();
 		h_add(key, val);
-PRlp(key);
 		t_insert(t, key, val);
 		freelump(key);
 		freelump(val);
 	}
 //	t_dump(t);
-	pr_all_records(t);
+//	pr_all_records(t);
+//	pr_tree(t);
+	t_audit(t);
 }
 
 void usage(void)

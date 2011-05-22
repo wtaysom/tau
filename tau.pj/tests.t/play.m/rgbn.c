@@ -58,6 +58,10 @@
  * zero can be used to measure the overhead of the loop.
  */
 
+#ifdef __APPLE__
+int main (int aragc, char *argv[]) { return 0; }
+#else
+
 #define DEBUG	0
 #define SPIN	1
 #define MUTEX	0
@@ -300,3 +304,4 @@ int main (int argc, char *argv[])
 
 	return 0;
 }
+#endif

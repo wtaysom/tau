@@ -22,6 +22,12 @@ int cmplump(Lump_s a, Lump_s b)
 	} else {
 		size = a.size;
 	}
+	if (!a.d) {
+		if (b.d) return -1;
+		else return 0;
+	} else {
+		if (!b.d) return 1;
+	}
 	x = memcmp(a.d, b.d, size);
 	if (x) return x;
 	if (a.size < b.size) return -1;
@@ -34,6 +40,19 @@ Lump_s duplump(Lump_s a)
 	Lump_s	b;
 
 	b.d = malloc(a.size);
+	b.size = a.size;
+	memmove(b.d, a.d, a.size);
+	return b;
+}
+
+Lump_s copylump(Lump_s a, int n, void *buf)
+{
+	Lump_s	b;
+
+	if (n < a.size) {
+		return Nil;
+	}
+	b.d = buf;
 	b.size = a.size;
 	memmove(b.d, a.d, a.size);
 	return b;

@@ -52,7 +52,7 @@ int main (int argc, char *argv[])
 #endif
 #ifdef __i386__
 	printf("%d\n", SIZE_abc_s_42);
-	printf("offsetof=%d\n", offsetof(abc_s, b));
+	printf("offsetof=%zd\n", offsetof(abc_s, b));
 #endif
 	return 0;
 }
