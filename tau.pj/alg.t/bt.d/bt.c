@@ -41,8 +41,9 @@ enum {	MAX_U16 = (1 << 16) - 1,
 	SZ_BRANCH_OVERHEAD = 2 * SZ_U16 };
 
 struct Btree_s {
-	Cache_s *cache;
-	u64 root;
+	Cache_s	*cache;
+	u64	root;
+	Stat_s	stat;	
 };
 
 typedef struct Audit_s {
@@ -75,6 +76,8 @@ void pr_branch(Head_s *head);
 void pr_node(Head_s *head);
 
 bool Dump_buf = FALSE;
+
+Stat_s t_get_stats (Btree_s *t) { return t->stat; }
 
 int allocatable(Head_s *head)
 {
@@ -327,6 +330,15 @@ FN;
 	return cmplump(key, target) <= 0;	
 }
 
+int isEQ(Head_s *head, Lump_s key, unint i)
+{
+FN;
+	Lump_s	target;
+
+	target = get_key(head, i);
+	return cmplump(key, target);	
+}
+
 void store_lump(Head_s *head, Lump_s lump)
 {
 FN;
@@ -392,6 +404,7 @@ FN;
 	*start++ = (block >> 7*BITS_U8) & MASK_U8;
 }
 
+/* XXX: Don't like this name */
 void store_end(Head_s *head, unint i)
 {
 FN;
@@ -403,6 +416,24 @@ FN;
 	++head->num_recs;
 	head->rec[i] = head->end;
 	head->available -= SZ_U16;
+}
+
+void delete_rec(Head_s *head, unint i)
+{
+FN;
+	Lump_s	key;
+	Lump_s	val;
+
+	assert(i < head->num_recs);
+	assert(head->kind == LEAF);
+	key = get_key(head, i);
+	val = get_val(head, i);
+	head->available += key.size + val.size + SZ_LEAF_OVERHEAD;
+	--head->num_recs;
+	if (i < head->num_recs) {
+		memmove(&head->rec[i], &head->rec[i+1],
+			(head->num_recs - i) * SZ_U16);
+	}
 }
 
 void lf_audit(const char *fn, unsigned line, Head_s *head)
@@ -489,27 +520,30 @@ FN;
 }
 #endif
 
-#if 0
 int find_eq(Head_s *head, Lump_s key)
 {
 FN;
 	int	x;
 	int	left;
 	int	right;
+	int	eq;
 
 	left = 0;
 	right = head->num_recs - 1;
 	while (left <= right) {
 		x = (left + right) / 2;
-		if (isGE(head, key, x)) {
+		eq = isEQ(head, key, x);
+		if (eq == 0) {
+			return x;
+		} else if (eq > 0) {
 			left = x + 1;
 		} else {
 			right = x - 1;
 		}
 	}
-	return right;
+	if (left == head->num_recs) return left;
+	return -1;
 }
-#endif
 
 void lf_del_rec(Head_s *head, unint i)
 {
@@ -660,12 +694,14 @@ FN;
 Buf_s *br_new(Btree_s *t)
 {
 FN;
+	++t->stat.new_branches;
 	return node_new(t, BRANCH);
 }
 
 Buf_s *lf_new(Btree_s *t)
 {
 FN;
+	++t->stat.new_leaves;
 	return node_new(t, LEAF);
 }
 
@@ -687,6 +723,7 @@ FN;
 	child->is_split = TRUE;
 	LF_AUDIT(child);
 	LF_AUDIT(sibling);
+	++t->stat.split_leaf;
 	return bsibling;
 }
 
@@ -770,6 +807,7 @@ FN;
 	child->is_split = TRUE;
 	BR_AUDIT(child);
 	BR_AUDIT(sibling);
+	++t->stat.split_branch;
 	return bsibling;
 }
 
@@ -863,16 +901,6 @@ if (bchild == bparent) {
 	}
 }
 
-Lump_s t_find(Btree_s *t, Lump_s key)
-{
-FN;
-	if (t->root == 0) {
-		fatal("btree empty");
-		return Nil;
-	}
-	return Nil;
-}
-
 int t_insert(Btree_s *t, Lump_s key, Lump_s val)
 {
 FN;
@@ -899,6 +927,169 @@ FN;
 		rc = br_insert(node, key, val);
 	}
 	cache_balanced(t->cache);
+	++t->stat.insert;
+	return rc;
+}
+
+int lf_find(Buf_s *lf, Lump_s key, Lump_s *val)
+{
+FN;
+	Buf_s	*right;
+	Head_s	*head = lf->d;
+	Lump_s	v;
+	int	i;
+
+	for (;;) {
+		i = find_eq(head, key);
+		if (i == -1) {
+			return BT_ERR_NOT_FOUND;
+		}
+		if (i == head->num_recs) {
+			if (head->is_split) {
+				right = buf_get(lf->cache, head->last);
+				buf_put(lf);
+				lf = right;
+				head = lf->d;
+			} else {
+				return BT_ERR_NOT_FOUND;
+			}
+		} else {
+			v = get_val(head, i);
+			*val = duplump(v);
+			buf_put(lf);
+			return 0;
+		}
+	}
+}
+
+int br_find(Buf_s *bparent, Lump_s key, Lump_s *val)
+{
+FN;
+	Head_s	*parent = bparent->d;
+	Buf_s	*bchild;
+	Head_s	*child;
+	u64	block;
+	int	x;
+
+	for(;;) {
+		x = find_le(parent, key);
+		if (x == parent->num_recs) {
+			block = parent->last;
+		} else {
+			block = get_block(parent, x);
+		}
+		bchild = buf_get(bparent->cache, block);
+		child = bchild->d;
+		if (child->kind == LEAF) {
+			buf_put(bparent);
+			lf_find(bchild, key, val);
+			return 0;
+		}
+		buf_put(bparent);
+		bparent = bchild;
+		parent = bparent->d;
+	}
+}
+
+int t_find(Btree_s *t, Lump_s key, Lump_s *val)
+{
+FN;
+	Buf_s	*node;
+	Head_s	*head;
+	int	rc;
+
+	if (!t->root) {
+		return BT_ERR_NOT_FOUND;
+	}
+	node = buf_get(t->cache, t->root);
+	head = node->d;
+	if (head->kind == LEAF) {
+		rc = lf_find(node, key, val);
+	} else {
+		rc = br_find(node, key, val);
+	}
+	cache_balanced(t->cache);
+	if (!rc) ++t->stat.find;
+	return rc;
+}
+
+int lf_delete(Buf_s *lf, Lump_s key)
+{
+FN;
+	Buf_s	*right;
+	Head_s	*head = lf->d;
+	int	i;
+
+	for (;;) {
+		i = find_eq(head, key);
+		if (i == -1) {
+			return BT_ERR_NOT_FOUND;
+		}
+		if (i == head->num_recs) {
+			if (head->is_split) {
+				right = buf_get(lf->cache, head->last);
+				buf_put(lf);
+				lf = right;
+				head = lf->d;
+			} else {
+				return BT_ERR_NOT_FOUND;
+			}
+		} else {
+			delete_rec(head, i);
+			buf_put(lf);
+			return 0;
+		}
+	}
+}
+
+int br_delete(Buf_s *bparent, Lump_s key)
+{
+FN;
+	Head_s	*parent = bparent->d;
+	Buf_s	*bchild;
+	Head_s	*child;
+	u64	block;
+	int	x;
+
+	for(;;) {
+		x = find_le(parent, key);
+		if (x == parent->num_recs) {
+			block = parent->last;
+		} else {
+			block = get_block(parent, x);
+		}
+		bchild = buf_get(bparent->cache, block);
+		child = bchild->d;
+		if (child->kind == LEAF) {
+			buf_put(bparent);
+			lf_delete(bchild, key);
+			return 0;
+		}
+		buf_put(bparent);
+		bparent = bchild;
+		parent = bparent->d;
+	}
+}
+
+int t_delete(Btree_s *t, Lump_s key)
+{
+FN;
+	Buf_s	*node;
+	Head_s	*head;
+	int	rc;
+
+	if (!t->root) {
+		return BT_ERR_NOT_FOUND;
+	}
+	node = buf_get(t->cache, t->root);
+	head = node->d;
+	if (head->kind == LEAF) {
+		rc = lf_delete(node, key);
+	} else {
+		rc = br_delete(node, key);
+	}
+	cache_balanced(t->cache);
+	if (!rc) ++t->stat.delete;
 	return rc;
 }
 

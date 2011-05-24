@@ -3,6 +3,10 @@
  * Distributed under the terms of the GNU General Public License v2
  */
 
+// Needed tests:
+// 1. Test for non-existant keys
+// 2. Inserting keys that already exist
+
 #include <ctype.h>
 #include <locale.h>
 #include <stdio.h>
@@ -21,9 +25,11 @@ enum {	NUM_BUFS = 20 };
 
 struct {
 	int	iterations;
+	int	level;
 	bool	debug;
 } static Option = {
 	.iterations = 23,
+	.level = 17,
 	.debug = FALSE };
 
 char *rndstring(unint n)
@@ -113,86 +119,100 @@ void pr_tree (Btree_s *t) {
 	t_map(t, pr_rec, &recnum);
 }
 
+void pr_stats (Btree_s *t) {
+	Stat_s	stat = t_get_stats(t);
+	u64	records = stat.insert - stat.delete;
+	
+	printf("Num leaves       = %8lld\n", stat.new_leaves);
+	printf("Num branches     = %8lld\n", stat.new_branches);
+	printf("Num split leaf   = %8lld\n", stat.split_leaf);
+	printf("Num split branch = %8lld\n", stat.split_branch);
+	printf("Num insert       = %8lld\n", stat.insert);
+	printf("Num find         = %8lld\n", stat.find);
+	printf("Num delete       = %8lld\n", stat.delete);
+	printf("Num records      = %8lld\n", records);
+	printf("Records per leaf = %g\n",
+		(double)records / stat.new_leaves);
+}
 
-enum { NUM_BUCKETS = 7 };
+enum {	NUM_BUCKETS = (1 << 20) + 1,
+	DYNA_START  = 1,
+	DYNA_MAX    = 1 << 27 };
 
 typedef void (*recFunc)(Lump_s key, Lump_s val, void *user);
 
-struct Record {
-	struct Record *next;
-	Lump_s key;
-	Lump_s val;
+typedef struct Record_s	Record_s;
+struct Record_s {
+	Lump_s		key;
+	Lump_s		val;
 };
 
-struct Record *Bucket[NUM_BUCKETS];
+static Record_s	*R;
+static Record_s	*Next;
+static unint	Size;
 
-static struct Record *hash(Lump_s key)
+static void r_add(Lump_s key, Lump_s val)
 {
-	unint h = crc32(key.d, key.size) % NUM_BUCKETS;
-	return (struct Record *)&Bucket[h];
-}
+	Record_s *r;
 
-static void h_add(Lump_s key, Lump_s val)
-{
-	struct Record *h;
-	struct Record *r;
+	if (!R) {
+		Size = DYNA_START;
+		Next = R = emalloc(Size * sizeof(*R));
+	}
+	if (Next == &R[Size]) {
+		unint		newsize;
 
-	h = hash(key);
-	r = malloc(sizeof(*r));
+		if (Size >= DYNA_MAX) {
+			fatal("Size %ld > %d", Size, DYNA_MAX);
+		}
+		newsize = Size << 2;
+		R = erealloc(R, newsize * sizeof(*R));
+		Next = &R[Size];
+		Size = newsize;
+	}
+	r = Next++;
 	r->key = key;
 	r->val = val;
-	r->next = h->next;
-	h->next = r;
 }
 
-#if 0
-static Lump_s h_find(Lump_s key)
+void r_for_each (recFunc f, void *user)
 {
-	struct Record *h;
-	struct Record *r;
+	Record_s *r;
 
-	h = hash(key);
-	r = h->next;
-	while (r) {
-		if (cmplump(key, r->key) == 0) {
-			return r->val;
-		}
-		r = r->next;
-	}
-	return Nil;
-}
-#endif
-
-static void h_for_each (recFunc f, void *user)
-{
-	unint i;
-	struct Record *r;
-
-	for (i = 0; i < NUM_BUCKETS; i++) {
-		r = Bucket[i];
-		while (r) {
-			f(r->key, r->val, user);
-		}
+	for (r = R; r < Next; r++) {
+		f(r->key, r->val, user);
 	}
 }
 
-static void print_f(Lump_s key, Lump_s val, void *t)
+static snint r_rand_index (void)
 {
-	Lump_s v;
+	snint x = Next - R;
 
-	v = t_find(t, key);
-	printf("%s=%s", key.d, val.d);
-	if (cmplump(val, v) != 0) {
-		printf("!=%s\n", v.d);
-	} else {
-		printf("\n");
-	}
-	freelump(v);
+	if (!R) return -1;
+	if (x == 0) return -1;
+	return range(x);
 }
 
-void t_print(Btree_s *t)
+Record_s r_get_rand (void)
 {
-	h_for_each(print_f, t);
+	snint	x = r_rand_index();
+
+	if (x == -1) {
+		Record_s r = { Nil, Nil };
+		return r;
+	}
+	return R[x];
+}
+
+Lump_s r_delete_rand (void)
+{
+	snint	x = r_rand_index();
+	Lump_s	key;
+
+	if (x == -1) return Nil;
+	key = R[x].key;
+	R[x] = *--Next;
+	return key;
 }
 
 void test1(int n)
@@ -219,7 +239,6 @@ void test_seq(int n)
 	for (i = 0; i < n; i++) {
 		key = seq_lump();
 		val = rnd_lump();
-		h_add(key, val);
 		t_insert(t, key, val);
 		freelump(key);
 		freelump(val);
@@ -239,7 +258,6 @@ void test_rnd(int n)
 	for (i = 0; i < n; i++) {
 		key = fixed_lump(7);
 		val = rnd_lump();
-		h_add(key, val);
 		t_insert(t, key, val);
 		freelump(key);
 		freelump(val);
@@ -248,14 +266,125 @@ void test_rnd(int n)
 //	pr_all_records(t);
 //	pr_tree(t);
 	t_audit(t);
+	pr_stats(t);
+}
+
+void find_find (Lump_s key, Lump_s val, void *user) {
+	Btree_s	*t = user;
+	Lump_s	fval;
+	int	rc;
+
+	rc = t_find(t, key, &fval);
+	if (rc) {
+		fatal("Didn't find %s : rc=%d", key.d, rc);
+	} else if (cmplump(val, fval) != 0) {
+		fatal("Val not the same %s!=%s", val.d, fval.d);
+	} else {
+		printf("%s:%s\n", key.d, fval.d);
+	}
+	freelump(fval);
+}
+
+void test_find(int n)
+{
+	Btree_s *t;
+	Lump_s key;
+	Lump_s val;
+	unint i;
+
+	if (FALSE) seed_random();
+	t = t_new(".tfile", NUM_BUFS);
+	for (i = 0; i < n; i++) {
+		key = fixed_lump(7);
+		val = rnd_lump();
+		r_add(key, val);
+		t_insert(t, key, val);
+	}
+	r_for_each(find_find, t);
+	t_audit(t);
+	pr_stats(t);
+}
+
+void delete (Lump_s key, Lump_s val, void *user) {
+	Btree_s	*t = user;
+	int	rc;
+
+	rc = t_delete(t, key);
+	if (rc) {
+		fatal("Didn't find %s : rc=%d", key.d, rc);
+	}
+}
+
+void test_delete(int n)
+{
+	Btree_s *t;
+	Lump_s key;
+	Lump_s val;
+	unint i;
+
+	if (FALSE) seed_random();
+	t = t_new(".tfile", NUM_BUFS);
+	for (i = 0; i < n; i++) {
+		key = fixed_lump(7);
+		val = rnd_lump();
+		r_add(key, val);
+		t_insert(t, key, val);
+	}
+	r_for_each(delete, t);
+	t_audit(t);
+	pr_stats(t);
+}
+
+int should_delete(s64 count, s64 level)
+{
+	enum { RANGE = 1<<20, MASK = (2*RANGE) - 1 };
+	return (random() & MASK) * count / level / RANGE;
+}
+
+void test_level(int n, int level)
+{
+	Btree_s	*t;
+	Lump_s	key;
+	Lump_s	val;
+	s64	count = 0;
+	unint	i;
+	int	rc;
+
+	if (FALSE) seed_random();
+	t = t_new(".tfile", NUM_BUFS);
+	for (i = 0; i < n; i++) {
+PRd(i);
+if (i > 255) {
+	t_dump(t);
+}
+		if (should_delete(count, level)) {
+			key = r_delete_rand();
+PRlp(key);
+			rc = t_delete(t, key);
+			if (rc) fatal("delete key=%s", key.d);
+			--count;
+		} else {
+			key = fixed_lump(7);
+PRlp(key);
+			val = rnd_lump();
+			r_add(key, val);
+			rc = t_insert(t, key, val);
+			if (rc) fatal("t_insert key=%s val=%s",
+					key.d, val.d);
+			++count;
+		}
+	}
+	t_audit(t);
+	pr_stats(t);
 }
 
 void usage(void)
 {
-	pr_usage("[-dh] [-i<iterations>]\n"
+	pr_usage("[-dh] [-i<iterations>] [-l<level>]\n"
 		"\t-d - turn on debugging\n"
 		"\t-h - print this help message\n"
-		"\t-i - num iterations");
+		"\t-i - num iterations\n",
+		"\t-l - level of records to keep\n");
 }
 
 void myoptions(int argc, char *argv[])
@@ -265,7 +394,7 @@ void myoptions(int argc, char *argv[])
 	fdebugoff();
 	setprogname(argv[0]);
 	setlocale(LC_NUMERIC, "en_US");
-	while ((c = getopt(argc, argv, "dhi:")) != -1) {
+	while ((c = getopt(argc, argv, "dhi:l:")) != -1) {
 		switch (c) {
 		case 'h':
 		case '?':
@@ -278,6 +407,9 @@ void myoptions(int argc, char *argv[])
 		case 'i':
 			Option.iterations = strtoll(optarg, NULL, 0);
 			break;
+		case 'l':
+			Option.level = strtoll(optarg, NULL, 0);
+			break;
 		default:
 			fatal("unexpected option %c", c);
 			break;
@@ -288,6 +420,7 @@ void myoptions(int argc, char *argv[])
 int main(int argc, char *argv[])
 {
 	myoptions(argc, argv);
-	test_rnd(Option.iterations);
+//	test_delete(Option.iterations);
+	test_level(Option.iterations, Option.level);
 	return 0;
 }
