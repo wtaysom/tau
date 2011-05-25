@@ -80,10 +80,20 @@ void set_signals(void)
 
 static void usage(void)
 {
-	fprintf(stderr, "usage: %s [-ds?]\n"
+	fprintf(stderr, "usage: %s [-dhs]\n"
 		"\td - dump of ftrace log of cpu 0 for debugging\n"
-		"\ts - trace self\n"
-		"\t? - usage\n",
+		"\th - usage\n"
+		"\ts - trace self\n\n"
+		"\tCommands while running:\n"
+		"\tq - quit\n"
+		"\tc - resets some counters by clearing them\n"
+		"\tk - display top kernel operations (default)\n"
+		"\tf - display just file system operations\n"
+		"\ti - display counters internal to ktop for debugging\n"
+		"\t< - reduce display timer internal by power of 2\n"
+		"\t\t(default 1 sec)\n"
+		"\t> - increase display timer internal by power of 2\n"
+		"\t\t(default 1 sec)\n",
 		getprogname());
 	exit(2);
 }
@@ -95,7 +105,7 @@ static void init(int argc, char *argv[])
 	setprogname(argv[0]);
 	set_signals();
 
-	while ((c = getopt(argc, argv, "ds?")) != -1) {
+	while ((c = getopt(argc, argv, "dhs?")) != -1) {
 		switch (c) {
 		case 'd':
 			Dump = TRUE;
@@ -103,6 +113,7 @@ static void init(int argc, char *argv[])
 		case 's':
 			Trace_self = TRUE;
 			break;
+		case 'h':
 		case '?':
 			usage();
 			break;
