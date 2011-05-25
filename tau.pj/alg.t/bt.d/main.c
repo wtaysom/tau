@@ -353,19 +353,13 @@ void test_level(int n, int level)
 	if (FALSE) seed_random();
 	t = t_new(".tfile", NUM_BUFS);
 	for (i = 0; i < n; i++) {
-PRd(i);
-if (i > 255) {
-	t_dump(t);
-}
 		if (should_delete(count, level)) {
 			key = r_delete_rand();
-PRlp(key);
 			rc = t_delete(t, key);
 			if (rc) fatal("delete key=%s", key.d);
 			--count;
 		} else {
 			key = fixed_lump(7);
-PRlp(key);
 			val = rnd_lump();
 			r_add(key, val);
 			rc = t_insert(t, key, val);

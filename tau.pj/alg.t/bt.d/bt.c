@@ -157,7 +157,6 @@ Lump_s get_key (Head_s *head, unint i)
 	unint	x;
 	u8	*start;
 
-	if (i >= head->num_recs) stacktrace();
 	assert(i < head->num_recs);
 	x = head->rec[i];
 	assert(x < SZ_BUF);
@@ -274,7 +273,7 @@ void br_dump(Buf_s *node, int indent)
 		pr_indent(indent);
 		printf("%ld. ", i);
 		lump_dump(key);
-		printf(" = %llx\n", block);
+		printf(" = %lld\n", block);
 		node_dump(node->user, block, indent + 1);
 	}
 	if (head->is_split) {
@@ -283,7 +282,7 @@ void br_dump(Buf_s *node, int indent)
 		node_dump(node->user, head->last, indent);
 	} else {
 		pr_indent(indent);
-		printf("%ld. <last> = %llx\n", i, head->last);
+		printf("%ld. <last> = %lld\n", i, head->last);
 		node_dump(node->user, head->last, indent + 1);
 	}
 }
@@ -884,11 +883,7 @@ if (bchild == bparent) {
 			bparent = br_store(bparent, bchild, x);
 			parent = bparent->d;
 			buf_put(bchild);
-			continue;	/* Try again: this won't work
-					 * because we may have split
-					 * and need to go to the next
-					 * block. Just need to do that.
-					 */
+			continue;
 		}
 		if (child->kind == LEAF) {
 			buf_put(bparent);
@@ -1060,6 +1055,12 @@ FN;
 		}
 		bchild = buf_get(bparent->cache, block);
 		child = bchild->d;
+		if (child->is_split) {
+			bparent = br_store(bparent, bchild, x);
+			parent = bparent->d;
+			buf_put(bchild);
+			continue;
+		}
 		if (child->kind == LEAF) {
 			buf_put(bparent);
 			lf_delete(bchild, key);
