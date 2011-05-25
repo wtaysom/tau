@@ -11,7 +11,10 @@
 // 5. Log
 // 6. Transactions
 // 7. Dependency graph
-// 8. Global statistics
+// 8. Global statistics - buffers
+// 9. Join
+// 10. Rebalance
+// 11. Prefix optimization
 
 #include <ctype.h>
 #include <stdio.h>
@@ -38,7 +41,8 @@ enum {	MAX_U16 = (1 << 16) - 1,
 	SZ_U64  = sizeof(u64),
 	SZ_HEAD = sizeof(Head_s),
 	SZ_LEAF_OVERHEAD   = 3 * SZ_U16,
-	SZ_BRANCH_OVERHEAD = 2 * SZ_U16 };
+	SZ_BRANCH_OVERHEAD = 2 * SZ_U16,
+	JOIN_LIMIT = (SZ_BUF - SZ_HEAD) / 3 };
 
 struct Btree_s {
 	Cache_s	*cache;
@@ -874,10 +878,6 @@ FN;
 			block = get_block(parent, x);
 		}
 		bchild = buf_get(bparent->cache, block);
-if (bchild == bparent) {
-	pr_node(parent);
-	assert(bchild != bparent);
-}
 		child = bchild->d;
 		if (child->is_split) {
 			bparent = br_store(bparent, bchild, x);

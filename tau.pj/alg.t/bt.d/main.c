@@ -370,6 +370,7 @@ void test_level(int n, int level)
 	}
 	t_audit(t);
 	pr_stats(t);
+	t_dump(t);
 }
 
 void usage(void)

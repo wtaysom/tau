@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
- * Distributed under the terms of the GNU General Public License v2
+ * Use of this source code is governed by a BSD-style license that
+ * can be found in the LICENSE file.
  */
 
 #include <ctype.h>
@@ -8,7 +9,6 @@
 #include <string.h>
 
 #include <lump.h>
-#include <debug.h>
 
 const Lump_s Nil = { -1, NULL };
 
@@ -56,6 +56,28 @@ Lump_s copylump(Lump_s a, int n, void *buf)
 	b.size = a.size;
 	memmove(b.d, a.d, a.size);
 	return b;
+}
+
+Lump_s prefixlump(Lump_s a, Lump_s b)
+{
+	Lump_s	p;
+	int	size;
+	int	i;
+
+	if (a.size > b.size) {
+		size = b.size;
+	} else {
+		size = a.size;
+	}
+	if (!a.d || !b.d) {
+		return Nil;
+	}
+	for (i = 0; i < size; i++) {
+		if (a.d[i] != b.d[i]) break;
+	}
+	p.size = i;
+	p.d = a.d;
+	return p;
 }
 
 void freelump(Lump_s a)
