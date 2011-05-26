@@ -35,6 +35,7 @@ Lump_s fixed_lump (unint n) {
 	return lumpmk(n, rndstring(n));
 }
 
+#define LUMP(_x)	(_x).size, (_x).d
 int main (int argc, char *argv[]) {
 	Lump_s	a;
 	Lump_s	b;
@@ -44,9 +45,8 @@ int main (int argc, char *argv[]) {
 	for (i = 0; i < 10; i++) {
 		a = rnd_lump();
 		b = rnd_lump();
-		printf("%s %s\n", strlump(a), strlump(b));
 		p = prefixlump(a, b);
-		printf("%s %s %s\n", strlump(a), strlump(b), strlump(p));
+		printf("%.*s %.*s %.*s\n", LUMP(a), LUMP(b), LUMP(p));
 	}
 	return 0;
 }

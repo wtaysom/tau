@@ -27,7 +27,6 @@ Lump_s duplump(Lump_s a);
 Lump_s copylump(Lump_s a, int n, void *buf);
 Lump_s prefixlump(Lump_s a, Lump_s b);
 void   freelump(Lump_s a);
-char  *strlump(Lump_s a);
 
 static inline Lump_s lumpmk(int size, void *data)
 {

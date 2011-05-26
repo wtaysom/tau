@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include <lump.h>
+#include <debug.h>
 
 const Lump_s Nil = { -1, NULL };
 
@@ -103,24 +104,4 @@ bool prlump(const char *fn, unsigned line, const char *label, Lump_s a)
 	}
 	buf[size] = '\0';
 	return print(fn, line, "%s=%d:%s", label, a.size, buf);
-}
-
-char *strlump(Lump_s a)
-{
-	enum { MAX_LUMP = 32 };
-	static char	buf[MAX_LUMP+1];
-	int	i;
-	int	size;
-
-	size = a.size;
-	if (size > MAX_LUMP) size = MAX_LUMP;
-	for (i = 0; i < size; i++) {
-		if (isprint(a.d[i])) {
-			buf[i] = a.d[i];
-		} else {
-			buf[i] = '.';
-		}
-	}
-	buf[size] = '\0';
-	return buf;
 }
