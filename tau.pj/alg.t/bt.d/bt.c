@@ -42,7 +42,7 @@ enum {	MAX_U16 = (1 << 16) - 1,
 	SZ_HEAD = sizeof(Head_s),
 	SZ_LEAF_OVERHEAD   = 3 * SZ_U16,
 	SZ_BRANCH_OVERHEAD = 2 * SZ_U16,
-	JOIN_LIMIT = (SZ_BUF - SZ_HEAD) / 3 };
+	REBALANCE = (SZ_BUF - SZ_HEAD) / 3 };
 
 struct Btree_s {
 	Cache_s	*cache;
@@ -843,14 +843,12 @@ FN;
 	if (x == parent->num_recs) {
 		store_block(parent, parent->last);
 		parent->last = child->last;
-		store_lump(parent, key);
-		store_end(parent, x);
 	} else {
 		update_block(parent, child->last, x);
 		store_block(parent, child->block);
-		store_lump(parent, key);
-		store_end(parent, x);
 	}
+	store_lump(parent, key);
+	store_end(parent, x);
 	if (child->kind == BRANCH) {
 		child->last = get_block(child, child->num_recs - 1);
 		br_del_rec(child, child->num_recs - 1);	
@@ -1037,6 +1035,64 @@ FN;
 	}
 }
 
+Buf_s *rebalance(Buf_s *bparent, int x, u64 block, Buf_s *bchild)
+{
+	Head_s	*parent = bparent->d;
+	Head_s	*child  = bchild->d;
+	Buf_s	*bsibling;
+	Head_s	*sibling;
+	int	y;
+	int	i;
+HERE;
+	if (x == parent->num_recs) {
+		/* No right sibling */
+		return bparent;
+	}
+	y = x + 1;
+	if (y == parent->num_recs) {
+		block = parent->last;
+	} else {
+		block = get_block(parent, y);
+	}
+	bsibling = buf_get(bparent->cache, block);
+	sibling = bsibling->d;
+	if (sibling->num_recs == 0) {
+		//XXX: should delete it
+		buf_put(bsibling);
+		return bparent;
+	}
+	if (child->kind == LEAF) {
+pr_leaf(child);
+		lf_compact(bchild);
+pr_leaf(child);
+		for (i = 0; ;i++) {
+			//XXX: May want to move more to the left
+			// to compact things. For random, that might
+			// be an interesting experiment.
+			// May need to compact
+			// Compacting first, certainly simplified things
+			// Can I do a quick check for compaction? I think
+			// so. That would simplify a lot of things.
+			// Need to check if we even have room for the
+			// record. They are variable length after all.
+			lf_rec_move(child, child->num_recs, sibling, 0);
+pr_leaf(child);
+			if (child->available <= sibling->available) break;
+		}
+	} else {
+		br_compact(bchild);
+		for (i = 0; ;i++) {
+			//XXX: see comments above.
+			br_rec_move(child, child->num_recs, sibling, 0);
+			if (child->available <= sibling->available) break;
+		}
+	}
+	buf_put(bsibling);
+	br_del_rec(parent, x);
+	bparent = br_store(bparent, bchild, x);
+	return bparent;
+}
+
 int br_delete(Buf_s *bparent, Lump_s key)
 {
 FN;
@@ -1060,6 +1116,8 @@ FN;
 			parent = bparent->d;
 			buf_put(bchild);
 			continue;
+		} else if (child->available > REBALANCE) {
+			bparent = rebalance(bparent, x, block, bchild);
 		}
 		if (child->kind == LEAF) {
 			buf_put(bparent);

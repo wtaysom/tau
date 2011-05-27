@@ -18,7 +18,7 @@ char *rndstring (unint n) {
 
 	s = malloc(n);
 	for (j = 0; j < n-1; j++) {
-		s[j] = 'a' + range(26);
+		s[j] = 'a' + range(3);
 	}
 	s[j] = 0;
 	return s;
@@ -27,12 +27,44 @@ char *rndstring (unint n) {
 Lump_s rnd_lump (void) {
 	unint	n;
 
-	n = range(7) + 5;
+	n = range(2) + 2;
 	return lumpmk(n, rndstring(n));
 }
 
 Lump_s fixed_lump (unint n) {
 	return lumpmk(n, rndstring(n));
+}
+
+Lump_s prefix(Lump_s a, Lump_s b) {
+	Lump_s	p;
+	int	size;
+	int	i;
+
+#if 0
+	int	cmp;
+	cmp = cmplump(a, b);
+	if (cmp > 0) {
+		Lump_s	t = a;
+		a = b;
+		b = t;
+	} else if (cmp == 0) {
+		return a;
+	}
+#endif
+	if (a.size > b.size) {
+		size = b.size;
+	} else {
+		size = a.size;
+	}
+	for (i = 0; i < size; i++) {
+		if (a.d[i] != b.d[i]) {
+			++i;
+			break;
+		}
+	}
+	p.size = i;
+	p.d = b.d;
+	return p;
 }
 
 #define LUMP(_x)	(_x).size, (_x).d
@@ -42,10 +74,10 @@ int main (int argc, char *argv[]) {
 	Lump_s	p;
 	int	i;
 
-	for (i = 0; i < 10; i++) {
+	for (i = 0; i < 20; i++) {
 		a = rnd_lump();
 		b = rnd_lump();
-		p = prefixlump(a, b);
+		p = prefix(a, b);
 		printf("%.*s %.*s %.*s\n", LUMP(a), LUMP(b), LUMP(p));
 	}
 	return 0;

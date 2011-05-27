@@ -353,8 +353,10 @@ void test_level(int n, int level)
 	if (FALSE) seed_random();
 	t = t_new(".tfile", NUM_BUFS);
 	for (i = 0; i < n; i++) {
+t_dump(t);
 		if (should_delete(count, level)) {
 			key = r_delete_rand();
+PRlp(key);
 			rc = t_delete(t, key);
 			if (rc) fatal("delete key=%s", key.d);
 			--count;
@@ -370,7 +372,7 @@ void test_level(int n, int level)
 	}
 	t_audit(t);
 	pr_stats(t);
-	t_dump(t);
+//	t_dump(t);
 }
 
 void usage(void)

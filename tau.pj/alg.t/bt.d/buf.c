@@ -11,6 +11,7 @@
 #define _XOPEN_SOURCE 500
 
 #include <fcntl.h>
+#include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -167,6 +168,7 @@ Buf_s *buf_get(Cache_s *cache, u64 block)
 FN;
 	Buf_s *b;
 
+	assert(block != 0);
 	b = lookup(cache, block);
 	if (!b) {
 		b = victim(cache);
@@ -214,16 +216,14 @@ FN;
 	--b->inuse;
 }
 
-#include <stdio.h>
-
 bool cache_balanced(Cache_s *cache)
 {
 FN;
 	if (cache->gets != cache->puts) {
-		warn("gets != puts %d", cache->gets - cache->puts);
+		fatal("gets != puts %d", cache->gets - cache->puts);
 		return FALSE;
 	}
-//	printf("gets=%lld puts=%lld\n", cache->gets, cache->puts);
+//	printf("balanced gets=%lld puts=%lld\n", cache->gets, cache->puts);
 	return TRUE;
 }
 
