@@ -2,7 +2,18 @@
  * Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
  * Distributed under the terms of the GNU General Public License v2
  */
-
+/*
+ * Terminology:
+ *	lump - a pointer with a size. Nil is <0, NULL>. Notice that
+ *		lumps are passed by value which means the size and
+ *		the pointer are copied onto the stack.
+ *	key - a lump. Index for a record.
+ *	val - a lump. Value of a record.
+ *	rec - <key, val>
+ *	twig - <key, block>
+ *	leaf - where the records of a the B-tree are stored.
+ *	branch - Store indexes to to leaves on other branches
+ */
 // XXX: Todo
 // 1. Combine lf_audit and leaf_audit
 // 2. Timer loop to measure rates
@@ -15,6 +26,10 @@
 // 9. Join
 // 10. Rebalance
 // 11. Prefix optimization
+// 12. Optimistic concurrency control - this is for the read path, if
+//	the version changes while reading, restart. But this may be
+//	dangerous if a record is updated.
+// 13. Multiple test threads
 
 #include <ctype.h>
 #include <stdio.h>
@@ -42,13 +57,23 @@ enum {	MAX_U16 = (1 << 16) - 1,
 	SZ_HEAD = sizeof(Head_s),
 	SZ_LEAF_OVERHEAD   = 3 * SZ_U16,
 	SZ_BRANCH_OVERHEAD = 2 * SZ_U16,
-	REBALANCE = (SZ_BUF - SZ_HEAD) / 3 };
+	REBALANCE = 2 * (SZ_BUF - SZ_HEAD) / 3 };
 
 struct Btree_s {
 	Cache_s	*cache;
 	u64	root;
 	Stat_s	stat;	
 };
+
+typedef struct Rec_s {
+	Lump_s	key;
+	Lump_s	val;
+} Rec_s;
+
+typedef struct Twig_s {
+	Lump_s	key;
+	u64	block;
+} Twig_s;
 
 typedef struct Audit_s {
 	u64	leaves;
@@ -83,7 +108,7 @@ bool Dump_buf = FALSE;
 
 Stat_s t_get_stats (Btree_s *t) { return t->stat; }
 
-int allocatable(Head_s *head)
+int usable(Head_s *head)
 {
 FN;
 	return head->end - SZ_HEAD - SZ_U16 * head->num_recs;
@@ -104,14 +129,14 @@ void pr_head(Head_s *head, int indent)
 	printf("%s "
 		"%s"
 		"%lld num_recs %d "
-		"available %d "
+		"free %d "
 		"end %d "
 		"last %lld\n",
 		head->kind == LEAF ? "LEAF" : "BRANCH",
 		head->is_split ? "*split* " : "",
 		head->block,
 		head->num_recs,
-		head->available,
+		head->free,
 		head->end,
 		head->last);
 }
@@ -146,13 +171,13 @@ FN;
 
 	node->user = t;
 	head = node->d;
-	head->kind      = kind;
-	head->num_recs  = 0;
-	head->is_split  = FALSE;
-	head->available = SZ_BUF - SZ_HEAD;
-	head->end       = SZ_BUF;
-	head->block     = node->block;
-	head->last      = 0;
+	head->kind     = kind;
+	head->num_recs = 0;
+	head->is_split = FALSE;
+	head->free     = SZ_BUF - SZ_HEAD;
+	head->end      = SZ_BUF;
+	head->block    = node->block;
+	head->last     = 0;
 }
 
 Lump_s get_key (Head_s *head, unint i)
@@ -208,14 +233,7 @@ FN;
 	key_size = *start++;
 	key_size |= (*start++) << 8;
 	start += key_size;
-	block  = (u64)start[0];
-	block |= (u64)start[1] << 1*BITS_U8;
-	block |= (u64)start[2] << 2*BITS_U8;
-	block |= (u64)start[3] << 3*BITS_U8;
-	block |= (u64)start[4] << 4*BITS_U8;
-	block |= (u64)start[5] << 5*BITS_U8;
-	block |= (u64)start[6] << 6*BITS_U8;
-	block |= (u64)start[7] << 7*BITS_U8;
+	UNPACK(start, block);
 	return block;
 }
 
@@ -229,7 +247,7 @@ FN;
 		putchar(a.d[i]);
 	}
 #else
-	printf("%*s", a.size - 1, a.d);
+	printf("%.*s", a.size, a.d);
 #endif
 }
 
@@ -348,12 +366,12 @@ FN;
 	int	total = lump.size + SZ_U16;
 	u8	*start;
 
-	assert(total <= head->available);
+	assert(total <= head->free);
 	assert(total <= head->end);
 	assert(lump.size < MAX_U16);
 
 	head->end -= total;
-	head->available -= total;
+	head->free -= total;
 	start = &((u8 *)head)[head->end];
 	*start++ = lump.size & MASK_U8;
 	*start++ = (lump.size >> BITS_U8) & MASK_U8;
@@ -366,20 +384,13 @@ FN;
 	int	total = SZ_U64;
 	u8	*start;
 
-	assert(total <= head->available);
+	assert(total <= head->free);
 	assert(total <= head->end);
 
 	head->end -= total;
-	head->available -= total;
+	head->free -= total;
 	start = &((u8 *)head)[head->end];
-	*start++ = block & MASK_U8;
-	*start++ = (block >> 1*BITS_U8) & MASK_U8;
-	*start++ = (block >> 2*BITS_U8) & MASK_U8;
-	*start++ = (block >> 3*BITS_U8) & MASK_U8;
-	*start++ = (block >> 4*BITS_U8) & MASK_U8;
-	*start++ = (block >> 5*BITS_U8) & MASK_U8;
-	*start++ = (block >> 6*BITS_U8) & MASK_U8;
-	*start++ = (block >> 7*BITS_U8) & MASK_U8;
+	PACK(start, block);
 }
 
 void update_block(Head_s *head, u64 block, unint a)
@@ -397,14 +408,7 @@ FN;
 	key_size = *start++;
 	key_size |= (*start++) << 8;
 	start += key_size;
-	*start++ = block & MASK_U8;
-	*start++ = (block >> 1*BITS_U8) & MASK_U8;
-	*start++ = (block >> 2*BITS_U8) & MASK_U8;
-	*start++ = (block >> 3*BITS_U8) & MASK_U8;
-	*start++ = (block >> 4*BITS_U8) & MASK_U8;
-	*start++ = (block >> 5*BITS_U8) & MASK_U8;
-	*start++ = (block >> 6*BITS_U8) & MASK_U8;
-	*start++ = (block >> 7*BITS_U8) & MASK_U8;
+	PACK(start, block);
 }
 
 /* XXX: Don't like this name */
@@ -418,7 +422,25 @@ FN;
 	}
 	++head->num_recs;
 	head->rec[i] = head->end;
-	head->available -= SZ_U16;
+	head->free -= SZ_U16;
+}
+
+void store_rec(Head_s *head, Lump_s key, Lump_s val, unint i)
+{
+FN;
+	//lf_compact(head);
+	store_lump(head, val);
+	store_lump(head, key);
+	store_end(head, i);
+}
+
+void store_twig(Head_s *head, Twig_s twig, unint i)
+{
+FN;
+	//br_compact(head);
+	store_block(head, twig.block);
+	store_lump(head, twig.key);
+	store_end(head, i);
 }
 
 void delete_rec(Head_s *head, unint i)
@@ -431,7 +453,7 @@ FN;
 	assert(head->kind == LEAF);
 	key = get_key(head, i);
 	val = get_val(head, i);
-	head->available += key.size + val.size + SZ_LEAF_OVERHEAD;
+	head->free += key.size + val.size + SZ_LEAF_OVERHEAD;
 	--head->num_recs;
 	if (i < head->num_recs) {
 		memmove(&head->rec[i], &head->rec[i+1],
@@ -443,7 +465,7 @@ void lf_audit(const char *fn, unsigned line, Head_s *head)
 {
 FN;
 	int	i;
-	int	avail = SZ_BUF - SZ_HEAD;
+	int	free = SZ_BUF - SZ_HEAD;
 
 	assert(head->kind == LEAF);
 	for (i = 0; i < head->num_recs; i++) {
@@ -452,11 +474,11 @@ FN;
 
 		key = get_key(head, i);
 		val = get_val(head, i);
-		avail -= key.size + val.size + 3 * SZ_U16;
+		free -= key.size + val.size + 3 * SZ_U16;
 	}
-	if (avail != head->available) {
-		printf("%s<%d> avail:%d != %d:head->available\n",
-			fn, line, avail, head->available);
+	if (free != head->free) {
+		printf("%s<%d> free:%d != %d:head->free\n",
+			fn, line, free, head->free);
 		exit(2);
 	}
 }
@@ -465,18 +487,18 @@ void br_audit(const char *fn, unsigned line, Head_s *head)
 {
 FN;
 	int	i;
-	int	avail = SZ_BUF - SZ_HEAD;
+	int	free = SZ_BUF - SZ_HEAD;
 
 	assert(head->kind == BRANCH);
 	for (i = 0; i < head->num_recs; i++) {
 		Lump_s key;
 
 		key = get_key(head, i);
-		avail -= key.size + SZ_U64 + 2 * SZ_U16;
+		free -= key.size + SZ_U64 + 2 * SZ_U16;
 	}
-	if (avail != head->available) {
-		printf("%s<%d> avail:%d != %d:head->available\n",
-			fn, line, avail, head->available);
+	if (free != head->free) {
+		printf("%s<%d> free:%d != %d:head->free\n",
+			fn, line, free, head->free);
 		exit(2);
 	}
 }
@@ -558,7 +580,7 @@ FN;
 	assert(i < head->num_recs);
 	key = get_key(head, i);
 	val = get_val(head, i);
-	head->available += key.size + val.size + 3 * SZ_U16;
+	head->free += key.size + val.size + 3 * SZ_U16;
 
 	--head->num_recs;
 	if (i < head->num_recs) {
@@ -571,42 +593,42 @@ FN;
 void lf_rec_copy(Head_s *dst, int i, Head_s *src, int j)
 {
 FN;
-	Lump_s	key;
-	Lump_s	val;
+	Rec_s	rec;
 
-	key = get_key(src, j);
-	val = get_val(src, j);
+	rec.key = get_key(src, j);
+	rec.val = get_val(src, j);
 
-	store_lump(dst, val);
-	store_lump(dst, key);
-	store_end(dst, i);
+	store_rec(dst, rec.key, rec.val, i);
 }	
 
 void lf_rec_move(Head_s *dst, int i, Head_s *src, int j)
 {
 FN;
-	Lump_s	key;
-	Lump_s	val;
+	Rec_s	rec;
 
-	key = get_key(src, j);
-	val = get_val(src, j);
+	rec.key = get_key(src, j);
+	rec.val = get_val(src, j);
 
-	store_lump(dst, val);
-	store_lump(dst, key);
-	store_end(dst, i);
+	store_rec(dst, rec.key, rec.val, i);
 
 	lf_del_rec(src, j);
 }	
 
-void lf_compact(Buf_s *lf)
+void lf_compact(Buf_s *bleaf)
 {
 FN;
-	Head_s	*head = lf->d;
-	Buf_s	*b = buf_scratch(lf->cache);
-	Head_s	*h = b->d;
+	Head_s	*head = bleaf->d;
+	Buf_s	*b;
+	Head_s	*h;
 	int	i;
 
-	init_node(b, lf->user, LEAF);
+	if (usable(head) == head->free) {
+HERE;
+		return;
+	}
+	b = buf_scratch(bleaf->cache);
+	h = b->d;
+	init_node(b, bleaf->user, LEAF);
 	h->is_split  = head->is_split;
 	h->block     = head->block;
 	h->last      = head->last;
@@ -625,7 +647,7 @@ FN;
 	BR_AUDIT(head);
 	assert(i < head->num_recs);
 	key = get_key(head, i);
-	head->available += key.size + SZ_U64 + 2 * SZ_U16;
+	head->free += key.size + SZ_U64 + 2 * SZ_U16;
 
 	--head->num_recs;
 	if (i < head->num_recs) {
@@ -638,29 +660,22 @@ FN;
 void br_rec_copy(Head_s *dst, int i, Head_s *src, int j)
 {
 FN;
-	Lump_s	key;
-	u64	block;
+	Twig_s	twig;
 
-	key = get_key(src, j);
-	block = get_block(src, j);
+	twig.key = get_key(src, j);
+	twig.block = get_block(src, j);
 
-	store_block(dst, block);
-	store_lump(dst, key);
-	store_end(dst, i);
+	store_twig(dst, twig, i);
 }	
 
 void br_rec_move(Head_s *dst, int i, Head_s *src, int j)
 {
 FN;
-	Lump_s	key;
-	u64	block;
+	Twig_s	twig;
 
-	key = get_key(src, j);
-	block = get_block(src, j);
-
-	store_block(dst, block);
-	store_lump(dst, key);
-	store_end(dst, i);
+	twig.key = get_key(src, j);
+	twig.block = get_block(src, j);
+	store_twig(dst, twig, i);
 
 	br_del_rec(src, j);
 }	
@@ -669,10 +684,16 @@ void br_compact(Buf_s *br)
 {
 FN;
 	Head_s	*head = br->d;
-	Buf_s	*b = buf_scratch(br->cache);
-	Head_s	*h = b->d;
+	Buf_s	*b;
+	Head_s	*h;
 	int	i;
 
+	if (usable(head) == head->free) {
+HERE;
+		return;
+	}
+	b = buf_scratch(br->cache);
+	h = b->d;
 	init_node(b, br->user, BRANCH);
 	h->is_split = head->is_split;
 	h->block    = head->block;
@@ -730,34 +751,32 @@ FN;
 	return bsibling;
 }
 
-int lf_insert(Buf_s *lf, Lump_s key, Lump_s val)
+int lf_insert(Buf_s *bleaf, Lump_s key, Lump_s val)
 {
 FN;
 	Buf_s	*right;
-	Head_s	*head = lf->d;
+	Head_s	*head = bleaf->d;
 	int	size  = key.size + val.size + SZ_LEAF_OVERHEAD;
 	int	i;
 
 	LF_AUDIT(head);
-	while (size > head->available) {
-		right = lf_split(lf);
+	while (size > head->free) {
+		right = lf_split(bleaf);
 		if (isLE(right->d, key, 0)) {
 			buf_put(right);
 		} else {
-			buf_put(lf);
-			lf = right;
-			head = lf->d;
+			buf_put(bleaf);
+			bleaf = right;
+			head = bleaf->d;
 		}
 	}
-	if (size > allocatable(head)) {
-		lf_compact(lf);
+	if (size > usable(head)) {
+		lf_compact(bleaf);
 	}
 	i = find_le(head, key);
-	store_lump(head, val);
-	store_lump(head, key);
-	store_end(head, i);
+	store_rec(head, key, val, i);
 	LF_AUDIT(head);
-	buf_put(lf);
+	buf_put(bleaf);
 	return 0;
 }
 
@@ -768,16 +787,15 @@ FN;
 	Head_s	*child = bchild->d;
 	Head_s	*parent;
 	Buf_s	*bparent;
-	Lump_s	key;
+	Twig_s	twig;
 
 	bparent = br_new(t);
 	parent = bparent->d;
 	parent->last = child->last;
 
-	key = get_key(child, child->num_recs - 1);
-	store_block(parent, child->block);
-	store_lump(parent, key);
-	store_end(parent, 0);
+	twig.key = get_key(child, child->num_recs - 1);
+	twig.block = child->block;
+	store_twig(parent, twig, 0);
 
 	if (child->kind == LEAF) {
 		child->last = 0;
@@ -814,41 +832,73 @@ FN;
 	return bsibling;
 }
 
-Buf_s *br_store(Buf_s *bparent, Buf_s *bchild, int x)
+Buf_s *br_reinsert(Buf_s *bparent, Buf_s *bchild, int x)
 {
 FN;
 	Head_s	*parent = bparent->d;
 	Head_s	*child  = bchild->d;
 	int	size;
-	Lump_s	key;
+	Twig_s	twig;
 
-	key = get_key(child, child->num_recs - 1);
-	size = key.size + SZ_U64 + SZ_LEAF_OVERHEAD;
+	twig.key = get_key(child, child->num_recs - 1);
+	size = twig.key.size + SZ_U64 + SZ_LEAF_OVERHEAD;
 
-	while (size > parent->available) {
+	while (size > parent->free) {
+HERE;
 		Buf_s	*right = br_split(bparent);
 
-		if (isLE(parent, key, parent->num_recs - 1)) {
+		if (isLE(parent, twig.key, parent->num_recs - 1)) {
 			buf_put(right);
 		} else {
 			buf_put(bparent);
 			bparent = right;
 			parent  = bparent->d;
 		}
-		x = find_le(parent, key);
+		x = find_le(parent, twig.key);
 	}
-	if (size > allocatable(parent)) {
+	if (size > usable(parent)) {
+HERE;
+		br_compact(bparent);
+	}
+	twig.block = child->block;
+	store_twig(parent, twig, x);
+	return bparent;
+}
+
+Buf_s *br_store(Buf_s *bparent, Buf_s *bchild, int x)
+{
+FN;
+	Head_s	*parent = bparent->d;
+	Head_s	*child  = bchild->d;
+	int	size;
+	Twig_s	twig;
+
+	twig.key = get_key(child, child->num_recs - 1);
+	size = twig.key.size + SZ_U64 + SZ_LEAF_OVERHEAD;
+
+	while (size > parent->free) {
+		Buf_s	*right = br_split(bparent);
+
+		if (isLE(parent, twig.key, parent->num_recs - 1)) {
+			buf_put(right);
+		} else {
+			buf_put(bparent);
+			bparent = right;
+			parent  = bparent->d;
+		}
+		x = find_le(parent, twig.key);
+	}
+	if (size > usable(parent)) {
 		br_compact(bparent);
 	}
 	if (x == parent->num_recs) {
-		store_block(parent, parent->last);
+		twig.block = parent->last;
 		parent->last = child->last;
 	} else {
 		update_block(parent, child->last, x);
-		store_block(parent, child->block);
+		twig.block = child->block;
 	}
-	store_lump(parent, key);
-	store_end(parent, x);
+	store_twig(parent, twig, x);
 	if (child->kind == BRANCH) {
 		child->last = get_block(child, child->num_recs - 1);
 		br_del_rec(child, child->num_recs - 1);	
@@ -924,11 +974,11 @@ FN;
 	return rc;
 }
 
-int lf_find(Buf_s *lf, Lump_s key, Lump_s *val)
+int lf_find(Buf_s *bleaf, Lump_s key, Lump_s *val)
 {
 FN;
 	Buf_s	*right;
-	Head_s	*head = lf->d;
+	Head_s	*head = bleaf->d;
 	Lump_s	v;
 	int	i;
 
@@ -939,17 +989,17 @@ FN;
 		}
 		if (i == head->num_recs) {
 			if (head->is_split) {
-				right = buf_get(lf->cache, head->last);
-				buf_put(lf);
-				lf = right;
-				head = lf->d;
+				right = buf_get(bleaf->cache, head->last);
+				buf_put(bleaf);
+				bleaf = right;
+				head = bleaf->d;
 			} else {
 				return BT_ERR_NOT_FOUND;
 			}
 		} else {
 			v = get_val(head, i);
 			*val = duplump(v);
-			buf_put(lf);
+			buf_put(bleaf);
 			return 0;
 		}
 	}
@@ -1006,11 +1056,11 @@ FN;
 	return rc;
 }
 
-int lf_delete(Buf_s *lf, Lump_s key)
+int lf_delete(Buf_s *bleaf, Lump_s key)
 {
 FN;
 	Buf_s	*right;
-	Head_s	*head = lf->d;
+	Head_s	*head = bleaf->d;
 	int	i;
 
 	for (;;) {
@@ -1020,16 +1070,16 @@ FN;
 		}
 		if (i == head->num_recs) {
 			if (head->is_split) {
-				right = buf_get(lf->cache, head->last);
-				buf_put(lf);
-				lf = right;
-				head = lf->d;
+				right = buf_get(bleaf->cache, head->last);
+				buf_put(bleaf);
+				bleaf = right;
+				head = bleaf->d;
 			} else {
 				return BT_ERR_NOT_FOUND;
 			}
 		} else {
 			delete_rec(head, i);
-			buf_put(lf);
+			buf_put(bleaf);
 			return 0;
 		}
 	}
@@ -1043,7 +1093,7 @@ Buf_s *rebalance(Buf_s *bparent, int x, u64 block, Buf_s *bchild)
 	Head_s	*sibling;
 	int	y;
 	int	i;
-HERE;
+PRd(block);
 	if (x == parent->num_recs) {
 		/* No right sibling */
 		return bparent;
@@ -1062,9 +1112,7 @@ HERE;
 		return bparent;
 	}
 	if (child->kind == LEAF) {
-pr_leaf(child);
 		lf_compact(bchild);
-pr_leaf(child);
 		for (i = 0; ;i++) {
 			//XXX: May want to move more to the left
 			// to compact things. For random, that might
@@ -1076,20 +1124,22 @@ pr_leaf(child);
 			// Need to check if we even have room for the
 			// record. They are variable length after all.
 			lf_rec_move(child, child->num_recs, sibling, 0);
-pr_leaf(child);
-			if (child->available <= sibling->available) break;
+			if (child->free <= sibling->free) break;
 		}
 	} else {
 		br_compact(bchild);
 		for (i = 0; ;i++) {
 			//XXX: see comments above.
 			br_rec_move(child, child->num_recs, sibling, 0);
-			if (child->available <= sibling->available) break;
+			if (child->free <= sibling->free) break;
 		}
 	}
 	buf_put(bsibling);
+pr_branch(bparent->d);
 	br_del_rec(parent, x);
-	bparent = br_store(bparent, bchild, x);
+pr_branch(bparent->d);
+	bparent = br_reinsert(bparent, bchild, x);
+pr_branch(bparent->d);
 	return bparent;
 }
 
@@ -1116,7 +1166,7 @@ FN;
 			parent = bparent->d;
 			buf_put(bchild);
 			continue;
-		} else if (child->available > REBALANCE) {
+		} else if (child->free > REBALANCE) {
 			bparent = rebalance(bparent, x, block, bchild);
 		}
 		if (child->kind == LEAF) {

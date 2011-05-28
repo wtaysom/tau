@@ -70,7 +70,7 @@ void pr_fatal (const char *file, const char *func, int line, const char *fmt, ..
 		}
 	}
 	fprintf(stderr, "\n");
-	if (Stacktrace) stacktrace();
+	if (Stacktrace) stacktrace_err();
 	exit(2); /* conventional value for failed execution */
 }
 

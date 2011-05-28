@@ -27,10 +27,12 @@ struct {
 	int	iterations;
 	int	level;
 	bool	debug;
+	bool	print;
 } static Option = {
-	.iterations = 23,
-	.level = 17,
-	.debug = FALSE };
+	.iterations = 3000,
+	.level = 150,
+	.debug = FALSE,
+	.print = FALSE };
 
 char *rndstring(unint n)
 {
@@ -133,6 +135,10 @@ void pr_stats (Btree_s *t) {
 	printf("Num records      = %8lld\n", records);
 	printf("Records per leaf = %g\n",
 		(double)records / stat.new_leaves);
+}
+
+void t_print (Btree_s *t) {
+	if (Option.print) t_dump(t);
 }
 
 enum {	NUM_BUCKETS = (1 << 20) + 1,
@@ -243,7 +249,7 @@ void test_seq(int n)
 		freelump(key);
 		freelump(val);
 	}
-	t_dump(t);
+	t_print(t);
 }
 
 void test_rnd(int n)
@@ -262,7 +268,7 @@ void test_rnd(int n)
 		freelump(key);
 		freelump(val);
 	}
-//	t_dump(t);
+//	t_print(t);
 //	pr_all_records(t);
 //	pr_tree(t);
 	t_audit(t);
@@ -353,7 +359,7 @@ void test_level(int n, int level)
 	if (FALSE) seed_random();
 	t = t_new(".tfile", NUM_BUFS);
 	for (i = 0; i < n; i++) {
-t_dump(t);
+t_print(t);
 		if (should_delete(count, level)) {
 			key = r_delete_rand();
 PRlp(key);
@@ -372,16 +378,17 @@ PRlp(key);
 	}
 	t_audit(t);
 	pr_stats(t);
-//	t_dump(t);
+//	t_print(t);
 }
 
 void usage(void)
 {
-	pr_usage("[-dh] [-i<iterations>] [-l<level>]\n"
+	pr_usage("[-dhp] [-i<iterations>] [-l<level>]\n"
 		"\t-d - turn on debugging\n"
 		"\t-h - print this help message\n"
 		"\t-i - num iterations\n",
-		"\t-l - level of records to keep\n");
+		"\t-l - level of records to keep\n",
+		"\t-p - turn on printing\n");
 }
 
 void myoptions(int argc, char *argv[])
@@ -391,7 +398,7 @@ void myoptions(int argc, char *argv[])
 	fdebugoff();
 	setprogname(argv[0]);
 	setlocale(LC_NUMERIC, "en_US");
-	while ((c = getopt(argc, argv, "dhi:l:")) != -1) {
+	while ((c = getopt(argc, argv, "dhpi:l:")) != -1) {
 		switch (c) {
 		case 'h':
 		case '?':
@@ -406,6 +413,9 @@ void myoptions(int argc, char *argv[])
 			break;
 		case 'l':
 			Option.level = strtoll(optarg, NULL, 0);
+			break;
+		case 'p':
+			Option.print = TRUE;
 			break;
 		default:
 			fatal("unexpected option %c", c);

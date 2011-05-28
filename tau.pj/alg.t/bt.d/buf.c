@@ -38,7 +38,6 @@ struct Cache_s {
 	s64	puts;
 };
 
-
 Dev_s *dev_open(char *name, u64 block_size)
 {
 FN;
@@ -220,7 +219,8 @@ bool cache_balanced(Cache_s *cache)
 {
 FN;
 	if (cache->gets != cache->puts) {
-		fatal("gets != puts %d", cache->gets - cache->puts);
+		fatal("gets %lld != %lld puts %d", cache->gets, cache->puts,
+			cache->gets - cache->puts);
 		return FALSE;
 	}
 //	printf("balanced gets=%lld puts=%lld\n", cache->gets, cache->puts);
