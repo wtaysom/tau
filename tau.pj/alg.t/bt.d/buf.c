@@ -224,6 +224,7 @@ FN;
 		return FALSE;
 	}
 //	printf("balanced gets=%lld puts=%lld\n", cache->gets, cache->puts);
+//	stacktrace();
 	return TRUE;
 }
 
