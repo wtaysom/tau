@@ -103,13 +103,13 @@ void pr_lump (Lump_s a) {
 	}
 }
 
-int pr_rec (Lump_s key, Lump_s val, void *user) {
+static int pr_rec (Rec_s rec, void *user) {
 	u64	*recnum = user;
 
 	printf("%4lld. ", ++*recnum);
-	pr_lump(key);
-	printf(" : ");
-	pr_lump(val);
+	pr_lump(rec.key);
+	printf(" = ");
+	pr_lump(rec.val);
 	printf("\n");
 	return 0;
 }
@@ -362,7 +362,7 @@ void test_level(int n, int level)
 t_print(t);
 		if (should_delete(count, level)) {
 			key = r_delete_rand();
-PRlp(key);
+//PRlp(key);
 			rc = t_delete(t, key);
 			if (rc) fatal("delete key=%s", key.d);
 			--count;

@@ -2,6 +2,7 @@
  * Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
  * Distributed under the terms of the GNU General Public License v2
  */
+
 /*
  * Terminology:
  *	lump - a pointer with a size. Nil is <0, NULL>. Notice that
@@ -24,12 +25,15 @@
 // 7. Dependency graph
 // 8. Global statistics - buffers
 // 9. Join
-// 10. Rebalance
+// *10. Rebalance
 // 11. Prefix optimization
 // 12. Optimistic concurrency control - this is for the read path, if
 //	the version changes while reading, restart. But this may be
 //	dangerous if a record is updated.
 // 13. Multiple test threads
+// 14. Need iterator that returns key and val, I think that is what map does.
+// 15. Only dirty buffers when needed.
+// 16. Only flush dirty buffers when needed.
 
 #include <ctype.h>
 #include <stdio.h>
@@ -64,11 +68,6 @@ struct Btree_s {
 	u64	root;
 	Stat_s	stat;	
 };
-
-typedef struct Rec_s {
-	Lump_s	key;
-	Lump_s	val;
-} Rec_s;
 
 typedef struct Twig_s {
 	Lump_s	key;
@@ -143,6 +142,7 @@ void pr_head(Head_s *head, int indent)
 
 void pr_buf(Buf_s *buf, int indent)
 {
+	enum { BYTES_PER_ROW = 16 };
 	unint	i;
 	unint	j;
 	u8	*d = buf->d;
@@ -150,13 +150,13 @@ void pr_buf(Buf_s *buf, int indent)
 
 	pr_indent(indent);
 	printf("block=%lld\n", buf->block);
-	for (i = 0; i < SZ_BUF / 16; i++) {
+	for (i = 0; i < SZ_BUF / BYTES_PER_ROW; i++) {
 		pr_indent(indent);
-		for (j = 0; j < 16; j++) {
+		for (j = 0; j < BYTES_PER_ROW; j++) {
 			printf(" %.2x", *d++);
 		}
 		printf(" | ");
-		for (j = 0; j < 16; j++) {
+		for (j = 0; j < BYTES_PER_ROW; j++) {
 			putchar(isprint(*c) ? *c : '.');
 			++c;
 		}
@@ -164,20 +164,60 @@ void pr_buf(Buf_s *buf, int indent)
 	}
 }
 
-void init_node(Buf_s *node, Btree_s *t, u8 kind)
+static void pr_chars (int n, u8 *a)
+{
+	int	i;
+	
+	for (i = 0; i < n; i++) {
+		if (isprint(a[i])) {
+			putchar(a[i]);
+		} else {
+			putchar('.');
+		}
+	}
+
+}
+
+static void pr_lump (Lump_s a)
+{
+	enum { MAX_PRINT = 32 };
+	int	size;
+
+	size = a.size;
+	if (size > MAX_PRINT) {
+		size = MAX_PRINT;
+		pr_chars(MAX_PRINT/2 - 3, a.d);
+		printf(" ... ");
+		pr_chars(MAX_PRINT/2 - 2, &a.d[MAX_PRINT/2 + 2]);
+	} else {
+		pr_chars(size, a.d);
+	}
+}
+
+void pr_rec (Rec_s rec)
+{
+	pr_lump(rec.key);
+	printf(" = ");
+	pr_lump(rec.val);
+}
+
+void init_head(Head_s *head, u8 kind, u64 block)
 {
 FN;
-	Head_s	*head;
-
-	node->user = t;
-	head = node->d;
 	head->kind     = kind;
 	head->num_recs = 0;
 	head->is_split = FALSE;
 	head->free     = SZ_BUF - SZ_HEAD;
 	head->end      = SZ_BUF;
-	head->block    = node->block;
+	head->block    = block;
 	head->last     = 0;
+}
+
+void init_node(Buf_s *node, Btree_s *t, u8 kind)
+{
+FN;
+	node->user = t;
+	init_head(node->d, kind, node->block);
 }
 
 Lump_s get_key (Head_s *head, unint i)
@@ -186,6 +226,11 @@ Lump_s get_key (Head_s *head, unint i)
 	unint	x;
 	u8	*start;
 
+if (i >= head->num_recs) {
+	PRd(i);
+	PRd(head->num_recs);
+	pr_node(head);
+}
 	assert(i < head->num_recs);
 	x = head->rec[i];
 	assert(x < SZ_BUF);
@@ -217,6 +262,27 @@ Lump_s get_val (Head_s *head, unint i)
 	return val;
 }
 
+Rec_s get_rec (Head_s *head, unint i)
+{
+	Rec_s	rec;
+	unint	x;
+	u8	*start;
+
+	assert(head->kind == LEAF);
+	assert(i < head->num_recs);
+	x = head->rec[i];
+	assert(x < SZ_BUF);
+	start = &((u8 *)head)[x];
+	rec.key.size = *start++;
+	rec.key.size |= (*start++) << 8;
+	rec.key.d = start;
+	start += rec.key.size;
+	rec.val.size = *start++;
+	rec.val.size |= (*start++) << 8;
+	rec.val.d = start;
+	return rec;
+}
+
 u64 get_block(Head_s *head, unint a)
 {
 FN;
@@ -237,6 +303,26 @@ FN;
 	return block;
 }
 
+Twig_s get_twig(Head_s *head, unint a)
+{
+FN;
+	Twig_s	twig;
+	u8	*start;
+	unint	x;
+
+	assert(head->kind == BRANCH);
+	assert(a < head->num_recs);
+	x = head->rec[a];
+	assert(x < SZ_BUF);
+	start = &((u8 *)head)[x];
+	twig.key.size = *start++;
+	twig.key.size |= (*start++) << 8;
+	twig.key.d = start;
+	start += twig.key.size;
+	UNPACK(start, twig.block);
+	return twig;
+}
+
 void lump_dump(Lump_s a)
 {
 FN;
@@ -251,9 +337,18 @@ FN;
 #endif
 }
 
+void rec_dump (Rec_s rec)
+{
+	lump_dump(rec.key);
+	printf(" = ");
+	lump_dump(rec.val);
+	printf("\n");
+}
+
 void lf_dump(Buf_s *node, int indent)
 {
 	Head_s	*head = node->d;
+	Rec_s	rec;
 	unint	i;
 
 	if (Dump_buf) {
@@ -261,17 +356,10 @@ void lf_dump(Buf_s *node, int indent)
 	}
 	pr_head(head, indent);
 	for (i = 0; i < head->num_recs; i++) {
-		Lump_s key;
-		Lump_s val;
-
-		key = get_key(head, i);
-		val = get_val(head, i);
+		rec = get_rec(head, i);
 		pr_indent(indent);
 		printf("%ld. ", i);
-		lump_dump(key);
-		printf(" = ");
-		lump_dump(val);
-		printf("\n");
+		rec_dump(rec);
 	}
 	if (head->is_split) {
 		pr_indent(indent);
@@ -283,20 +371,17 @@ void lf_dump(Buf_s *node, int indent)
 void br_dump(Buf_s *node, int indent)
 {
 	Head_s	*head = node->d;
+	Twig_s	twig;
 	unint	i;
 
 	pr_head(head, indent);
 	for (i = 0; i < head->num_recs; i++) {
-		Lump_s key;
-		u64 block;
-
-		key   = get_key(head, i);
-		block = get_block(head, i);
+		twig = get_twig(head, i);
 		pr_indent(indent);
 		printf("%ld. ", i);
-		lump_dump(key);
-		printf(" = %lld\n", block);
-		node_dump(node->user, block, indent + 1);
+		lump_dump(twig.key);
+		printf(" = %lld\n", twig.block);
+		node_dump(node->user, twig.block, indent + 1);
 	}
 	if (head->is_split) {
 		pr_indent(indent);
@@ -425,10 +510,78 @@ FN;
 	head->free -= SZ_U16;
 }
 
+void _store_rec(Head_s *head, Lump_s key, Lump_s val, unint i)
+{
+FN;
+	store_lump(head, val);
+	store_lump(head, key);
+	store_end(head, i);
+}
+
+void rec_copy(Head_s *dst, int a, Head_s *src, int b)
+{
+	Rec_s	rec;
+
+	rec = get_rec(src, b);
+
+	store_lump(dst, rec.val);
+	store_lump(dst, rec.key);
+	store_end(dst, a);
+}
+
+void twig_copy(Head_s *dst, int a, Head_s *src, int b)
+{
+	Twig_s	twig;
+
+	twig = get_twig(src, b);
+
+	store_block(dst, twig.block);
+	store_lump(dst, twig.key);
+	store_end(dst, a);
+}
+
+void lf_compact(Head_s *leaf)
+{
+FN;
+	u8	b[SZ_BUF];
+	Head_s	*h = (Head_s *)b;
+	int	i;
+
+	if (usable(leaf) == leaf->free) {
+		return;
+	}
+	init_head(h, LEAF, leaf->block);
+	h->is_split  = leaf->is_split;
+	h->last      = leaf->last;
+	for (i = 0; i < leaf->num_recs; i++) {
+		rec_copy(h, i, leaf, i);
+	}
+	memmove(leaf, h, SZ_BUF);
+}
+
+void br_compact(Head_s *branch)
+{
+FN;
+	u8	b[SZ_BUF];
+	Head_s	*h = (Head_s *)b;
+	int	i;
+
+	if (usable(branch) == branch->free) {
+		return;
+	}
+	init_head(h, BRANCH, branch->block);
+	h->is_split  = branch->is_split;
+	h->last      = branch->last;
+	for (i = 0; i < branch->num_recs; i++) {
+		twig_copy(h, i, branch, i);
+	}
+	memmove(branch, h, SZ_BUF);
+}
+
 void store_rec(Head_s *head, Lump_s key, Lump_s val, unint i)
 {
 FN;
-	//lf_compact(head);
+	lf_compact(head);
 	store_lump(head, val);
 	store_lump(head, key);
 	store_end(head, i);
@@ -437,7 +590,7 @@ FN;
 void store_twig(Head_s *head, Twig_s twig, unint i)
 {
 FN;
-	//br_compact(head);
+	br_compact(head);
 	store_block(head, twig.block);
 	store_lump(head, twig.key);
 	store_end(head, i);
@@ -446,14 +599,12 @@ FN;
 void delete_rec(Head_s *head, unint i)
 {
 FN;
-	Lump_s	key;
-	Lump_s	val;
+	Rec_s	rec;
 
 	assert(i < head->num_recs);
 	assert(head->kind == LEAF);
-	key = get_key(head, i);
-	val = get_val(head, i);
-	head->free += key.size + val.size + SZ_LEAF_OVERHEAD;
+	rec = get_rec(head, i);
+	head->free += rec.key.size + rec.val.size + SZ_LEAF_OVERHEAD;
 	--head->num_recs;
 	if (i < head->num_recs) {
 		memmove(&head->rec[i], &head->rec[i+1],
@@ -464,17 +615,14 @@ FN;
 void lf_audit(const char *fn, unsigned line, Head_s *head)
 {
 FN;
-	int	i;
+	Rec_s	rec;
 	int	free = SZ_BUF - SZ_HEAD;
+	int	i;
 
 	assert(head->kind == LEAF);
 	for (i = 0; i < head->num_recs; i++) {
-		Lump_s key;
-		Lump_s val;
-
-		key = get_key(head, i);
-		val = get_val(head, i);
-		free -= key.size + val.size + 3 * SZ_U16;
+		rec = get_rec(head, i);
+		free -= rec.key.size + rec.val.size + 3 * SZ_U16;
 	}
 	if (free != head->free) {
 		printf("%s<%d> free:%d != %d:head->free\n",
@@ -573,14 +721,12 @@ FN;
 void lf_del_rec(Head_s *head, unint i)
 {
 FN;
-	Lump_s	key;
-	Lump_s	val;
+	Rec_s	rec;
 
 	LF_AUDIT(head);
 	assert(i < head->num_recs);
-	key = get_key(head, i);
-	val = get_val(head, i);
-	head->free += key.size + val.size + 3 * SZ_U16;
+	rec = get_rec(head, i);
+	head->free += rec.key.size + rec.val.size + 3 * SZ_U16;
 
 	--head->num_recs;
 	if (i < head->num_recs) {
@@ -595,8 +741,7 @@ void lf_rec_copy(Head_s *dst, int i, Head_s *src, int j)
 FN;
 	Rec_s	rec;
 
-	rec.key = get_key(src, j);
-	rec.val = get_val(src, j);
+	rec = get_rec(src, j);
 
 	store_rec(dst, rec.key, rec.val, i);
 }	
@@ -606,14 +751,14 @@ void lf_rec_move(Head_s *dst, int i, Head_s *src, int j)
 FN;
 	Rec_s	rec;
 
-	rec.key = get_key(src, j);
-	rec.val = get_val(src, j);
+	rec = get_rec(src, j);
 
 	store_rec(dst, rec.key, rec.val, i);
 
 	lf_del_rec(src, j);
 }	
 
+#if 0
 void lf_compact(Buf_s *bleaf)
 {
 FN;
@@ -623,7 +768,6 @@ FN;
 	int	i;
 
 	if (usable(head) == head->free) {
-HERE;
 		return;
 	}
 	b = buf_scratch(bleaf->cache);
@@ -638,6 +782,7 @@ HERE;
 	memmove(head, h, SZ_BUF);
 	buf_toss(b);
 }
+#endif
 
 void br_del_rec(Head_s *head, unint i)
 {
@@ -662,8 +807,7 @@ void br_rec_copy(Head_s *dst, int i, Head_s *src, int j)
 FN;
 	Twig_s	twig;
 
-	twig.key = get_key(src, j);
-	twig.block = get_block(src, j);
+	twig = get_twig(src, j);
 
 	store_twig(dst, twig, i);
 }	
@@ -673,37 +817,11 @@ void br_rec_move(Head_s *dst, int i, Head_s *src, int j)
 FN;
 	Twig_s	twig;
 
-	twig.key = get_key(src, j);
-	twig.block = get_block(src, j);
+	twig = get_twig(src, j);
 	store_twig(dst, twig, i);
 
 	br_del_rec(src, j);
 }	
-
-void br_compact(Buf_s *br)
-{
-FN;
-	Head_s	*head = br->d;
-	Buf_s	*b;
-	Head_s	*h;
-	int	i;
-
-	if (usable(head) == head->free) {
-HERE;
-		return;
-	}
-	b = buf_scratch(br->cache);
-	h = b->d;
-	init_node(b, br->user, BRANCH);
-	h->is_split = head->is_split;
-	h->block    = head->block;
-	h->last     = head->last;
-	for (i = 0; i < head->num_recs; i++) {
-		br_rec_copy(h, i, head, i);
-	}
-	memmove(head, h, SZ_BUF);
-	buf_toss(b);
-}
 
 Buf_s *node_new(Btree_s *t, u8 kind)
 {
@@ -755,27 +873,27 @@ int lf_insert(Buf_s *bleaf, Lump_s key, Lump_s val)
 {
 FN;
 	Buf_s	*right;
-	Head_s	*head = bleaf->d;
+	Head_s	*leaf = bleaf->d;
 	int	size  = key.size + val.size + SZ_LEAF_OVERHEAD;
 	int	i;
 
-	LF_AUDIT(head);
-	while (size > head->free) {
+	LF_AUDIT(leaf);
+	while (size > leaf->free) {
 		right = lf_split(bleaf);
 		if (isLE(right->d, key, 0)) {
 			buf_put(right);
 		} else {
 			buf_put(bleaf);
 			bleaf = right;
-			head = bleaf->d;
+			leaf = bleaf->d;
 		}
 	}
-	if (size > usable(head)) {
-		lf_compact(bleaf);
+	if (size > usable(leaf)) {
+		lf_compact(leaf);
 	}
-	i = find_le(head, key);
-	store_rec(head, key, val, i);
-	LF_AUDIT(head);
+	i = find_le(leaf, key);
+	store_rec(leaf, key, val, i);
+	LF_AUDIT(leaf);
 	buf_put(bleaf);
 	return 0;
 }
@@ -857,8 +975,7 @@ HERE;
 		x = find_le(parent, twig.key);
 	}
 	if (size > usable(parent)) {
-HERE;
-		br_compact(bparent);
+		br_compact(parent);
 	}
 	twig.block = child->block;
 	store_twig(parent, twig, x);
@@ -873,6 +990,12 @@ FN;
 	int	size;
 	Twig_s	twig;
 
+	if (child->num_recs == 0) {
+		/* We have a degenerate case */
+		update_block(parent, child->last, x);
+		buf_free(bchild);
+		return bparent;
+	}
 	twig.key = get_key(child, child->num_recs - 1);
 	size = twig.key.size + SZ_U64 + SZ_LEAF_OVERHEAD;
 
@@ -889,7 +1012,7 @@ FN;
 		x = find_le(parent, twig.key);
 	}
 	if (size > usable(parent)) {
-		br_compact(bparent);
+		br_compact(parent);
 	}
 	if (x == parent->num_recs) {
 		twig.block = parent->last;
@@ -1093,7 +1216,7 @@ Buf_s *rebalance(Buf_s *bparent, int x, u64 block, Buf_s *bchild)
 	Head_s	*sibling;
 	int	y;
 	int	i;
-PRd(block);
+
 	if (x == parent->num_recs) {
 		/* No right sibling */
 		return bparent;
@@ -1112,7 +1235,7 @@ PRd(block);
 		return bparent;
 	}
 	if (child->kind == LEAF) {
-		lf_compact(bchild);
+		lf_compact(child);
 		for (i = 0; ;i++) {
 			//XXX: May want to move more to the left
 			// to compact things. For random, that might
@@ -1127,7 +1250,7 @@ PRd(block);
 			if (child->free <= sibling->free) break;
 		}
 	} else {
-		br_compact(bchild);
+		br_compact(child);
 		for (i = 0; ;i++) {
 			//XXX: see comments above.
 			br_rec_move(child, child->num_recs, sibling, 0);
@@ -1135,11 +1258,8 @@ PRd(block);
 		}
 	}
 	buf_put(bsibling);
-pr_branch(bparent->d);
 	br_del_rec(parent, x);
-pr_branch(bparent->d);
 	bparent = br_reinsert(bparent, bchild, x);
-pr_branch(bparent->d);
 	return bparent;
 }
 
@@ -1245,13 +1365,7 @@ bool pr_key (Head_s *head, unint i)
 		return FALSE;
 	}
 	printf(" %4ld, %4ld:", x, size);
-	for (i = 0; i < size; i++) {
-		if (isprint(start[i])) {
-			printf("%c", start[i]);
-		} else {
-			putchar('.');
-		}
-	}
+	pr_lump(lumpmk(size, start));
 	putchar('\n');
 	return TRUE;
 }
@@ -1291,13 +1405,7 @@ bool pr_val (Head_s *head, unint i)
 		return FALSE;
 	}
 	printf(" %4ld, %4ld:", x, size);
-	for (i = 0; i < size; i++) {
-		if (isprint(start[i])) {
-			printf("%c", start[i]);
-		} else {
-			putchar('.');
-		}
-	}
+	pr_lump(lumpmk(size, start));
 	putchar('\n');
 	return TRUE;
 }
@@ -1328,13 +1436,7 @@ bool pr_record (Head_s *head, unint i)
 		return FALSE;
 	}
 	printf(" %4ld, %4ld:", x, size);
-	for (i = 0; i < size; i++) {
-		if (isprint(start[i])) {
-			printf("%c", start[i]);
-		} else {
-			putchar('.');
-		}
-	}
+	pr_lump(lumpmk(size, start));
 	start += size;
 	size = *start++;
 	size |= (*start++) << 8;
@@ -1344,13 +1446,7 @@ bool pr_record (Head_s *head, unint i)
 		return FALSE;
 	}
 	printf(" : %4ld:", size);
-	for (i = 0; i < size; i++) {
-		if (isprint(start[i])) {
-			printf("%c", start[i]);
-		} else {
-			putchar('.');
-		}
-	}
+	pr_lump(lumpmk(size, start));
 	putchar('\n');
 	return TRUE;
 }
@@ -1401,14 +1497,7 @@ bool pr_index (Head_s *head, unint i)
 	}
 	start += size;
 
-	block  = (u64)start[0];
-	block |= (u64)start[1] << 1*BITS_U8;
-	block |= (u64)start[2] << 2*BITS_U8;
-	block |= (u64)start[3] << 3*BITS_U8;
-	block |= (u64)start[4] << 4*BITS_U8;
-	block |= (u64)start[5] << 5*BITS_U8;
-	block |= (u64)start[6] << 6*BITS_U8;
-	block |= (u64)start[7] << 7*BITS_U8;
+	UNPACK(start, block);
 	printf(" : %lld", block);
 	putchar('\n');
 	return TRUE;
@@ -1441,18 +1530,15 @@ static void pr_all_nodes(Btree_s *t, u64 block);
 static void pr_all_leaves(Buf_s *node)
 {
 	Head_s	*head = node->d;
+	Rec_s	rec;
 	unint	i;
 
 	for (i = 0; i < head->num_recs; i++) {
-		Lump_s key;
-		Lump_s val;
-
-		key = get_key(head, i);
-		val = get_val(head, i);
+		rec = get_rec(head, i);
 		printf("%4ld. ", Recnum++);
-		lump_dump(key);
+		lump_dump(rec.key);
 		printf("\t");
-		lump_dump(val);
+		lump_dump(rec.val);
 		printf("\n");
 	}
 	if (head->is_split) {
@@ -1509,14 +1595,12 @@ static int lf_map(Buf_s *node, Apply_s apply)
 {
 	Head_s	*head = node->d;
 	unint	i;
-	Lump_s	key;
-	Lump_s	val;
+	Rec_s	rec;
 	int	rc;
 
 	for (i = 0; i < head->num_recs; i++) {
-		key = get_key(head, i);
-		val = get_val(head, i);
-		rc = apply.func(key, val, apply.user);
+		rec = get_rec(head, i);
+		rc = apply.func(rec, apply.user);
 		if (rc) return rc;
 	}
 	if (head->is_split) {
@@ -1573,27 +1657,11 @@ int t_map(Btree_s *t, Apply_f func, void *user)
 	return rc;
 }
 
-static void pr_lump (Lump_s a) {
-	enum { MAX_PRINT = 32 };
-	int	i;
-	int	size;
-
-	size = a.size;
-	if (size > MAX_PRINT) size = MAX_PRINT;
-	for (i = 0; i < size; i++) {
-		if (isprint(a.d[i])) {
-			putchar(a.d[i]);
-		} else {
-			putchar('.');
-		}
-	}
-}
-	
-static int rec_audit (Lump_s key, Lump_s val, void *user) {
+static int rec_audit (Rec_s rec, void *user) {
 	Lump_s	*old = user;
 
-	if (cmplump(key, *old) < 0) {
-		pr_lump(key);
+	if (cmplump(rec.key, *old) < 0) {
+		pr_lump(rec.key);
 		printf(" < ");
 		pr_lump(*old);
 		printf("  ");
@@ -1601,7 +1669,7 @@ static int rec_audit (Lump_s key, Lump_s val, void *user) {
 		return FAILURE;
 	}
 	freelump(*old);
-	*old = duplump(key);
+	*old = duplump(rec.key);
 	return 0;
 }
 
@@ -1614,13 +1682,11 @@ static int leaf_audit(Buf_s *node, Audit_s *audit)
 	++audit->leaves;
 #if 0
 	unint	i;
-	Lump_s	key;
-	Lump_s	val;
+	Rec_s	rec;
 	int	rc;
 	for (i = 0; i < head->num_recs; i++) {
-		key = get_key(head, i);
-		val = get_val(head, i);
-		rc = apply.func(key, val, apply.user);
+		rec = get_rec(head, i);
+		rc = apply.func(rec, apply.user);
 		if (rc) return rc;
 	}
 #endif

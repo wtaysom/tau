@@ -18,9 +18,14 @@ enum {	BT_ERR_NOT_FOUND = 2000,	/* Key not found */
 	BT_ERR_BAD_NODE,		/* Internal error: bad node */
 	FAILURE = -1 };
 
+typedef struct Rec_s {
+	Lump_s	key;
+	Lump_s	val;
+} Rec_s;
+
 typedef struct Btree_s Btree_s;
 
-typedef int (*Apply_f)(Lump_s key, Lump_s val, void *user);
+typedef int (*Apply_f)(Rec_s rec, void *user);
 
 typedef struct Stat_s {
 	u64	new_leaves;

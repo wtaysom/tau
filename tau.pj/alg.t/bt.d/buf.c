@@ -215,6 +215,13 @@ FN;
 	--b->inuse;
 }
 
+void buf_free(Buf_s *b)
+{
+FN;
+	printf("Don't know what to do yet with freed block: %lld\n",
+		b->block);
+}
+
 bool cache_balanced(Cache_s *cache)
 {
 FN;
