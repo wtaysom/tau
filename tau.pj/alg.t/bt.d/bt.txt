@@ -41,7 +41,7 @@ Todo
  6. Transactions
  7. Dependency graph
  8. Global statistics - buffers
- 	9. Join
+ 9. Join
 *10. Rebalance
  11. Prefix optimization
  12. Optimistic concurrency control - this is for the read path, if
