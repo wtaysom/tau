@@ -54,61 +54,12 @@ Todo
  17. pr_index -> pr_twig
 
 
-static inline Apply_s mk_apply(Apply_f func, void *user)
-{
-	Apply_s	a;
-
-	a.func = func;
-	a.user = user;
-	return a;
-}
-
-void lump_dump(Lump_s a);
-void lf_dump(Buf_s *node, int indent);
-void br_dump(Buf_s *node, int indent);
-void node_dump(Btree_s *t, u64 block, int indent);
-void pr_leaf(Head_s *head);
-void pr_branch(Head_s *head);
-void pr_node(Head_s *head);
-
-bool Dump_buf = FALSE;
-
-Stat_s t_get_stats (Btree_s *t) { return t->stat; }
-
-int usable(Head_s *head)
-
-int inuse(Head_s *head)
-
-void pr_indent(int indent)
-
-void pr_head(Head_s *head, int indent)
-
-void pr_buf(Buf_s *buf, int indent)
-
-static void pr_chars (int n, u8 *a)
-
-static void pr_lump (Lump_s a)
-
 void pr_rec (Rec_s rec)
 	pr_lump(rec.key);
 	pr_lump(rec.val);
 
-void init_head(Head_s *head, u8 kind, u64 block)
-
 void init_node(Buf_s *node, Btree_s *t, u8 kind)
 	init_head(node->d, kind, node->block);
-
-Lump_s get_key (Head_s *head, unint i)
-
-Lump_s get_val (Head_s *head, unint i)
-
-Rec_s get_rec (Head_s *head, unint i)
-
-u64 get_block(Head_s *head, unint a)
-
-Twig_s get_twig(Head_s *head, unint a)
-
-void lump_dump(Lump_s a)
 
 void rec_dump (Rec_s rec)
 	lump_dump(rec.key);
@@ -147,14 +98,6 @@ bool isLE(Head_s *head, Lump_s key, unint i)
 int isEQ(Head_s *head, Lump_s key, unint i)
 	target = get_key(head, i);
 	return cmplump(key, target);	
-
-void store_lump(Head_s *head, Lump_s lump)
-
-void store_block(Head_s *head, u64 block)
-
-void update_block(Head_s *head, u64 block, unint a)
-
-void store_end(Head_s *head, unint i)
 
 void _store_rec(Head_s *head, Lump_s key, Lump_s val, unint i)
 	store_lump(head, val);
@@ -211,10 +154,6 @@ void br_audit(const char *fn, unsigned line, Head_s *head)
 	foreach twig
 		key = get_key(head, i);
 		free -= key.size + SZ_U64 + 2 * SZ_U16;
-
-int find_le(Head_s *head, Lump_s key)
-
-int find_eq(Head_s *head, Lump_s key)
 
 void lf_del_rec(Head_s *head, unint i)
 	rec = get_rec(head, i);
