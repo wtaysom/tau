@@ -3,7 +3,6 @@
  * Distributed under the terms of the GNU General Public License v2
  */
 
-
 #include <sys/syscall.h>
 #include <pthread.h>
 #include <signal.h>
@@ -86,14 +85,12 @@ static void usage(void)
 		"\ts - trace self\n\n"
 		"\tCommands while running:\n"
 		"\tq - quit\n"
-		"\tc - resets some counters by clearing them\n"
+		"\tc - reset internal counters\n"
 		"\tk - display top kernel operations (default)\n"
 		"\tf - display just file system operations\n"
 		"\ti - display counters internal to ktop for debugging\n"
-		"\t< - reduce display timer internal by power of 2\n"
-		"\t\t(default 1 sec)\n"
-		"\t> - increase display timer internal by power of 2\n"
-		"\t\t(default 1 sec)\n",
+		"\t< - reduce redisplay interval\n"
+		"\t> - increase redisplay interval\n",
 		getprogname());
 	exit(2);
 }
@@ -118,7 +115,7 @@ static void init(int argc, char *argv[])
 			usage();
 			break;
 		default:
-			fprintf(stderr, "unknown option %c\n", c);
+			fprintf(stderr, "unknown option '%c'\n", c);
 			usage();
 			break;
 		}
@@ -183,6 +180,7 @@ int main(int argc, char **argv)
 
 	if (!Dump) {
 		rc = pthread_create(&reduce_thread, NULL, reduce, NULL);
+		if (rc) fatal("creating reduce thread:");
 	}
 	commander();
 

@@ -113,6 +113,11 @@ FN;
 	return head->end - SZ_HEAD - SZ_U16 * head->num_recs;
 }
 
+int inuse(Head_s *head)
+{
+	return SZ_BUF - SZ_HEAD - head->free;
+}
+
 void pr_indent(int indent)
 {
 	int	i;
@@ -1208,16 +1213,46 @@ FN;
 	}
 }
 
-Buf_s *rebalance(Buf_s *bparent, int x, u64 block, Buf_s *bchild)
+Buf_s *join(Buf_s *bparent, int x, Buf_s *bchild, Buf_s *bsibling)
+{
+	Head_s	*parent  = bparent->d;
+	Head_s	*child   = bchild->d;
+	Head_s	*sibling = bsibling->d;
+	int	i;
+
+	if (child->kind == LEAF) {
+		lf_compact(sibling);
+		for (i = 0; child->num_recs; i++) {
+PRd(child->num_recs);
+			lf_rec_move(sibling, i, child, 0);
+			if (child->free <= sibling->free) break;
+		}
+	} else {
+PRd(child->num_recs);
+//XXX: this is not quite write because it doesn't handle last
+		br_compact(child);
+		for (i = 0; child->num_recs; i++) {
+			br_rec_move(sibling, i, child, 0);
+		}
+	}
+	br_del_rec(parent, x);
+	buf_free(bchild);
+	buf_put(bsibling);
+	return bparent;	
+}
+
+Buf_s *rebalance(Buf_s *bparent, int x, Buf_s *bchild)
 {
 	Head_s	*parent = bparent->d;
 	Head_s	*child  = bchild->d;
 	Buf_s	*bsibling;
 	Head_s	*sibling;
+	u64	block;
 	int	y;
 	int	i;
 
 	if (x == parent->num_recs) {
+HERE;
 		/* No right sibling */
 		return bparent;
 	}
@@ -1229,7 +1264,13 @@ Buf_s *rebalance(Buf_s *bparent, int x, u64 block, Buf_s *bchild)
 	}
 	bsibling = buf_get(bparent->cache, block);
 	sibling = bsibling->d;
+	/* Can we join? */
+	if (child->free > inuse(sibling)) {
+HERE;
+		return join(bparent, x, bchild, bsibling);
+	}
 	if (sibling->num_recs == 0) {
+HERE;
 		//XXX: should delete it
 		buf_put(bsibling);
 		return bparent;
@@ -1258,8 +1299,10 @@ Buf_s *rebalance(Buf_s *bparent, int x, u64 block, Buf_s *bchild)
 		}
 	}
 	buf_put(bsibling);
+	buf_put(bchild);
 	br_del_rec(parent, x);
 	bparent = br_reinsert(bparent, bchild, x);
+HERE;
 	return bparent;
 }
 
@@ -1287,7 +1330,10 @@ FN;
 			buf_put(bchild);
 			continue;
 		} else if (child->free > REBALANCE) {
-			bparent = rebalance(bparent, x, block, bchild);
+PRd(child->free);
+			bparent = rebalance(bparent, x, bchild);
+PRd(child->free);
+			continue;	// Had to add this for join
 		}
 		if (child->kind == LEAF) {
 			buf_put(bparent);

@@ -386,8 +386,8 @@ void usage(void)
 	pr_usage("[-dhp] [-i<iterations>] [-l<level>]\n"
 		"\t-d - turn on debugging\n"
 		"\t-h - print this help message\n"
-		"\t-i - num iterations\n",
-		"\t-l - level of records to keep\n",
+		"\t-i - num iterations\n"
+		"\t-l - level of records to keep\n"
 		"\t-p - turn on printing\n");
 }
 
