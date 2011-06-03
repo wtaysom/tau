@@ -120,7 +120,7 @@ int flushbug (void)
 bool print (const char *fn, unsigned line, const char *format, ...)
 {
 	va_list	args;
-	char	buf[80];
+	char	buf[132];
 	char	*b = buf;
 	int	r = sizeof(buf);
 	int	n;

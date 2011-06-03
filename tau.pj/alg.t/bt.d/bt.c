@@ -63,6 +63,13 @@ enum {	MAX_U16 = (1 << 16) - 1,
 	SZ_BRANCH_OVERHEAD = 2 * SZ_U16,
 	REBALANCE = 2 * (SZ_BUF - SZ_HEAD) / 3 };
 
+typedef struct Err_s {
+	char	*where;
+	int	rc;
+} Err_s;
+
+#define SET_ERR(_e, _rc) (((_e).where = WHERE), ((_e).rc = (_rc)))
+
 struct Btree_s {
 	Cache_s	*cache;
 	u64	root;
@@ -86,6 +93,16 @@ typedef struct Apply_s {
 	void	*user;
 } Apply_s;
 
+typedef struct Op_s {
+	Btree_s	*tree;
+	Buf_s	*parent;
+	Buf_s	*child;
+	int	irec;		/* Record index */
+	Lump_s	key;
+	Lump_s	val;
+	Err_s	err;
+} Op_s;
+
 static inline Apply_s mk_apply(Apply_f func, void *user)
 {
 	Apply_s	a;
@@ -94,6 +111,15 @@ static inline Apply_s mk_apply(Apply_f func, void *user)
 	a.user = user;
 	return a;
 }
+
+bool pr_op(const char *fn, unsigned line, const char *label, Op_s *op)
+{
+	return print(fn, line,
+		"%s: tree=%p parent=%p child=%p irec=%d key=%.*s val=%.*s err=%d",
+		label, op->tree, op->parent, op->child, op->irec, op->key, op->val, op->err.rc);
+}
+
+#define PRop(_op)	pr_op(FN_ARG, # _op, _op)
 
 void lump_dump(Lump_s a);
 void lf_dump(Buf_s *node, int indent);
@@ -418,7 +444,7 @@ void node_dump(Btree_s *t, u64 block, int indent)
 		printf("unknown kind %d\n", head->kind);
 		break;
 	}
-	buf_put(node);
+	buf_put(&node);
 }
 
 #if 0
@@ -874,46 +900,44 @@ FN;
 	return bsibling;
 }
 
-int lf_insert(Buf_s *bleaf, Lump_s key, Lump_s val)
+int lf_insert(Op_s *op)
 {
 FN;
 	Buf_s	*right;
-	Head_s	*leaf = bleaf->d;
-	int	size  = key.size + val.size + SZ_LEAF_OVERHEAD;
+	Head_s	*leaf = op->child->d;
+	int	size  = op->key.size + op->val.size + SZ_LEAF_OVERHEAD;
 	int	i;
 
 	LF_AUDIT(leaf);
 	while (size > leaf->free) {
-		right = lf_split(bleaf);
-		if (isLE(right->d, key, 0)) {
-			buf_put(right);
+		right = lf_split(op->child);
+		if (isLE(right->d, op->key, 0)) {
+			buf_put(&right);
 		} else {
-			buf_put(bleaf);
-			bleaf = right;
-			leaf = bleaf->d;
+			buf_put(&op->child);
+			op->child = right;
+			leaf = op->child->d;
 		}
 	}
 	if (size > usable(leaf)) {
 		lf_compact(leaf);
 	}
-	i = find_le(leaf, key);
-	store_rec(leaf, key, val, i);
+	i = find_le(leaf, op->key);
+	store_rec(leaf, op->key, op->val, i);
 	LF_AUDIT(leaf);
-	buf_put(bleaf);
+	buf_put(&op->child);
 	return 0;
 }
 
-Buf_s *grow(Buf_s *bchild)
+int grow(Op_s *op)
 {
 FN;
-	Btree_s	*t     = bchild->user;
-	Head_s	*child = bchild->d;
+	Head_s	*child = op->child->d;
 	Head_s	*parent;
-	Buf_s	*bparent;
 	Twig_s	twig;
 
-	bparent = br_new(t);
-	parent = bparent->d;
+	op->parent = br_new(op->tree);
+	parent = op->parent->d;
 	parent->last = child->last;
 
 	twig.key = get_key(child, child->num_recs - 1);
@@ -927,8 +951,11 @@ FN;
 		br_del_rec(child, child->num_recs - 1);	
 	}
 	child->is_split = FALSE;
-	t->root = parent->block;
-	return bparent;
+	op->tree->root = parent->block;
+	buf_put(&op->child);
+	op->child = op->parent;
+	op->parent = NULL;
+	return 0;
 }	
 
 Buf_s *br_split(Buf_s *bchild)
@@ -971,9 +998,9 @@ HERE;
 		Buf_s	*right = br_split(bparent);
 
 		if (isLE(parent, twig.key, parent->num_recs - 1)) {
-			buf_put(right);
+			buf_put(&right);
 		} else {
-			buf_put(bparent);
+			buf_put(&bparent);
 			bparent = right;
 			parent  = bparent->d;
 		}
@@ -987,46 +1014,46 @@ HERE;
 	return bparent;
 }
 
-Buf_s *br_store(Buf_s *bparent, Buf_s *bchild, int x)
+int br_store(Op_s *op)
 {
 FN;
-	Head_s	*parent = bparent->d;
-	Head_s	*child  = bchild->d;
+	Head_s	*parent = op->parent->d;
+	Head_s	*child  = op->child->d;
 	int	size;
 	Twig_s	twig;
 
 	if (child->num_recs == 0) {
 		/* We have a degenerate case */
-		update_block(parent, child->last, x);
-		buf_free(bchild);
-		return bparent;
+		update_block(parent, child->last, op->irec);
+		buf_free(op->child);
+		return 0;
 	}
 	twig.key = get_key(child, child->num_recs - 1);
 	size = twig.key.size + SZ_U64 + SZ_LEAF_OVERHEAD;
 
 	while (size > parent->free) {
-		Buf_s	*right = br_split(bparent);
+		Buf_s	*right = br_split(op->parent);
 
 		if (isLE(parent, twig.key, parent->num_recs - 1)) {
-			buf_put(right);
+			buf_put(&right);
 		} else {
-			buf_put(bparent);
-			bparent = right;
-			parent  = bparent->d;
+			buf_put(&op->parent);
+			op->parent = right;
+			parent  = op->parent->d;
 		}
-		x = find_le(parent, twig.key);
+		op->irec = find_le(parent, twig.key);
 	}
 	if (size > usable(parent)) {
 		br_compact(parent);
 	}
-	if (x == parent->num_recs) {
+	if (op->irec == parent->num_recs) {
 		twig.block = parent->last;
 		parent->last = child->last;
 	} else {
-		update_block(parent, child->last, x);
+		update_block(parent, child->last, op->irec);
 		twig.block = child->block;
 	}
-	store_twig(parent, twig, x);
+	store_twig(parent, twig, op->irec);
 	if (child->kind == BRANCH) {
 		child->last = get_block(child, child->num_recs - 1);
 		br_del_rec(child, child->num_recs - 1);	
@@ -1034,68 +1061,66 @@ FN;
 		child->last = 0;
 	}
 	child->is_split = FALSE;
-	return bparent;
+	return 0;
 }
 
-int br_insert(Buf_s *bparent, Lump_s key, Lump_s val)
+int br_insert(Op_s *op)
 {
 FN;
-	Head_s	*parent = bparent->d;
-	Buf_s	*bchild;
+	Head_s	*parent;
 	Head_s	*child;
 	u64	block;
-	int	x;
 
+	op->parent = op->child;
+	op->child = NULL;
 	for(;;) {
-		x = find_le(parent, key);
-		if (x == parent->num_recs) {
+		parent = op->parent->d;
+		op->irec = find_le(parent, op->key);
+		if (op->irec == parent->num_recs) {
 			block = parent->last;
 		} else {
-			block = get_block(parent, x);
+			block = get_block(parent, op->irec);
 		}
-		bchild = buf_get(bparent->cache, block);
-		child = bchild->d;
+		op->child = buf_get(op->tree->cache, block);
+		child = op->child->d;
 		if (child->is_split) {
-			bparent = br_store(bparent, bchild, x);
-			parent = bparent->d;
-			buf_put(bchild);
+		/* XXX: this is no what I want */
+			if (br_store(op)) return FAILURE;
+			buf_put(&op->child);
 			continue;
 		}
+		buf_put(&op->parent);
 		if (child->kind == LEAF) {
-			buf_put(bparent);
-			lf_insert(bchild, key, val);
+			lf_insert(op);
 			return 0;
 		}
-		buf_put(bparent);
-		bparent = bchild;
-		parent = bparent->d;
+		op->parent = op->child;
+		op->child = NULL;
 	}
 }
 
 int t_insert(Btree_s *t, Lump_s key, Lump_s val)
 {
 FN;
-	Buf_s	*node;
-	Head_s	*head;
+	Op_s	op = { t, NULL, NULL, 0, key, val, { 0 } };
+	Head_s	*child;
 	int	rc;
 
 	if (t->root) {
-		node = buf_get(t->cache, t->root);
+		op.child = buf_get(t->cache, t->root);
 	} else {
-		node = lf_new(t);
-		t->root = node->block;
+		op.child = lf_new(t);
+		t->root = op.child->block;
 	}
-	head = node->d;
-	if (head->is_split) {
-		Buf_s *new_node = grow(node);
-		buf_put(node);
-		node = new_node;
-		head = node->d;
+	child = op.child->d;
+	if (child->is_split) {
+		if (grow(&op)) return op.err.rc;
+		child = op.child->d;
 	}
-	if (head->kind == LEAF) {
-		rc = lf_insert(node, key, val);
+	if (child->kind == LEAF) {
+		rc = lf_insert(&op);
 	} else {
-		rc = br_insert(node, key, val);
+		rc = br_insert(&op);
 	}
 	cache_balanced(t->cache);
 	++t->stat.insert;
@@ -1118,7 +1143,7 @@ FN;
 		if (i == head->num_recs) {
 			if (head->is_split) {
 				right = buf_get(bleaf->cache, head->last);
-				buf_put(bleaf);
+				buf_put(&bleaf);
 				bleaf = right;
 				head = bleaf->d;
 			} else {
@@ -1127,7 +1152,7 @@ FN;
 		} else {
 			v = get_val(head, i);
 			*val = duplump(v);
-			buf_put(bleaf);
+			buf_put(&bleaf);
 			return 0;
 		}
 	}
@@ -1152,11 +1177,11 @@ FN;
 		bchild = buf_get(bparent->cache, block);
 		child = bchild->d;
 		if (child->kind == LEAF) {
-			buf_put(bparent);
+			buf_put(&bparent);
 			lf_find(bchild, key, val);
 			return 0;
 		}
-		buf_put(bparent);
+		buf_put(&bparent);
 		bparent = bchild;
 		parent = bparent->d;
 	}
@@ -1199,7 +1224,7 @@ FN;
 		if (i == head->num_recs) {
 			if (head->is_split) {
 				right = buf_get(bleaf->cache, head->last);
-				buf_put(bleaf);
+				buf_put(&bleaf);
 				bleaf = right;
 				head = bleaf->d;
 			} else {
@@ -1207,7 +1232,7 @@ FN;
 			}
 		} else {
 			delete_rec(head, i);
-			buf_put(bleaf);
+			buf_put(&bleaf);
 			return 0;
 		}
 	}
@@ -1237,7 +1262,7 @@ PRd(child->num_recs);
 	}
 	br_del_rec(parent, x);
 	buf_free(bchild);
-	buf_put(bsibling);
+	buf_put(&bsibling);
 	return bparent;	
 }
 
@@ -1272,7 +1297,7 @@ HERE;
 	if (sibling->num_recs == 0) {
 HERE;
 		//XXX: should delete it
-		buf_put(bsibling);
+		buf_put(&bsibling);
 		return bparent;
 	}
 	if (child->kind == LEAF) {
@@ -1298,8 +1323,8 @@ HERE;
 			if (child->free <= sibling->free) break;
 		}
 	}
-	buf_put(bsibling);
-	buf_put(bchild);
+	buf_put(&bsibling);
+	buf_put(&bchild);
 	br_del_rec(parent, x);
 	bparent = br_reinsert(bparent, bchild, x);
 HERE;
@@ -1325,22 +1350,22 @@ FN;
 		bchild = buf_get(bparent->cache, block);
 		child = bchild->d;
 		if (child->is_split) {
+#if 0
 			bparent = br_store(bparent, bchild, x);
 			parent = bparent->d;
-			buf_put(bchild);
+			buf_put(&bchild);
 			continue;
+#endif
 		} else if (child->free > REBALANCE) {
-PRd(child->free);
 			bparent = rebalance(bparent, x, bchild);
-PRd(child->free);
 			continue;	// Had to add this for join
 		}
 		if (child->kind == LEAF) {
-			buf_put(bparent);
+			buf_put(&bparent);
 			lf_delete(bchild, key);
 			return 0;
 		}
-		buf_put(bparent);
+		buf_put(&bparent);
 		bparent = bchild;
 		parent = bparent->d;
 	}
@@ -1507,7 +1532,7 @@ void pr_leaf(Head_s *head)
 	}
 }
 
-bool pr_index (Head_s *head, unint i)
+bool pr_twig (Head_s *head, unint i)
 {
 	unint	size;
 	unint	x;
@@ -1555,7 +1580,7 @@ void pr_branch(Head_s *head)
 
 	pr_head(head, 0);
 	for (i = 0; i < head->num_recs; i++) {
-		pr_index(head, i);
+		pr_twig(head, i);
 	}
 	printf(" last: %lld\n", head->last);
 }
@@ -1624,7 +1649,7 @@ static void pr_all_nodes(Btree_s *t, u64 block)
 		printf("unknown kind %d\n", head->kind);
 		break;
 	}
-	buf_put(node);
+	buf_put(&node);
 }
 
 void pr_all_records(Btree_s *t)
@@ -1691,7 +1716,7 @@ static int node_map(Btree_s *t, u64 block, Apply_s apply)
 		rc = BT_ERR_BAD_NODE;
 		break;
 	}
-	buf_put(node);
+	buf_put(&node);
 	return rc;
 }
 
@@ -1781,7 +1806,7 @@ static int node_audit(Btree_s *t, u64 block, Audit_s *audit)
 		rc = BT_ERR_BAD_NODE;
 		break;
 	}
-	buf_put(node);
+	buf_put(&node);
 	return rc;
 }
 

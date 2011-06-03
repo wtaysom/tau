@@ -191,8 +191,9 @@ FN;
 	return b;
 }
 
-void buf_put(Buf_s *b)
+void buf_put(Buf_s **bp)
 {
+	Buf_s	*b = *bp;
 FN;
 	Cache_s	*cache = b->cache;
 
@@ -203,6 +204,7 @@ FN;
 		dev_flush(b);
 	}
 	--b->inuse;
+	*bp = NULL;
 }
 
 void buf_toss(Buf_s *b)

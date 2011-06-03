@@ -33,7 +33,7 @@ Buf_s   *buf_new(Cache_s *cache);
 void     buf_free(Buf_s *b);
 Buf_s   *buf_get(Cache_s *cache, u64 block);
 Buf_s   *buf_scratch(Cache_s *cache);
-void     buf_put(Buf_s *b);
+void     buf_put(Buf_s **bp);
 void     buf_toss(Buf_s *b);
 
 #endif
