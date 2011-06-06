@@ -21,14 +21,12 @@ func main() {
 		return
 	}
 	s := c.Screen()
-/*
-	for x := 0; x < 100; x++ {
-		for y := 0; y < 200; y++ {
+	for x := 0; x < 256; x++ {
+		for y := 0; y < 256; y++ {
 			color = image.RGBAColor{uint8(x), uint8(y), 0, 255}
 			s.Set(x, y, color)
 		}
 	}
-*/
 	b := s.Bounds()
 	for x := 0; x < b.Max.Y; x++ {
 		y := x*x;

@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"flag"
 	"os"
+	"syscall"
 	"unsafe"
 )
 
@@ -45,7 +46,7 @@ type Cache struct {
 }
 
 func OpenDev(name string) *Dev {
-	f, e := os.Open(name, os.O_RDWR | os.O_CREAT, 0666);
+	f, e := os.OpenFile(name, syscall.O_RDWR | syscall.O_CREAT, 0666);
 	if e != nil {
 		fmt.Fprintln(os.Stderr, "Failed to open", name, e)
 		return nil
