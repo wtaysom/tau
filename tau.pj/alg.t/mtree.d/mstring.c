@@ -259,7 +259,7 @@ FN;
 	tree->t_root = root;
 	return 0;
 }
-	
+
 void init_string (void)
 {
 	init_tree( &Tree, &String_species);

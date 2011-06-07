@@ -73,7 +73,7 @@ typedef struct Err_s {
 struct Btree_s {
 	Cache_s	*cache;
 	u64	root;
-	Stat_s	stat;	
+	Stat_s	stat;
 };
 
 typedef struct Twig_s {
@@ -198,7 +198,7 @@ void pr_buf(Buf_s *buf, int indent)
 static void pr_chars (int n, u8 *a)
 {
 	int	i;
-	
+
 	for (i = 0; i < n; i++) {
 		if (isprint(a[i])) {
 			putchar(a[i]);
@@ -454,7 +454,7 @@ FN;
 	Lump_s	target;
 
 	target = get_key(head, i);
-	return cmplump(key, target) >= 0;	
+	return cmplump(key, target) >= 0;
 }
 #endif
 
@@ -464,7 +464,7 @@ FN;
 	Lump_s	target;
 
 	target = get_key(head, i);
-	return cmplump(key, target) <= 0;	
+	return cmplump(key, target) <= 0;
 }
 
 int isEQ(Head_s *head, Lump_s key, unint i)
@@ -473,7 +473,7 @@ FN;
 	Lump_s	target;
 
 	target = get_key(head, i);
-	return cmplump(key, target);	
+	return cmplump(key, target);
 }
 
 void store_lump(Head_s *head, Lump_s lump)
@@ -775,7 +775,7 @@ FN;
 	rec = get_rec(src, j);
 
 	store_rec(dst, rec.key, rec.val, i);
-}	
+}
 
 void lf_rec_move(Head_s *dst, int i, Head_s *src, int j)
 {
@@ -787,7 +787,7 @@ FN;
 	store_rec(dst, rec.key, rec.val, i);
 
 	lf_del_rec(src, j);
-}	
+}
 
 #if 0
 void lf_compact(Buf_s *bleaf)
@@ -841,7 +841,7 @@ FN;
 	twig = get_twig(src, j);
 
 	store_twig(dst, twig, i);
-}	
+}
 
 void br_rec_move(Head_s *dst, int i, Head_s *src, int j)
 {
@@ -852,7 +852,7 @@ FN;
 	store_twig(dst, twig, i);
 
 	br_del_rec(src, j);
-}	
+}
 
 Buf_s *node_new(Btree_s *t, u8 kind)
 {
@@ -948,7 +948,7 @@ FN;
 		child->last = 0;
 	} else {
 		child->last = get_block(child, child->num_recs - 1);
-		br_del_rec(child, child->num_recs - 1);	
+		br_del_rec(child, child->num_recs - 1);
 	}
 	child->is_split = FALSE;
 	op->tree->root = parent->block;
@@ -956,7 +956,7 @@ FN;
 	op->child = op->parent;
 	op->parent = NULL;
 	return 0;
-}	
+}
 
 Buf_s *br_split(Buf_s *bchild)
 {
@@ -1025,7 +1025,7 @@ FN;
 	if (child->num_recs == 0) {
 		/* We have a degenerate case */
 		update_block(parent, child->last, op->irec);
-		buf_free(op->child);
+		buf_free(&op->child);
 		return 0;
 	}
 	twig.key = get_key(child, child->num_recs - 1);
@@ -1040,8 +1040,8 @@ FN;
 			buf_put(&op->parent);
 			op->parent = right;
 			parent  = op->parent->d;
+			op->irec = find_le(parent, twig.key);
 		}
-		op->irec = find_le(parent, twig.key);
 	}
 	if (size > usable(parent)) {
 		br_compact(parent);
@@ -1056,11 +1056,12 @@ FN;
 	store_twig(parent, twig, op->irec);
 	if (child->kind == BRANCH) {
 		child->last = get_block(child, child->num_recs - 1);
-		br_del_rec(child, child->num_recs - 1);	
+		br_del_rec(child, child->num_recs - 1);
 	} else {
 		child->last = 0;
 	}
 	child->is_split = FALSE;
+	buf_put(&op->child);
 	return 0;
 }
 
@@ -1084,9 +1085,7 @@ FN;
 		op->child = buf_get(op->tree->cache, block);
 		child = op->child->d;
 		if (child->is_split) {
-		/* XXX: this is no what I want */
 			if (br_store(op)) return FAILURE;
-			buf_put(&op->child);
 			continue;
 		}
 		buf_put(&op->parent);
@@ -1261,9 +1260,9 @@ PRd(child->num_recs);
 		}
 	}
 	br_del_rec(parent, x);
-	buf_free(bchild);
+	buf_free(&bchild);
 	buf_put(&bsibling);
-	return bparent;	
+	return bparent;
 }
 
 Buf_s *rebalance(Buf_s *bparent, int x, Buf_s *bchild)
@@ -1374,6 +1373,7 @@ FN;
 int t_delete(Btree_s *t, Lump_s key)
 {
 FN;
+//	Op_s	op = { t, NULL, NULL, 0, key, { 0 }, { 0 } };
 	Buf_s	*node;
 	Head_s	*head;
 	int	rc;

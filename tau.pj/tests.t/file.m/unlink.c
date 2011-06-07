@@ -14,13 +14,13 @@
 /*
  * NAME
  *      unlink - remove directory entry
- * 
+ *
  * SYNOPSIS
  *      #include <unistd.h>
- * 
+ *
  *      int
  *      unlink(const char *path);
- * 
+ *
  * DESCRIPTION
  *      The unlink() function removes the link named by path from its directory
  *      and decrements the link count of the file which was referenced by the
@@ -29,7 +29,7 @@
  *      are reclaimed.  If one or more process have the file open when the last
  *      link is removed, the link is removed, but the removal of the file is
  *      delayed until all references to it have been closed.
- * 
+ *
  * RETURN VALUES
  *      Upon successful completion, a value of 0 is returned.  Otherwise, a value
  *      of -1 is returned and errno is set to indicate the error.

@@ -102,9 +102,9 @@ void test_stk (unint numTests)
 	StkObj_s	*obj;
 	StkObj_s	*peeked;
 	StkTest_s	t;
-	
+
 	zero(t);
-	
+
 	init_stk( &Astack);
 	init_stk( &Bstack);
 	for (i = 0; i < NUM_OBJS; ++i) {
@@ -206,9 +206,9 @@ void test_ring (unint numTests)
 	_ringObj_s	*obj;
 	_ringObj_s	*peeked;
 	_ringTest_s	t;
-	
+
 	zero(t);
-	
+
 	new_ring( &Aring, NUM_OBJS + 1);
 	new_ring( &Bring, NUM_OBJS + 1);
 	for (i = 0; i < NUM_OBJS; ++i) {
@@ -318,9 +318,9 @@ void test_cir (unint numTests)
 	CirObj_s	*obj;
 	CirObj_s	*peeked;
 	CirTest_s	t;
-	
+
 	zero(t);
-	
+
 	init_cir( &Acir);
 	init_cir( &Bcir);
 	for (i = 0; i < NUM_OBJS; ++i) {
@@ -426,9 +426,9 @@ void test_dq (unint numTests)
 	DqObj_s		*obj;
 	DqObj_s		*peeked;
 	DqTest_s	t;
-	
+
 	zero(t);
-	
+
 	init_dq( &Adq);
 	init_dq( &Bdq);
 	for (i = 0; i < NUM_OBJS; ++i) {
@@ -509,7 +509,7 @@ void test_dq (unint numTests)
 int main (int argc, char *argv[])
 {
 	unint		numTests = 100000;
-	
+
 	if (argc > 1) numTests = atoi(argv[1]);
 
 	test_stk(numTests);
@@ -520,6 +520,6 @@ int main (int argc, char *argv[])
 	test_cir(numTests);
 	test_dq(numTests);
 	test_dq(numTests);
-	
+
 	return 0;
 }

@@ -12,7 +12,7 @@
 long myRand (void)
 {
 	static long x = 0;
-	
+
 	//x= rand();//x+= 3;
 	x= random();//x+= 3;
 //	printf(" %d ", x);
@@ -35,7 +35,7 @@ int *newSet (int size)
 {
 	int	*set;
 	int	i;
-	
+
 	set = malloc(size * sizeof(int));
 	if (!set) return set;
 	for (i = 0; i < size; ++i) {
@@ -54,7 +54,7 @@ void unionSet (int *set, int x, int y)
 {
 	int	root1 = findSet(set, x);
 	int	root2 = findSet(set, y);
-	
+
 	if (set[root2] < set[root1]) set[root1] = root2;
 	else {
 		if (set[root2] == set[root1]) --set[root1];
@@ -75,7 +75,7 @@ typedef struct vvInt {
 void prVInt (vInt *v)
 {
 	int	i;
-	
+
 	for (i = 0; i < v->length; ++i) {
 		printf("\t%d. %d\n", i, v->v[i]);
 	}
@@ -84,7 +84,7 @@ void prVInt (vInt *v)
 void prVvInt (vvInt *vv)
 {
 	int	i;
-	
+
 	for (i = 0; i < vv->length; ++i) {
 		printf("%d. %p\n", i, vv->v[i]);
 		if (vv->v[i]) prVInt(vv->v[i]);
@@ -94,7 +94,7 @@ void prVvInt (vvInt *vv)
 void prVirtRow (vInt *v)
 {
 	int	i;
-	
+
 	for (i = 0;;) {
 		if (v->v[i]) printf("|");
 		else printf(" ");
@@ -120,7 +120,7 @@ void prHorzRow (vInt *v)
 vInt *newVInt (int length)
 {
 	vInt	*v;
-	
+
 	v = malloc(sizeof(int) * (length + 1));
 	if (v) v->length = length;
 	return v;
@@ -129,7 +129,7 @@ vInt *newVInt (int length)
 void setVInt (vInt *v, int value)
 {
 	int	i;
-	
+
 	for (i = 0; i < v->length; ++i) {
 		v->v[i] = value;
 	}
@@ -139,14 +139,14 @@ void prMaze (vvInt *maze)
 {
 	int	rows = maze->length / 2;
 	int	i;
-	
+
 	for (i = 0; i < rows; ++i) {
 		prHorzRow(maze->v[2*i]);
 		prVirtRow(maze->v[1+2*i]);
 	}
 	prHorzRow(maze->v[2*i]);
 }
-		
+
 vvInt *makeMaze (int rows, int cols)
 {
 	vvInt	*vv;
@@ -171,7 +171,7 @@ int pickAwall (vInt *walls)
 {
 	int	k;
 	int	wall;
-	
+
 	if (walls->length == 0) {
 		return -1;
 	}
@@ -196,11 +196,11 @@ int isVirtWall (int wall, int *row, int *col)
 		*row = wall / (Cols + 1);
 		*col = wall % (Cols + 1);
 		return TRUE;
-		
+
 	} else {
-	
+
 		wall -= VirtWalls;
-		
+
 		*row = wall / Cols;
 		*col = wall % Cols;
 		return FALSE;
@@ -211,17 +211,17 @@ int adjacentRooms (int wall, int *a, int *b)
 {
 	int	row;
 	int	col;
-	
+
 	if (isVirtWall(wall, &row, &col)) {
 
 		if ((col == 0) || (col == Cols)) return -1;
-		
+
 		*b = row * Cols + col;
 		*a = *b - 1;
 	} else {
-		
+
 		if ((row == 0) || (row == Rows)) return -1;
-		
+
 		*b = row * Cols + col;
 		*a = *b - Cols;
 	}
@@ -233,7 +233,7 @@ void discardWall (vvInt *maze, int wall)
 	int	row;
 	int	col;
 
-//printf("%d ", wall);	
+//printf("%d ", wall);
 	if (isVirtWall(wall, &row, &col)) {
 		maze->v[2*row + 1]->v[col] = 0;
 	} else {
@@ -249,13 +249,13 @@ void saveWall (vvInt *maze, int wall)
 void initWalls (void)
 {
 	int	i;
-	
+
 	VirtWalls = (Cols+1)*Rows;
 	HorzWalls = (Rows+1)*Cols;
 	TotalWalls = VirtWalls + HorzWalls;
 
 	Walls = newVInt(TotalWalls);
-	
+
 	for (i = 0; i < TotalWalls; ++i) {
 		Walls->v[i] = i;
 	}
@@ -273,10 +273,10 @@ int main (int argc, char *argv[])
 	srand(times( &time));
 	srandom(times( &time));
 
-#if 0	
+#if 0
 {
 	int i;
-	
+
 	for (i = 0; i < 400; ++i) {
 		printf(" %d\n", myRand() % 4);
 	}
@@ -285,7 +285,7 @@ int main (int argc, char *argv[])
 
 	if (argc > 1) Rows = atoi(argv[1]);
 	if (argc > 2) Cols = atoi(argv[2]);
-	
+
 	if ((Rows == 0) || (Cols == 0)) {
 		fprintf(stderr, "Usage: %s [rows [columns]]\n", argv[0]);
 		return 1;
@@ -294,11 +294,11 @@ int main (int argc, char *argv[])
 
 	Rooms = newSet(Cols * Rows);
 	maze = makeMaze(Rows, Cols);
-	
+
 	for (;;) {
 		wall = pickAwall(Walls);
 		if (wall == -1) break;
-		
+
 		rc = adjacentRooms(wall, &a, &b);
 		if (rc == -1) {
 			saveWall(maze, wall);

@@ -30,7 +30,7 @@ static inline void buf_dirty(Buf_s *b)
 Cache_s *cache_new(char *filename, u64 num_bufs, u64 blockSize);
 bool     cache_balanced(Cache_s *cache);
 Buf_s   *buf_new(Cache_s *cache);
-void     buf_free(Buf_s *b);
+void     buf_free(Buf_s **bp);
 Buf_s   *buf_get(Cache_s *cache, u64 block);
 Buf_s   *buf_scratch(Cache_s *cache);
 void     buf_put(Buf_s **bp);

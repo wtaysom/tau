@@ -43,7 +43,7 @@ cir_q	Delay_q;
 void bind (agent_s *to_signal, agent_s *to_flush) /* dependent, independent */
 {
 	bond_s	*bond;
- 
+
 	bond = ezalloc(sizeof(*bond));
 	bond->bn_to_signal   = to_signal;
 	bond->bn_to_flush = to_flush;
@@ -109,7 +109,7 @@ void assert_no_bonds (agent_s *agent)
 	assert(is_empty_dq( &agent->ag_flush_list));
 	assert(is_empty_stk( &agent->ag_signal));
 }
-			
+
 void signal_agents (stk_q *stk)
 {
 	bond_s	*bond;
@@ -157,7 +157,7 @@ check_agent(agent);
 	}
 	assert(agent->ag_wait_for == 0);//XXX: no asynchronous flush yet
 	agent->ag_flush(agent);
-	signal_agents( &agent->ag_signal);		
+	signal_agents( &agent->ag_signal);
 }
 
 void delay_agent (agent_s *agent)

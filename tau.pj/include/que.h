@@ -34,35 +34,35 @@ extern "C" {
  | list structure being used.  The link field can be any place in the
  | structure though being placed at the front of the structure generates
  | slightly better code.
- | 
+ |
  | We support four types of linked list.
- | 
+ |
  | 	1. A stack (STK)
  | 	2. A singly linked list (SQ)
  | 	3. A singly linked circular list (CIR)
  | 	4. A doubly linked circular list (DQ)
- | 
+ |
  | The following sections describe each of these link types in
  | detail and how to use the various operations and under what
  | circumstances they should be used.
- | 
+ |
  | You have several compile time options to ENABLE or DISABLE to
  | select how these routines are implemented in your system.
- | 
+ |
  | 	MCCABE		ENABLE	Sets rest of options to minimize complexity
  | 				measures from the MCCABE tools.
  | 			DISABLE	Use options set by developer.
- | 
+ |
  | 	QUE_NULL	ENABLE	NULL out next pointer after dequeuing
  | 			DISABLE	Next pointer is not nulled, thus QMEMBER
  | 				and QUE_CHECK are not available.
- | 
+ |
  | 	QUE_CHECK	ENABLE	Make sure 'next' is NULL when putting an
  | 				element into a linked list.  This should
  | 				be ENABLED during development but should
  | 				be DISABLED for maximum performance.
  | 				DISABLE	No checking done.
- | 
+ |
  | 	QUE_MACRO	ENABLE	Use the macro (in-line) versions.  Because
  | 				of locality in caches, it may be more
  | 				efficient to use the function version of
@@ -70,30 +70,30 @@ extern "C" {
  | 			DISABLE	Use the function versions.  Makes it
  | 				easier to step over queuing functions
  | 				when debugging.
- | 
+ |
  | The generic macros work across all linked list types.  The following
  | parameters are the same for all the macros.
- | 
+ |
  | 	type
  | 		INPUT: The type of the structure pointed to by 'item'.
  | 	linkField
  | 		INPUT: The field allocated in the structure to be
  | 		used as the link field for the linked list.  It should
  | 		be declared to be of appropriate for the linked list.
- | 
+ |
  | 	Definitions used in USAGE sections:
- | 
+ |
  | 		typedef struct Xyz_s
  | 		{
  | 			int		field_a;
  | 			DQlink_t	link;
  | 			int		field_b;
  | 		} Xyz_s;
- | 
+ |
  | 		DQhead_t	Head;
  | 		Zyz_s		Xyzzy;
  | 		Zyz_s		*xyz;
- | 
+ |
  | 	FRONTaddr(item, type, linkField)
  | 			Because the link field can be any place in the structure,
  | 			sometimes you have a pointer to the link field and want
@@ -106,10 +106,10 @@ extern "C" {
  | 		USAGE:
  | 			{
  | 				Xyz_s	*abc = (Xyz_s *)&Xyzzy.link;
- | 
+ |
  | 				FRONTaddr(abc, Xyz_s, link);
  | 			}
- | 
+ |
  | 	STRUCT(item, type, linkField)
  | 			Same as FRONTaddr but rather than updating 'item', lets
  | 			the new pointer be assigned to a variable of your choice.
@@ -119,10 +119,10 @@ extern "C" {
  | 			{
  | 				DQlink_t	*abc = &Xyzzy.link;
  | 				Xyz_s		*efg;
- | 
+ |
  | 				efg = STRUCT(abc, Xyz_s, link);
  | 			}
- | 
+ |
  | 	NEXT(item)
  | 			Gets the next item in a linked list.  In this case,
  | 			item points to the link field of the structure.
@@ -133,11 +133,11 @@ extern "C" {
  | 				DQlink_t	*abc = &Xyzzy.link;
  | 				DQlink_t	*next;
  | 				Xyz_s		*efg;
- | 
+ |
  | 				next = NEXT(abc);
  | 				efg = STRUCT(next, Xyz_s, link);
  | 			}
- | 
+ |
  | 	ONEXT(item, type, linkField)
  | 			Gets the next item in a linked list.  In this case,
  | 			assumes item is pointing to the front of the structure
@@ -149,14 +149,14 @@ extern "C" {
  | 			{
  | 				Xyz_s	*abc = &Xyzzy;
  | 				Xyz_s	*next;
- | 
+ |
  | 				next = NEXT(abc, Xyz_s, link);
  | 			}
- | 
+ |
  | 	PREV and OPREV only apply to doubly linked lists which have
  | 	a previous element pointer but are included here because they
  | 	complement NEXT and ONEXT.
- | 
+ |
  | 	PREV(item)
  | 			Gets the previous item in a doubly linked list.  In
  | 			this case, item points to the link field of the structure.
@@ -169,11 +169,11 @@ extern "C" {
  | 				DQlink_t	*abc = &Xyzzy.link;
  | 				DQlink_t	*prev;
  | 				Xyz_s		*efg;
- | 
+ |
  | 				prev = PREV(abc);
  | 				efg = STRUCT(prev, Xyz_s, link);
  | 			}
- | 
+ |
  | 	OPREV(item, type, linkField)
  | 			Gets the previous item in a doubly linked list.  In
  | 			this case, it assumes item is pointing to the front
@@ -185,10 +185,10 @@ extern "C" {
  | 			{
  | 				Xyz_s	*abc = &Xyzzy;
  | 				Xyz_s	*prev;
- | 
+ |
  | 				prev = PREV(abc, Xyz_s, link);
  | 			}
- | 
+ |
  | 	NULLIFY(link)
  | 			Used internally by link list routines to set the
  | 			'next' field to NULL if QUE_NULL is ENABLED.  Can
@@ -200,7 +200,7 @@ extern "C" {
  | 			{
  | 				NULLIFY( &Xyzzy.link);
  | 			}
- | 
+ |
  | 	QMEMBER(link)
  | 			Used to test if linkField is in a linked list.  It does
  | 			this by comparing the linkField to NULL.  Only works if
@@ -213,17 +213,17 @@ extern "C" {
  | 				{
  | 					DQ_RMV( &Xyzzy, link);
  | 			}
- | 
+ |
  | Stack: STK
  | 	A stack is a singly linked list that supports Last-In-First-Out
  | 	(LIFO) order access to its members.  The last element on the
  | 	list points to NULL.
- | 
+ |
  | 	Empty Head
  | 	+-------+
  | 	| NULL  |
  | 	+-------+
- | 	
+ |
  | 	+-------+
  | 	|  Top  +-----------+
  | 	+-------+	    |
@@ -246,60 +246,60 @@ extern "C" {
  | 	             	  --+--
  | 			   ---
  | 			    -
- | 
+ |
  | 	typedef struct Xyz_s
  | 	{
  | 		int		field_a;
  | 		STKlink_t	stkLink;
  | 		int		field_b;
  | 	} Xyz_s;
- | 	
+ |
  | 	zyzzy()
  | 	{
  | 		STKtop_t	Top;
  | 		Xyz_s		A, B, C;
  | 		Xyz_s		*a, *b, *c;
- | 		
+ |
  | 		STK_INIT(Top);
- | 	
+ |
  | 		STK_PUSH(Top, &C, stkLink);
  | 		STK_PUSH(Top, &B, stkLink);
  | 		STK_PUSH(Top, &A, stkLink);
- | 	
+ |
  | 		STK_POP(Top, a, Xyz_s, stkLink);
  | 		STK_POP(Top, b, Xyz_s, stkLink);
  | 		STK_POP(Top, c, Xyz_s, stkLink);
  | 	}
- | 
+ |
  | Stacks are useful for handling free lists of resources.  The link fields
  | have been designed so that a structure that normally resides on some
  | other type of linked data structure, can be stored on a free list managed
  | by the stack macros.
- | 
+ |
  | Typedefs:
- | 
+ |
  | 	STKlink_t	Use the STKlink_t typedef to define the link field
  | 			in the structures to be managed as a stack.  This
  | 			field must be initialized to zero either by zeroing
  | 			the whole structure or calling NULLIFY with the field.
- | 
+ |
  | 	STKtop_t	Use the STKtop_t typedef to define the top of the
  | 			stack or LIFO.  The top must be initialized by either
  | 			using STK_INIT or STK_INIT_ELEMENTS.
- | 
+ |
  | Macros:
- | 
+ |
  | 	STK_INIT(top)
  | 			Initialize the top of the stack.
  | 		top
  | 			OUTPUT: A variable of type STKtop_t used for the
  | 			top of the stack.
- | 
+ |
  | 	STK_STATIC_INIT()
  | 			Uses compile time initialization to initialize the head.
  | 		USAGE:
  | 			STKtop_t Top = STK_STATIC_INIT();
- | 
+ |
  | 	STK_INIT_ELEMENTS(top, data, numElements, typeElement, linkField)
  | 			Used to take an array of items and initialize all of them
  | 			and push them onto the stack.  A nice way to build a free
@@ -321,10 +321,10 @@ extern "C" {
  | 			{
  | 				Xyz_s		Xyz[10];
  | 				STKtop_t	Top;
- | 
+ |
  | 				STK_INIT_ELEMENTS(Top, Xyz, 10, Xyz_s, link);
  | 			}
- | 
+ |
  | 	STK_EMPTY(top)
  | 			Is True, if top of stack is empty, otherwise is False.
  | 			Used to test if there are any items left on the stack.
@@ -332,7 +332,7 @@ extern "C" {
  | 			INPUT: The top of the stack.
  | 		USAGE:
  | 			if (STK_EMPTY(Top)) { ... }
- | 
+ |
  | 	STK_NOT_EMPTY(top)
  | 			Is False, if top of stack is empty, otherwise is True.
  | 			Easier to understand then "if (!STK_EMPTY(top))...".
@@ -340,7 +340,7 @@ extern "C" {
  | 			INPUT: The top of the stack.
  | 		USAGE:
  | 			if (STK_NOT_EMPTY(Top)) { ... }
- | 
+ |
  | 	STK_PUSH(top, item, linkField)
  | 			Push an item on to the stack.  If the stack is immediately
  | 			popped, this item will come off first.
@@ -350,7 +350,7 @@ extern "C" {
  | 			INPUT: Pointer to a structure to be put in the stack.
  | 			The 'linkField' of 'item' is set to the current structure
  | 			pointer in 'top' and 'top' points to 'item'.
- | 
+ |
  | 	STK_POP(top, item, type, linkField)
  | 			Pop the top item off the stack.  If the stack is empty,
  | 			item is set to NULL, otherwise it has the top structure
@@ -363,7 +363,7 @@ extern "C" {
  | 			OUTPUT: Pointer to a structure of type 'type'.  Set
  | 			to NULL if the stack is empty, otherwise set to a
  | 			pointer to the structure pointed to by top.
- | 
+ |
  | 	STK_POP_NO_CHECK(top, item, type, linkField)
  | 			STK_POP_NO_CHECK is just like STK_POP except we know
  | 			something is on the stack having done a STK_NOT_EMPTY
@@ -375,7 +375,7 @@ extern "C" {
  | 			OUTPUT: Pointer to a structure of type 'type'.  Set
  | 			to NULL if the stack is empty, otherwise set to a
  | 			pointer to the structure pointed to by top.
- | 
+ |
  | 	STK_PEEK(top, item, type, linkField)
  | 			Sets 'item' to the first element at the top of the stack
  | 			but does not remove it from the stack.  Good for checking
@@ -387,7 +387,7 @@ extern "C" {
  | 			OUTPUT: Pointer to a structure of type 'type'.  Set
  | 			to NULL if the stack is empty, otherwise set to a
  | 			pointer to the structure pointed to by top.
- | 
+ |
  | 	STK_DROP(top, item, type, linkField)
  | 			Used to drop or remove 'item' from the top of the stack.
  | 			Normally, 'item' is obtained by using STK_PEEK.
@@ -398,7 +398,7 @@ extern "C" {
  | 			OUTPUT: Pointer to a structure of type 'type'.  Set
  | 			to NULL if the stack is empty, otherwise set to a
  | 			pointer to the structure pointed to by top.
- | 
+ |
  | 	STK_RMV(top, item, linkField)
  | 			Removes the designated 'item' from the stack by starting
  | 			at the head of the stack and scanning the stack linearly
@@ -412,7 +412,7 @@ extern "C" {
  | 		RETURNS:
  | 			TRUE: found the item in the stack and removed it.
  | 			FALSE: did not find the item in the stack and did nothing.
- | 
+ |
  | 	STK_FOREACH(head, item, type, linkField)
  | 			Used to scan through the stack to process it or search for
  | 			a particular element in the stack.  It is really a 'for' loop
@@ -425,7 +425,7 @@ extern "C" {
  | 			{
  | 				extern STKtop_t	Top;
  | 				Xyz_s			*x;
- | 
+ |
  | 				STK_FOREACH(Top, x, Xyz_s, stkLink)
  | 				{
  | 					if (x->field_a == 42) return x;
@@ -439,7 +439,7 @@ extern "C" {
  | 	we support.  The head does take more space than the circular linked
  | 	lists (CIR).  Elements can be inserted at either the head or the tail
  | 	of the queue but can only be take from the head.
- | 
+ |
  | 	Empty Head
  | 	+-------+
  | 	| next  |<------+
@@ -448,7 +448,7 @@ extern "C" {
  | 	+---+---+       |
  | 		|       |
  | 		+-------+
- | 	
+ |
  | 	  Head
  | 	+-------+
  | 	| next  +-----------+
@@ -470,59 +470,59 @@ extern "C" {
  | 	    |		+-------+
  | 	    +---------->|   C   |
  | 			+-------+
- | 
+ |
  | 	typedef struct Xyz_s
  | 	{
  | 		int		field_a;
  | 		SQlink_t	sqLink;
  | 		int		field_b;
  | 	} Xyz_s;
- | 	
+ |
  | 	zyzzy()
  | 	{
  | 		SQhead_t	Head;
  | 		Xyz_s		A, B, C;
  | 		Xyz_s		*a, *b, *c;
- | 		
+ |
  | 		SQ_INIT( &Head);
- | 	
+ |
  | 		SQ_ENQ( &Head, &A, sqLink);
  | 		SQ_ENQ( &Head, &B, sqLink);
  | 		SQ_ENQ( &Head, &C, sqLink);
- | 	
+ |
  | 		SQ_DEQ( &Head, a, Xyz_s, sqLink);
  | 		SQ_DEQ( &Head, b, Xyz_s, sqLink);
  | 		SQ_DEQ( &Head, c, Xyz_s, sqLink);
  | 	}
- | 
+ |
  | Singly linked queues can quickly process queues that are normally
  | accessed in FIFO order and elements are rarely or never removed
  | from the middle of the queue.  To remove an element from the middle
  | of the queue requires starting a scan at the head and following the
  | links until the desired element is found.
- | 
+ |
  | Typedefs:
- | 
+ |
  | 	SQlink_t	Use the SQlink_t typedef to define the link field
  | 			in the structures to be managed as a singly linked
  | 			queue.  This field must be initialized to zero either
  | 			by zeroing the whole structure or calling NULLIFY
  | 			with the field.
- | 
+ |
  | 	SQhead_t	Use the SQhead_t typedef to define the head of the
  | 			singly linked queue.  The head  must be initialized by
  | 			either using SQ_INIT or SQ_INIT_ELEMENTS.
- | 
+ |
  | Macros:
- | 
+ |
  | 	SQ_INIT(head)
  | 			Initialize the head of the queue.
  | 		head
  | 			OUTPUT: A pointer to a variable of type SQhead_t.
- | 
+ |
  | 	SQ_INIT_ELEMENTS(head, data, numElements, typeElement, linkField)
  | 			Used to take an array of items and initialize all of them
- | 			and enqueue them in the queue. 
+ | 			and enqueue them in the queue.
  | 		head
  | 			OUTPUT: A variable of type SQhead_t used for the
  | 			head of the queue.  Assumed to be uninitialized.
@@ -539,10 +539,10 @@ extern "C" {
  | 			{
  | 				Xyz_s		Xyz[10];
  | 				SQhead_t	Head;
- | 
+ |
  | 				SQ_INIT_ELEMENTS(Head, Xyz, 10, Xyz_s, link);
  | 			}
- | 
+ |
  | 	SQ_EMPTY(head)
  | 			Is True, if queue is empty, otherwise is False.
  | 			Used to test if there are any items left in the queue.
@@ -550,7 +550,7 @@ extern "C" {
  | 			INPUT: A pointer to the head of the queue.
  | 		USAGE:
  | 			if (SQ_EMPTY(Head)) { ... }
- | 
+ |
  | 	SQ_NOT_EMPTY(head)
  | 			Is False, if queue is empty, otherwise is True.
  | 			Easier to understand then "if (!SQ_EMPTY(head))...".
@@ -558,7 +558,7 @@ extern "C" {
  | 			INPUT: A pointer to the head of the queue.
  | 		USAGE:
  | 			if (SQ_NOT_EMPTY(Head)) { ... }
- | 
+ |
  | 	SQ_ENQ(head, item, linkField)
  | 			Enqueue an item on to the tail of the queue.
  | 		head
@@ -567,7 +567,7 @@ extern "C" {
  | 		item
  | 			INPUT: Pointer to the element to be inserted at the
  | 			tail of the queue.
- | 
+ |
  | 	SQ_PUSH(head, item, linkField)
  | 			Push an item on to the front of the queue.  If the queue
  | 			is immediately dequeued, this item will come off.  Useful
@@ -579,7 +579,7 @@ extern "C" {
  | 			UPDATE: Pointer to the element to be inserted at the head
  | 			of the queue.  The link field of 'item' points to what
  | 			the 'head' did.
- | 
+ |
  | 	SQ_DEQ(head, item, type, linkField)
  | 			Dequeue the first item off the queue.  If the queue is
  | 			empty, item is set to NULL, otherwise it has the oldest
@@ -592,7 +592,7 @@ extern "C" {
  | 			OUTPUT: Pointer to a structure of type 'type'.  Set
  | 			to NULL if the queue is empty, otherwise set to a
  | 			pointer to the structure pointed to by head.
- | 
+ |
  | 	SQ_DEQ_NO_CHECK(head, item, type, linkField)
  | 			SQ_DEQ_NO_CHECK is just like SQ_DEQ except we know
  | 			something is on the queue having done a SQ_NOT_EMPTY
@@ -603,7 +603,7 @@ extern "C" {
  | 		item
  | 			OUTPUT: Pointer to a structure of type 'type'.  Set
  | 			to a pointer to the structure pointed to by head.
- | 
+ |
  | 	SQ_PEEK(head, item, type, linkField)
  | 			Sets 'item' to the first element at the head of the queue
  | 			but does not remove it from the queue.  Good for checking
@@ -615,7 +615,7 @@ extern "C" {
  | 			OUTPUT: Pointer to a structure of type 'type'.  Set
  | 			to a pointer to the structure pointed to by head.  If
  | 			queue is empty, it is set to NULL.
- | 
+ |
  | 	SQ_PEEK_LAST(head, item, type, linkField)
  | 			Sets 'item' to the element at the tail of the queue
  | 			but does not remove it from the queue.
@@ -625,7 +625,7 @@ extern "C" {
  | 			OUTPUT: Pointer to a structure of type 'type'.  Set
  | 			to a pointer to the structure pointed to by head.  If
  | 			queue is empty, it is set to NULL.
- | 
+ |
  | 	SQ_DROP(head, item, linkField)
  | 			Used to drop or remove 'item' from the head of the queue.
  | 			Normally, 'item' is obtained by using SQ_PEEK.
@@ -635,7 +635,7 @@ extern "C" {
  | 		item
  | 			UPDATE: Pointer to a structure of type 'type'.  'item'
  | 			was obtained by doing a SQ_PEEK.
- | 
+ |
  | 	SQ_RMV(head, item, linkField)
  | 			Removes the designated 'item' from the queue by starting
  | 			at the head of the queue and scanning the queue linearly
@@ -647,7 +647,7 @@ extern "C" {
  | 		item
  | 			INPUT: Pointer to a structure of type 'type'.  LinkField
  | 			will be set to NULL, if QUE_NULL is enabled.
- | 
+ |
  | 	SQ_APPEND(head, appendee)
  | 			Used to append one queue to another queue.  All the
  | 			elements in the appendee queue are placed at the tail
@@ -660,7 +660,7 @@ extern "C" {
  | 			UPDATE: A pointer to the head of the queue that will be
  | 			attached to the end of the head queue.  'appendee' is
  | 			made an empty queue.
- | 
+ |
  | 	SQ_PREPEND(head, prependee)
  | 			Used to prepend one queue to another queue.  All the
  | 			elements in the prepend queue are placed at the front
@@ -673,14 +673,14 @@ extern "C" {
  | 			UPDATE: A pointer to the head of the queue that will be
  | 			attached to the beginning of the head queue.  The 'prependee'
  | 			is made an empty queue.
- | 
+ |
  | 	SQ_FIND(head, item, linkField)
  | 			Returns TRUE if it finds 'item' in the queue, otherwise
  | 			returns FALSE.  Does a linear search of the queue to find
  | 			the 'item'.
  | 		head
  | 			INPUT: A pointer to the head of the queue.
- | 
+ |
  | 	SQ_CNT(head)
  | 			Returns the number of elements in the queue.
  | 		head
@@ -691,12 +691,12 @@ extern "C" {
  | 	head element.  It is a little more costly to manipulate than the
  | 	singly linked queue described above but it only uses one pointer
  | 	for the head so can be used when many instances of queues are needed.
- | 
+ |
  | 	Empty Head
  | 	+-------+
  | 	|   0   |
  | 	+-------+
- | 	
+ |
  | 	+-------+
  | 	| Head  +-----------+
  | 	+-------+	    |
@@ -715,53 +715,53 @@ extern "C" {
  | 		|	+-------+
  | 		+-------+   B   |
  | 			+-------+
- | 
+ |
  | 	typedef struct Xyz_s
  | 	{
  | 		int		field_a;
  | 		CIRlink_t	cirLink;
  | 		int		field_b;
  | 	} Xyz_s;
- | 	
+ |
  | 	zyzzy()
  | 	{
  | 		CIRhead_t	Head;
  | 		Xyz_s		A, B, C;
  | 		Xyz_s		*a, *b, *c;
- | 		
+ |
  | 		CIR_INIT(Head);
- | 	
+ |
  | 		CIR_ENQ(Head, &A, cirLink);
  | 		CIR_ENQ(Head, &B, cirLink);
  | 		CIR_ENQ(Head, &C, cirLink);
- | 	
+ |
  | 		CIR_DEQ(Head, a, Xyz_s, cirLink);
  | 		CIR_DEQ(Head, b, Xyz_s, cirLink);
  | 		CIR_DEQ(Head, c, Xyz_s, cirLink);
  | 	}
  |
  | Typedefs:
- | 
+ |
  | 	CIRlink_t	Use the CIRlink_t typedef to define the link field
  | 			in the structures to be managed as a singly linked
  | 			circular queue.  This field must be initialized to
  | 			zero either by zeroing the whole structure or calling
  | 			NULLIFY with the field.
- | 
+ |
  | 	CIRhead_t	Use the CIRhead_t typedef to define the head of the
  | 			singly linked circular queue.  The head  must be
  | 			initialized by either using CIR_INIT or CIR_INIT_ELEMENTS.
- | 
+ |
  | Macros:
- | 
+ |
  | 	CIR_INIT(head)
  | 			Initialize the head of the queue.
  | 		head
  | 			OUTPUT: A variable of type CIRhead_t initialized to NULL.
- | 
+ |
  | 	CIR_INIT_ELEMENTS(head, data, numElements, typeElement, linkField)
  | 			Used to take an array of items and initialize all of them
- | 			and enqueue them in the queue. 
+ | 			and enqueue them in the queue.
  | 		head
  | 			OUTPUT: A variable of type CIRhead_t used for the
  | 			head of the queue.  Assumed to be uninitialized.
@@ -778,10 +778,10 @@ extern "C" {
  | 			{
  | 				Xyz_s		Xyz[10];
  | 				CIRhead_t	Head;
- | 
+ |
  | 				CIR_INIT_ELEMENTS(Head, Xyz, 10, Xyz_s, link);
  | 			}
- | 
+ |
  | 	CIR_EMPTY(head)
  | 			Is True, if queue is empty, otherwise is False.
  | 			Used to test if there are any items left in the queue.
@@ -789,7 +789,7 @@ extern "C" {
  | 			INPUT: The head of the queue.
  | 		USAGE:
  | 			if (CIR_EMPTY(Head)) { ... }
- | 
+ |
  | 	CIR_NOT_EMPTY(head)
  | 			Is False, if queue is empty, otherwise is True.
  | 			Easier to understand then "if (!CIR_EMPTY(head))...".
@@ -797,7 +797,7 @@ extern "C" {
  | 			INPUT: The head of the queue.
  | 		USAGE:
  | 			if (CIR_NOT_EMPTY(Head)) { ... }
- | 
+ |
  | 	CIR_ENQ(head, item, linkField)
  | 			Enqueue an item on to the tail of the queue.
  | 		head
@@ -807,7 +807,7 @@ extern "C" {
  | 		item
  | 			UPDATE: Pointer to element to be inserted at tail of queue.
  | 			Its link field is updated to point to the head element.
- | 
+ |
  | 	CIR_PUSH(head, item, linkField)
  | 			Push an item on to the front of the queue.  If the queue
  | 			is immediately dequeued, this item will come off.  Useful
@@ -820,7 +820,7 @@ extern "C" {
  | 		item
  | 			UPDATE: Pointer to element to be inserted at head of queue.
  | 			Its link field is updated to point to the old head element.
- | 
+ |
  | 	CIR_DEQ(head, item, type, linkField)
  | 			Dequeue the first item off the queue.  If the queue is
  | 			empty, item is set to NULL, otherwise it has the oldest
@@ -835,7 +835,7 @@ extern "C" {
  | 			to NULL if the queue is empty, otherwise set to a
  | 			pointer to the structure pointed to by the tail element
  | 			pointed to by 'head'.
- | 
+ |
  | 	CIR_DEQ_NO_CHECK(head, item, type, linkField)
  | 			CIR_DEQ_NO_CHECK is just like CIR_DEQ except we know
  | 			something is on the queue having done a CIR_NOT_EMPTY
@@ -849,7 +849,7 @@ extern "C" {
  | 			to NULL if the queue is empty, otherwise set to a
  | 			pointer to the structure pointed to by the tail element
  | 			pointed to by 'head'.
- | 
+ |
  | 	CIR_PEEK(head, item, type, linkField)
  | 			Sets 'item' to the first element at the head of the queue
  | 			but does not remove it from the queue.  Good for checking
@@ -862,7 +862,7 @@ extern "C" {
  | 			to the first element of the queue which is pointed
  | 			to by tail element which is pointed to by head.  If
  | 			queue is empty, it is set to NULL.
- | 
+ |
  | 	CIR_DROP(head, item, linkField)
  | 			Used to drop or remove 'item' from the head of the queue.
  | 			Normally, 'item' is obtained by using CIR_PEEK.
@@ -873,7 +873,7 @@ extern "C" {
  | 		item
  | 			UPDATE: Pointer to a structure of type 'type'.  'item'
  | 			was obtained by doing a CIR_PEEK.
- | 
+ |
  | 	CIR_RMV(head, item, linkField)
  | 			Removes the designated 'item' from the queue by starting
  | 			at the head of the queue and scanning the queue linearly
@@ -884,7 +884,7 @@ extern "C" {
  | 		item
  | 			INPUT: Pointer to a structure of type 'type'.  LinkField
  | 			will be set to NULL, if QUE_NULL is enabled.
- | 
+ |
  | 	CIR_APPEND(head, appendee)
  | 			Used to append one queue to another queue.  All the
  | 			elements in the appendee queue are placed at the tail
@@ -896,7 +896,7 @@ extern "C" {
  | 			UPDATE: The head of the queue that will be attached to
  | 			the end of the head queue.  'appendee' is made an empty
  | 			queue.
- | 
+ |
  | 	CIR_PREPEND(head, prependee)
  | 			Used to prepend one queue to another queue.  All the
  | 			elements in the prepend queue are placed at the front
@@ -909,33 +909,33 @@ extern "C" {
  | 			UPDATE: The head of the queue that will be attached to
  | 			the beginning of the head queue.  The 'prependee' is made
  | 			an empty queue.
- | 
+ |
  | 	CIR_FIND(head, item, linkField)
  | 			Returns TRUE if it finds 'item' in the queue, otherwise
  | 			returns FALSE.  Does a linear search of the queue to find
  | 			the 'item'.
  | 		head
  | 			INPUT: A pointer to the head of the queue.
- | 
+ |
  | 	CIR_CNT(head)
  | 			Returns the number of elements in the queue.
  | 		head
  | 			INPUT: A pointer to the head of the queue.
- | 			
+ |
  | Doubly Linked Circular Queue: DQ
  | A doubly linked circular queue is the most general of these link list
  | routines and of course it takes the most resources to manipulate and
  | store.  The head of a doubly linked queue appears as a member of the
  | queue.  It has a 'next' and 'previous' pointer and can be traversed
  | in either direction.  The queue is empty when the head points to itself.
- | 
+ |
  | 			Empty Head
  | 			+-------+
  | 		    +-->| next  +---+
  | 		    |	+-------+   |
  | 		    +---+ prev  |<--+
  | 			+-------+
- | 			
+ |
  | 			  Head
  | 		+-->+-------+<---------------+
  | 		|   | next  +-------+        |
@@ -963,68 +963,68 @@ extern "C" {
  | 				+-------+    |
  | 				|       +----+
  | 				+-------+
- | 
+ |
  | 	typedef struct Xyz_s
  | 	{
  | 		int		field_a;
  | 		DQlink_t	dqLink;
  | 		int		field_b;
  | 	} Xyz_s;
- | 	
+ |
  | 	zyzzy()
  | 	{
  | 		DQhead_t	Head;
  | 		Xyz_s		A, B, C;
  | 		Xyz_s		*a, *b, *c;
- | 		
+ |
  | 		DQ_INIT( &Head);
- | 	
+ |
  | 		DQ_ENQ( &Head, &A, dqLink);
  | 		DQ_ENQ( &Head, &B, dqLink);
  | 		DQ_ENQ( &Head, &C, dqLink);
- | 	
+ |
  | 		DQ_DEQ( &Head, a, Xyz_s, dqLink);
  | 		DQ_DEQ( &Head, b, Xyz_s, dqLink);
  | 		DQ_DEQ( &Head, c, Xyz_s, dqLink);
  | 	}
- | 
+ |
  | Their biggest advantages are easy removal of an item from the middle
  | of a list (you don't even have to know the head) and simple routines
  | for scanning the list.  For data structures that need to use multiple
  | linked lists, this is the queue of choice because once you have found
  | the element on one list, you can easily remove it from other lists.
- | 
+ |
  | Typedefs:
- | 
+ |
  | 	DQlink_t	Use the DQlink_t typedef to define the link field
  | 			in the structures to be managed as doubly linked
  | 			queue.  This field must be initialized to zero either
  | 			by zeroing the whole structure or calling NULLIFY
  | 			with the field.
- | 
+ |
  | 	DQhead_t	Use the DQhead_t typedef to define the head of the
  | 			doubly linked queue.  The head  must be initialized by
  | 			either using DQ_INIT or DQ_INIT_ELEMENTS.
- | 
+ |
  | Macros:
- | 
+ |
  | 	DQ_INIT(head)
  | 			Initialize the head of the queue.
  | 		head
  | 			OUTPUT: A pointer to a variable of type DQhead_t.
  | 		USAGE:
  | 			DQ_INIT( &Head);
- | 
+ |
  | 	DQ_STATIC_INIT(head)
  | 			Uses compile time initialization to initialize the head.
  | 		head
  | 			OUTPUT: A variable of type DQhead_t.
  | 		USAGE:
  | 			DQhead_t	Head = DQ_STATIC_INIT(Head);
- | 
+ |
  | 	DQ_INIT_ELEMENTS(head, data, numElements, typeElement, linkField)
  | 			Used to take an array of items and initialize all of them
- | 			and enqueue them in the queue. 
+ | 			and enqueue them in the queue.
  | 		head
  | 			OUTPUT: A variable of type DQhead_t used for the
  | 			head of the queue.  Assumed to be uninitialized.
@@ -1041,10 +1041,10 @@ extern "C" {
  | 			{
  | 				Xyz_s		Xyz[10];
  | 				DQhead_t	Head;
- | 
+ |
  | 				DQ_INIT_ELEMENTS(Head, Xyz, 10, Xyz_s, link);
  | 			}
- | 
+ |
  | 	DQ_EMPTY(head)
  | 			Is True, if queue is empty, otherwise is False.
  | 			Used to test if there are any items left in the queue.
@@ -1052,7 +1052,7 @@ extern "C" {
  | 			INPUT: A pointer to the head of the queue.
  | 		USAGE:
  | 			if (DQ_EMPTY(Head)) { ... }
- | 
+ |
  | 	DQ_NOT_EMPTY(head)
  | 			Is False, if queue is empty, otherwise is True.
  | 			Easier to understand then "if (!DQ_EMPTY(head))...".
@@ -1060,7 +1060,7 @@ extern "C" {
  | 			INPUT: A pointer to the head of the queue.
  | 		USAGE:
  | 			if (DQ_NOT_EMPTY(Head)) { ... }
- | 
+ |
  | 	DQ_ENQ(head, item, linkField)
  | 			Enqueue an item on to the tail of the queue.
  | 		head
@@ -1072,7 +1072,7 @@ extern "C" {
  | 			tail of the queue.  Its 'next' pointer will point to
  | 			the 'head' and its 'previous' pointer will point to
  | 			the old tail.
- | 
+ |
  | 	DQ_PUSH(head, item, linkField)
  | 			Push an item on to the front of the queue.  If the queue
  | 			is immediately dequeued, this item will come off.  Useful
@@ -1085,7 +1085,7 @@ extern "C" {
  | 			of the queue.  The 'previous' field of 'item' will point
  | 			to the 'head' and the 'next' field will point to the old
  | 			head element of the queue.
- | 
+ |
  | 	DQ_DEQ(head, item, type, linkField)
  | 			Dequeue the first item off the queue.  If the queue is
  | 			empty, item is set to NULL, otherwise it has the oldest
@@ -1098,7 +1098,7 @@ extern "C" {
  | 			OUTPUT: Pointer to a structure of type 'type'.  Set
  | 			to NULL if the queue is empty, otherwise set to a
  | 			pointer to the structure pointed to by head.
- | 
+ |
  | 	DQ_DEQ_NO_CHECK(head, item, type, linkField)
  | 			DQ_DEQ_NO_CHECK is just like DQ_DEQ except we know
  | 			something is on the queue having done a DQ_NOT_EMPTY
@@ -1109,7 +1109,7 @@ extern "C" {
  | 		item
  | 			OUTPUT: Pointer to a structure of type 'type'.  Set
  | 			to a pointer to the structure pointed to by head.
- | 
+ |
  | 	DQ_TAKE(head, item, type, linkField)
  | 			Dequeue the last item off the queue (which is normally the
  |			the last item inserted).  If the queue is empty, item is set
@@ -1135,11 +1135,11 @@ extern "C" {
  | 			OUTPUT: Pointer to a structure of type 'type'.  Set
  | 			to a pointer to the structure pointed to by head.  If
  | 			queue is empty, it is set to NULL.
- | 
+ |
  | 	DQ_PEEK_END(head, item, type, linkField)
  | 			Sets 'item' to the LAST element at the head of the queue
  | 			but does not remove it from the queue.  Good for checking
- | 			resources before committing them.  
+ | 			resources before committing them.
  | 		head
  | 			INPUT: A pointer to the head of the queue.
  | 		item
@@ -1156,7 +1156,7 @@ extern "C" {
  | 		item
  | 			UPDATE: Pointer to a structure of type 'type'.  'item'
  | 			was obtained by doing a DQ_PEEK.
- | 
+ |
  | 	DQ_RMV(item, linkField)
  | 			Removes the designated 'item' from the queue.  Because
  | 			we have a 'next' and 'previous' pointers, this operation
@@ -1167,7 +1167,7 @@ extern "C" {
  | 			will be set to NULL, if QUE_NULL is enabled.  Its successor
  | 			and predecessor elements in the queue will now point
  | 			to each others
- | 
+ |
  | 	DQ_APPEND(head, appendee)
  | 			Used to append one queue to another queue.  All the
  | 			elements in the appendee queue are placed at the tail
@@ -1180,7 +1180,7 @@ extern "C" {
  | 			UPDATE: A pointer to the head of the queue that will be
  | 			attached to the end of the head queue.  'appendee' is
  | 			made an empty queue.
- | 
+ |
  | 	DQ_PREPEND(head, prependee)
  | 			Used to prepend one queue to another queue.  All the
  | 			elements in the prepend queue are placed at the front
@@ -1193,7 +1193,7 @@ extern "C" {
  | 			UPDATE: A pointer to the head of the queue that will be
  | 			attached to the beginning of the head queue.  The 'prependee'
  | 			is made an empty queue.
- | 
+ |
  | 	DQ_FOREACH(head, item, type, linkField)
  | 			Used to scan through the queue to process it or search for
  | 			a particular element in the queue.  It is really a 'for' loop
@@ -1206,13 +1206,13 @@ extern "C" {
  | 			{
  | 				extern DQhead_t	Head;
  | 				Xyz_s			*x;
- | 
+ |
  | 				DQ_FOREACH( &Head, x, Xyz_s, dqLink)
  | 				{
  | 					if (x->field_a == 42) return x;
  | 				}
  | 			}
- | 
+ |
  | 	DQ_ISHEADNEXT(head, item, type, linkField)
  |			Can be used to check if you are at the last item in the
  |			list.
@@ -1224,7 +1224,7 @@ extern "C" {
  | 			{
  | 				extern DQhead_t	Head;
  | 				Xyz_s			*x;
- | 
+ |
  | 				DQ_FOREACH( &Head, x, Xyz_s, dqLink)
  | 				{
  | 					if (x->field_a == 42) return x;
@@ -1235,7 +1235,7 @@ extern "C" {
  |					}
  | 				}
  | 			}
- | 
+ |
  | 	DQ_NEXT(head, item, type, linkField)
  | 			Get the next 'item' in the queue.  If you reach the head,
  | 			'item' is set to NULL.  Useful for more generic scanning.
@@ -1247,7 +1247,7 @@ extern "C" {
  | 			{
  | 				extern DQhead_t	Head;
  | 				Xyz_s			*x;
- | 
+ |
  | 				x = STRUCT( &Head, Xyz_s, dqLink);
  | 				x = DQ_NEXT( &Head, x, Xyz_s, dqLink);
  | 				while (x != NULL)
@@ -1257,7 +1257,7 @@ extern "C" {
  | 				}
  | 				return NULL;
  | 			}
- | 
+ |
  | 	DQ_PREV(head, item, type, linkField)
  | 			Get the previous 'item' in the queue.  If you reach the head,
  | 			'item' is set to NULL.
@@ -1269,7 +1269,7 @@ extern "C" {
  | 			{
  | 				extern DQhead_t	Head;
  | 				Xyz_s			*x;
- | 
+ |
  | 				x = STRUCT( &Head, Xyz_s, dqLink);
  | 				x = DQ_PREV( &Head, x, Xyz_s, dqLink);
  | 				for(;;)
@@ -1278,14 +1278,14 @@ extern "C" {
  | 					x = DQ_PREV( &Head, x, Xyz_s, dqLink);
  | 				}
  | 			}
- | 
+ |
  | 	DQ_FIND(head, item, linkField)
  | 			Returns TRUE if it finds 'item' in the queue, otherwise
  | 			returns FALSE.  Does a linear search of the queue to find
  | 			the 'item'.
  | 		head
  | 			INPUT: A pointer to the head of the queue.
- | 
+ |
  | 	DQ_CNT(head)
  | 			Returns the number of elements in the queue.
  | 		head
@@ -1435,7 +1435,7 @@ extern addr LBQ_STKpopNoCheck(STKtop_t *top, unint offset);
 extern void LBQ_STKdrop(STKtop_t *);
 extern int	LBQ_STKrmv(STKtop_t *, STKlink_t);
 extern void LBQ_STKinitElements(STKtop_t *stacktop, addr start,unint num, unint size);
-							
+
 
 #define STK_INIT(top)		((top) = NULL)
 

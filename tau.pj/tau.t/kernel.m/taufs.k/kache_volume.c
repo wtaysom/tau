@@ -105,7 +105,7 @@ FN;
 		if (m->q.q_passed_key) {
 			destroy_key_tau(m->q.q_passed_key);
 		}
-		return;	
+		return;
 	}
 	if (rc == DESTROYED) {
 		type->ty_destroy(m);

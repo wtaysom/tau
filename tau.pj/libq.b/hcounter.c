@@ -240,7 +240,7 @@ void stat_hcounter (hash_counter_s *hc)
 
 #if 0
 enum { M = 107, R = M };
-	
+
 int main (int argc, char *argv[])
 {
 	unsigned	i;

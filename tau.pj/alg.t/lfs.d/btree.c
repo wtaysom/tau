@@ -262,7 +262,7 @@ void verify_leaf (tree_s *tree, leaf_s *leaf, char *where)
 			exit(3);
 		}
 	}
-			
+
 }
 
 buf_s *new_leaf (tree_s *tree)
@@ -394,7 +394,7 @@ static int compare_leaves (tree_s *a, tree_s *b, leaf_s *aleaf, leaf_s *bleaf)
 		rc = compare_rec( &aleaf->l_rec[i], &bleaf->l_rec[i]);
 		if (rc) return rc;
 	}
-	return 0;	
+	return 0;
 }
 
 static int compare_branches (tree_s *a, tree_s *b, branch_s *abranch, branch_s *bbranch)
@@ -427,7 +427,7 @@ static int compare_branches (tree_s *a, tree_s *b, branch_s *abranch, branch_s *
 		rc = compare_nodes(a, b, akey->k_block, bkey->k_block);
 		if (rc) return rc;
 	}
-	return 0;	
+	return 0;
 }
 
 static int compare_nodes (tree_s *a, tree_s *b, u64 a_blk, u64 b_blk)

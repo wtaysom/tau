@@ -362,7 +362,7 @@ FN;
 EXPORT_SYMBOL(copy_to_avatar_tau);
 
 int read_from_avatar_tau (packet_s *p)
-{	
+{
 	key_s		*key = &p->pk_key;
 	datagate_s	*gate;
 	int		rc;

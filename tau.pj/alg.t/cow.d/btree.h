@@ -45,7 +45,7 @@ typedef struct tree_species_s {
 	u64	(*ts_root)        (tree_s *tree);
 	int	(*ts_change_root) (tree_s *tree, void *root);
 	int	(*ts_pack)        (void *to, void *from, unint len);
-} tree_species_s; 
+} tree_species_s;
 
 typedef struct branch_update_s {
 	u64	bu_old_blkno;

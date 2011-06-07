@@ -25,7 +25,7 @@
 #include "randrw.h"
 
 Buf_s	Buf;
-	
+
 bool checkBuf (void)
 {
 	int	i;

@@ -169,10 +169,10 @@ static void format (const char *fmt, ...)
 
 static int match (const char *p, const char *s)
 {
-	for (;;) {	
+	for (;;) {
 		switch (*p) {
 		case '\0':	return *s == '\0';
-		
+
 		case '*':	for (;;) {
 					++p;
 					if (*p == '\0') return 1;
@@ -183,16 +183,16 @@ static int match (const char *p, const char *s)
 					++s;
 					if (*s == '\0') return 0;
 				}
-					
+
 		case '\\':	++p;
 				if (*p == '\0') return 0;
 				if (*p != *s) return 0;
 				break;
-				
+
 		case '?':	if (*s == '\0') return 0;
 				++s;
 				break;
-	
+
 		default:	if (*p != *s) return 0;
 				++s;
 				break;
@@ -690,7 +690,7 @@ void tau_pr_packet (void *packet)
 	pr_key("    passed", &p->pk_passed_key);
 	pr_body(p->pk_body);
 }
-EXPORT_SYMBOL(tau_pr_packet);	
+EXPORT_SYMBOL(tau_pr_packet);
 
 void pr_mac (void *mac)
 {
@@ -717,7 +717,7 @@ void pr_gate (datagate_s *gate)
 	format("gate: %llx %s %s ->%s next=%p\n",
 		gate->gt_id,
 		gate_type(gate->gt_type),
-		gate_pass(gate->gt_type), 
+		gate_pass(gate->gt_type),
 		gate->gt_avatar->av_name,
 		gate->gt_siblings.next);
 	pr_datagate((datagate_s *)gate);
@@ -742,7 +742,7 @@ static void pr_key_index (avatar_s *avatar, ki_t key_index)
 			"slot=%d\n",
 			key_index, key.k_id,
 			gate_type(key.k_type),
-			gate_pass(key.k_type), 
+			gate_pass(key.k_type),
 			key.k_node);
 	} else {
 		rc = read_gate(key.k_id, &gate);
@@ -755,12 +755,12 @@ static void pr_key_index (avatar_s *avatar, ki_t key_index)
 			format(" %u->%llx %s %s ->%s\n",
 				key_index, gate.gt_id,
 				gate_type(gate.gt_type),
-				gate_pass(gate.gt_type), 
+				gate_pass(gate.gt_type),
 				gate.gt_avatar->av_name);
 			pr_datagate( &gate);
 		}
 	}
-}	
+}
 
 static void pr_passed_key (avatar_s *avatar, unsigned key_index)
 {
@@ -809,7 +809,7 @@ void in_call (
 	pr_body( &mb->mb_body);
 
 	log();
-	unlock();		
+	unlock();
 }
 
 void out_call (avatar_s *avatar, msgbuf_s *mb, int rc)
@@ -827,7 +827,7 @@ void out_call (avatar_s *avatar, msgbuf_s *mb, int rc)
 		pr_body( &mb->mb_body);
 	}
 	log();
-	unlock();	
+	unlock();
 }
 
 void in_change_index (
@@ -843,7 +843,7 @@ void in_change_index (
 	format("  std index=%u\n", std_index);
 
 	log();
-	unlock();		
+	unlock();
 }
 
 void out_change_index (avatar_s *avatar, int rc)
@@ -855,7 +855,7 @@ void out_change_index (avatar_s *avatar, int rc)
 	putlog('\n');
 
 	log();
-	unlock();	
+	unlock();
 }
 
 void in_create_gate (avatar_s *avatar, msg_s *msg)
@@ -1001,7 +1001,7 @@ void in_plug_key (avatar_s *avatar, ki_t plug, msgbuf_s *mb)
 	format("%s",  plug_str(plug));
 
 	pr_key_index(avatar, mb->mb_packet.pk_sys.q_passed_key);
-	pr_body( &mb->mb_body);	
+	pr_body( &mb->mb_body);
 	log();
 	unlock();
 }
@@ -1016,7 +1016,7 @@ void out_plug_key (avatar_s *avatar, int rc)
 	log();
 	unlock();
 }
-	
+
 void in_receive (avatar_s *avatar)
 {
 	if (!Tau_debug_trace) return;
@@ -1042,7 +1042,7 @@ void out_receive (avatar_s *avatar, msgbuf_s *mb, int rc)
 	if (!rc) {
 		pr_passed_key(avatar, sys->q_passed_key);
 		pr_body( &mb->mb_body);
-	}	
+	}
 	log();
 	unlock();
 }
@@ -1086,7 +1086,7 @@ void in_send (avatar_s *avatar, ki_t key_index, msgbuf_s *mb)
 	pr_key_index(avatar, key_index);
 	format("  method=%d\n", mb->mb_body.m_method);
 	pr_passed_key(avatar, passed_key);
-	pr_body( &mb->mb_body);		
+	pr_body( &mb->mb_body);
 	log();
 	unlock();
 }

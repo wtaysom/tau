@@ -28,7 +28,7 @@ static char *stripwhite (char *string)
 	//for (s = string; whitespace(*s); s++)
 	for (s = string; isspace(*s); s++)
 		;
-		
+
 	if (*s == 0) return (s);
 
 	t = s + strlen (s) - 1;
@@ -56,7 +56,7 @@ int shell (void)
 		if (*s) {
 			add_history(s);
 		}
-		argc = line2argv(s, &argv);		
+		argc = line2argv(s, &argv);
 		execute(argc, argv);
 		free(line);
 	}

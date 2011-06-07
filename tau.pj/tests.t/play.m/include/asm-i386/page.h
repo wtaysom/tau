@@ -27,7 +27,7 @@
  *	On older X86 processors it's not a win to use MMX here it seems.
  *	Maybe the K6-III ?
  */
- 
+
 #define clear_page(page)	memset((void *)(page), 0, PAGE_SIZE)
 #define copy_page(to,from)	memcpy((void *)(to), (void *)(from), PAGE_SIZE)
 
@@ -89,7 +89,7 @@ typedef struct { unsigned long pgprot; } pgprot_t;
  *
  * A __PAGE_OFFSET of 0xC0000000 means that the kernel has
  * a virtual address space of one gigabyte, which limits the
- * amount of physical memory you can use to about 950MB. 
+ * amount of physical memory you can use to about 950MB.
  *
  * If you want more physical memory than this then see the CONFIG_HIGHMEM4G
  * and CONFIG_HIGHMEM64G options in the kernel configuration.

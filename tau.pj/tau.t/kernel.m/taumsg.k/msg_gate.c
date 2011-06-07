@@ -25,7 +25,7 @@ enum {	KEY_HASH_SHIFT = 1,	// XXX: need to be bigger (>7)
 	KEY_INC = 1 /*614889782588491411ULL*/};
 
 static msg_spinlock_s	Gate_spinlock;
-static datagate_s	*Gate_bucket[KEY_HASH_SIZE];	
+static datagate_s	*Gate_bucket[KEY_HASH_SIZE];
 static u64		Gate_id;
 static kmem_cache_t	*Gate_pool;
 

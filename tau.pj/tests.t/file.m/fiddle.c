@@ -309,7 +309,7 @@ void *test (void *arg)
 	// make and cd to directory for thread to play in
 	snprintf(dir, MAX_NAME-1, "fiddle_dir_%ld", a->id);
 	cr_dir(dir);
-	
+
 	// create the number of files with the specific amount of data
 	for (i = 0; i < a->num_files; i++) {
 		mk_path(path, dir, i);

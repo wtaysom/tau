@@ -296,7 +296,7 @@ u64 bdevsize (dev_s *dev)
 		return 0;
 	}
 	return size >> BLK_SHIFT;
-#endif	
+#endif
 }
 
 void bput (buf_s *buf)

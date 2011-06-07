@@ -531,7 +531,7 @@ int main (int argc, char *argv[])
 #else
 	debugoff();
 #endif
-FN;	
+FN;
 	if (argc > 1) {
 		devA = argv[1];
 	}

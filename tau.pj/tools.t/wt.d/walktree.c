@@ -260,7 +260,7 @@ void find_median(void)
 		}
 	}
 	free(set);
-}		
+}
 
 int do_entry(
 	const char *fpath,

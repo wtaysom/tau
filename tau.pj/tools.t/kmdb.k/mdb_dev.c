@@ -119,7 +119,7 @@ static struct miscdevice kmdb_device = {
 static int mdb_init (void)
 {
 	int	rc;
-FN;	
+FN;
 	rc = misc_register( &kmdb_device);
 	if (rc) {
 		printk(KERN_INFO "%s load failed\n", DEV_NAME);

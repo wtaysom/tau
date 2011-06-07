@@ -179,16 +179,16 @@ void pr_stat_sizes (struct stat *sb)
 {
 	printf("%lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu\n",
 		(unint)sizeof(sb->st_dev),
-		(unint)sizeof(sb->st_ino),	
+		(unint)sizeof(sb->st_ino),
 		(unint)sizeof(sb->st_mode),
 		(unint)sizeof(sb->st_nlink),
 		(unint)sizeof(sb->st_uid),
-		(unint)sizeof(sb->st_gid),	
+		(unint)sizeof(sb->st_gid),
 		(unint)sizeof(sb->st_rdev),
 		(unint)sizeof(sb->st_size),
 		(unint)sizeof(sb->st_blocks),
 		(unint)sizeof(sb->st_blksize),
-		(unint)sizeof(sb->st_atime),	
+		(unint)sizeof(sb->st_atime),
 		(unint)sizeof(sb->st_mtime),
 		(unint)sizeof(sb->st_ctime)
 	);

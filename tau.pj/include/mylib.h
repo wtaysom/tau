@@ -30,7 +30,7 @@ char *cat (char *dst, ...);
 
 size_t strlcpy(char *dest, const char *src, size_t size);
 size_t strlcat(char *dest, const char *src, size_t count);
- 
+
 unsigned int murmurhash (const unsigned char *data, int len, unsigned int h);
 
 void seed_random (void);

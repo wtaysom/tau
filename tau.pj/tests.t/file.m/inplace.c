@@ -52,7 +52,7 @@ static int init(char *name, size_t size)
 {
 	size_t i;
 	int fd;
-	
+
 	fd = open(name, O_RDWR | O_CREAT | O_TRUNC, 0666);
 	if (fd == -1) {
 		perror(name);

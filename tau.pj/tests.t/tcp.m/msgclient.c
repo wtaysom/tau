@@ -227,7 +227,7 @@ int init_msg_tau (const char *name)
 	}
 	init_dq( &Me.pr_msgq);
 	return 0;
-}	
+}
 
 int create_gate_tau (void *msg)
 {

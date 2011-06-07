@@ -75,7 +75,7 @@ void appendStk(Stk_q *dst, Stk_q *src);
 unint cntStk(Stk_q *stk);
 bool foreachStk(Stk_q *stk, qfunc f, void *args);
 
-#define isEmptyRing(_ring)	((_ring)->enq == (_ring)->deq)	
+#define isEmptyRing(_ring)	((_ring)->enq == (_ring)->deq)
 void initRing(Ring_q *ring, unint numObjs, void **ringBuffer);
 Ring_q *newRing(Ring_q *ring, unint numObjs);
 bool enqRing(Ring_q *ring, void *obj);
@@ -88,7 +88,7 @@ unint cntRing(Ring_q *ring);
 bool appendRing(Ring_q *dstq, Ring_q *srcq);
 bool foreachRing(Ring_q *ring, qfunc f, void *args);
 
-#define isEmptyCir(_cir)	((_cir)->last == 0)	
+#define isEmptyCir(_cir)	((_cir)->last == 0)
 void initCir(Cir_q *cir, unint offset);
 void enqCir(Cir_q *cir, void *obj);
 void enqFrontCir(Cir_q *cir, void *obj);
@@ -99,7 +99,7 @@ void appendCir(Cir_q *dstq, Cir_q *srcq);
 unint cntCir(Cir_q *cir);
 bool foreachCir(Cir_q *cir, qfunc f, void *args);
 
-#define isEmptyDq(_dq)	((_dq)->head.next == &(_dq)->head)	
+#define isEmptyDq(_dq)	((_dq)->head.next == &(_dq)->head)
 void initDq(D_q *dq, unint offset);
 void enqDq(D_q *dq, void *obj);
 void enqFrontDq(D_q *dq, void *obj);

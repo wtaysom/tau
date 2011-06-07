@@ -378,7 +378,7 @@ FN;
 static ant_caste_s Tree_ant = { "tree",
 				ant_flush:  flush_tree,
 				ant_update: update_tree };
-	
+
 void start_string (char *dev_name)
 {
 	dev_s	*dev;

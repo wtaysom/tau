@@ -30,7 +30,7 @@ double current_time ()
 	return x;
 }
 
-void prTimer () 
+void prTimer ()
 {
 	timeval_s	diff;
 	double		x;

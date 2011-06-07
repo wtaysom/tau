@@ -253,7 +253,7 @@ char *strguid (guid_t guid)
 
 void pr_guids (int nreps, int nshards, int a[nreps][nshards], guid_t *bags)
 {
-	
+
 	int	i, j;
 
 	for (i = 0; i < nshards; i++) {

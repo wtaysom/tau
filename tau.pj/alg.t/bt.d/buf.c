@@ -185,7 +185,7 @@ Buf_s *buf_scratch(Cache_s *cache)
 {
 FN;
 	Buf_s *b;
-	
+
 	b = victim(cache);
 	b->block = 0;
 	return b;
@@ -193,8 +193,8 @@ FN;
 
 void buf_put(Buf_s **bp)
 {
-	Buf_s	*b = *bp;
 FN;
+	Buf_s	*b = *bp;
 	Cache_s	*cache = b->cache;
 
 	assert(b->block == ((Head_s *)b->d)->block);
@@ -217,11 +217,21 @@ FN;
 	--b->inuse;
 }
 
-void buf_free(Buf_s *b)
+void buf_free(Buf_s **bp)
 {
 FN;
-	printf("Don't know what to do yet with freed block: %lld\n",
-		b->block);
+	Buf_s	*b = *bp;
+	Cache_s	*cache = b->cache;
+
+	assert(b->block == ((Head_s *)b->d)->block);
+	assert(b->inuse > 0);
+	++cache->puts;
+	--b->inuse;
+	if (!b->inuse) {
+		b->block = 0;
+	}
+	*bp = NULL;
+	//XXX: Don't know what to do yet with freed block
 }
 
 bool cache_balanced(Cache_s *cache)

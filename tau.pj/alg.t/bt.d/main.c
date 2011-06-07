@@ -124,7 +124,7 @@ void pr_tree (Btree_s *t) {
 void pr_stats (Btree_s *t) {
 	Stat_s	stat = t_get_stats(t);
 	u64	records = stat.insert - stat.delete;
-	
+
 	printf("Num leaves       = %8lld\n", stat.new_leaves);
 	printf("Num branches     = %8lld\n", stat.new_branches);
 	printf("Num split leaf   = %8lld\n", stat.split_leaf);

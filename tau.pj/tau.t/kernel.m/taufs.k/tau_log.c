@@ -104,9 +104,9 @@ FN;
 	log->lg_current = stage;
 PRd(stage->stg_home_mutex.count.counter);
 	down( &stage->stg_home_mutex);
-	stage->stg_numpages = 0;	
+	stage->stg_numpages = 0;
 	up( &stage->stg_home_mutex);
-}		
+}
 
 void tau_logbegin (struct inode *inode)
 {

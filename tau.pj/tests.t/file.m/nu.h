@@ -37,10 +37,10 @@ enum {
 	NU_INOS_PER_BLK		= (NU_BLK_SIZE / sizeof(u64)),
 	NU_NUM_DIRECT		= 20,
 	NU_MAX_FILE_SIZE	= NU_NUM_DIRECT * NU_BLK_SIZE,
-	NU_INO_VERSION		= 1,	/* Increment when on disk inode format changes */	
+	NU_INO_VERSION		= 1,	/* Increment when on disk inode format changes */
 	NU_MAGIC_SB		= 0x7265707573756174LLU,
 	NU_MAGIC_NODE		= 0x65646f6e69756174LLU
-	
+
 };
 
 typedef struct Inode_s	Inode_s;

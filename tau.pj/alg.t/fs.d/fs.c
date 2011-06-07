@@ -136,7 +136,7 @@ FN;
 	info = delete_open(key);
 	put_info(info);
 	return 0;
-}	
+}
 
 int Creat (const char *path)
 {
@@ -250,7 +250,7 @@ FN;
 	if (seek+num_bytes > file->in_inode.i_eof) {
 		num_bytes = file->in_inode.i_eof - seek;
 	}
-	
+
 	logical = seek >> BLK_SHIFT;
 	offset  = seek & BLK_MASK;
 	bytes_read = 0;
@@ -310,7 +310,7 @@ FN;
 	assert(file);
 
 	seek = opn->o_seek;
-	
+
 	logical = seek >> BLK_SHIFT;
 	offset  = seek & BLK_MASK;
 	bytes_written = 0;

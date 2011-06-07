@@ -30,7 +30,7 @@ enum {	NODE_HASH_SHIFT	= 3,
 node_s	*Tau_node_slot[MAX_NODES];
 EXPORT_SYMBOL(Tau_node_slot);
 
-static node_s	*Node_bucket[NODE_HASH_SIZE];	
+static node_s	*Node_bucket[NODE_HASH_SIZE];
 
 static snint alloc_slot (node_s *node)
 {

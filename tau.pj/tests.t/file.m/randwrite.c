@@ -22,7 +22,7 @@
 #include "randrw.h"
 
 Buf_s	Buf;
-	
+
 void initBuf (void)
 {
 	int		i;

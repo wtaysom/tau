@@ -21,7 +21,7 @@
 #include <tau/msg.h>
 #include <msg_debug.h>
 #include <msg_internal.h>
-	
+
 /*
  * Key chaind is arranged so 1 is allocated first and 0 is never
  * allocated.
@@ -58,7 +58,7 @@ FN;
 	}
 	chain->kc_top = *(key_s **)key;
 	*key = *passed_key;
-	
+
 	return key - chain->kc_chain;
 }
 

@@ -86,7 +86,7 @@ void input (void)
 					break;
 
 		case KEY_RESIZE:	break;
-	
+
 		case CNTRL('R'):	rotate();
 					Decimal = 0;
 					break;

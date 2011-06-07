@@ -166,7 +166,7 @@ static void display_string (int row, int col, u8 *s, int n)
 	int	i;
 
 	for (i = 0; i < n; s++, col++, i++) {
-		
+
 		mvprintw(row, col, "%c", isgraph(*s) ? *s : '.');
 	}
 }

@@ -53,7 +53,7 @@ FN;
 	for (i = NumBlocks - TAU_CLEAR_ENDS; i < NumBlocks; ++i) {
 		zero_blk(i);
 	}
-}		
+}
 
 void write_super_block (guid_t vol_guid)
 {

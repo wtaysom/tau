@@ -281,7 +281,7 @@ FN;
 	tree->t_root = root;
 	return 0;
 }
-	
+
 void init_dir (void)
 {
 	init_tree( &Tree, &Dir_species);

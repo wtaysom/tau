@@ -62,7 +62,7 @@ static void send_tst (void *msg)
 {
 	yy_msg_s	*m = msg;
 	unint		key = m->q.q_passed_key;
-	unint		n = m->yy_num; 
+	unint		n = m->yy_num;
 	unint		i;
 	int		rc;
 
@@ -168,7 +168,7 @@ FN;
 	return 0;
 error:
 	eprintf("yang failed initialization rc=%d", rc);
-	return rc;	
+	return rc;
 }
 
 int main (int argc, char *argv[])

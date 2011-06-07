@@ -126,7 +126,7 @@ char *stripwhite (char *string)
 	//for (s = string; whitespace(*s); s++)
 	for (s = string; isspace(*s); s++)
 		;
-		
+
 	if (*s == 0) return (s);
 
 	t = s + strlen (s) - 1;

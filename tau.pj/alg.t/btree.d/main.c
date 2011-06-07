@@ -469,7 +469,7 @@ int main (int argc, char *argv[])
 	fdebugoff();
 #endif
 
-FN;	
+FN;
 	if (argc > 1) {
 		dev_name = argv[1];
 	}

@@ -49,7 +49,7 @@ void pushStk (Stk_q *stk, void *obj)
 void *popStk (Stk_q *stk)
 {
 	qlink_t	*link;
-	
+
 	link = stk->top;
 	if (!link) return 0;
 
@@ -61,7 +61,7 @@ void *popStk (Stk_q *stk)
 void *peekStk (Stk_q *stk)
 {
 	qlink_t	*link;
-	
+
 	link = stk->top;
 	if (!link) return 0;
 
@@ -72,7 +72,7 @@ unint cntStk (Stk_q *stk)
 {
 	unint	cnt = 0;
 	qlink_t	*link;
-		
+
 	for (link = stk->top; link; link = link->next) {
 		++cnt;
 	}
@@ -111,7 +111,7 @@ void appendStk (Stk_q *dst, Stk_q *src)
 bool foreachStk (Stk_q *stk, qfunc f, void *args)
 {
 	qlink_t	*link;
-		
+
 	for (link = stk->top; link; link = link->next) {
 		if (!f((void *)((addr)link - stk->offset), args)) {
 			return FALSE;
@@ -408,7 +408,7 @@ void appendCir (Cir_q *dstq, Cir_q *srcq)
 bool foreachCir (Cir_q *cir, qfunc f, void *args)
 {
 	qlink_t	*link;
-		
+
 	if (isEmptyCir(cir)) return TRUE;
 
 	for (link = cir->last->next;; link = link->next) {
@@ -505,7 +505,7 @@ unint cntDq (D_q *dq)
 {
 	unint		cnt = 0;
 	dqlink_t	*link;
-		
+
 	for (link = dq->head.next; link != &dq->head; link = link->next) {
 		++cnt;
 	}
@@ -535,7 +535,7 @@ void appendDq (D_q *dstq, D_q *srcq)
 bool foreachDq (D_q *dq, qfunc f, void *args)
 {
 	dqlink_t	*link;
-		
+
 	for (link = dq->head.next; link != &dq->head; link = link->next) {
 		if (!f((void *)((addr)link - dq->offset), args)) {
 			return FALSE;
@@ -627,9 +627,9 @@ void testStk (unint numTests)
 	StkObj_s	*obj;
 	StkObj_s	*peeked;
 	StkTest_s	t;
-	
+
 	bzero( &t, sizeof(StkTest_s));
-	
+
 	initStk( &Astack, offsetof(StkObj_s, link));
 	initStk( &Bstack, offsetof(StkObj_s, link));
 	for (i = 0; i < NUM_OBJS; ++i) {
@@ -730,9 +730,9 @@ void testRing (unint numTests)
 	RingObj_s	*obj;
 	RingObj_s	*peeked;
 	RingTest_s	t;
-	
+
 	bzero( &t, sizeof(RingTest_s));
-	
+
 	newRing( &Aring, NUM_OBJS + 1);
 	newRing( &Bring, NUM_OBJS + 1);
 	for (i = 0; i < NUM_OBJS; ++i) {
@@ -841,9 +841,9 @@ void testCir (unint numTests)
 	CirObj_s	*obj;
 	CirObj_s	*peeked;
 	CirTest_s	t;
-	
+
 	bzero( &t, sizeof(CirTest_s));
-	
+
 	initCir( &Acir, offsetof(CirObj_s, link));
 	initCir( &Bcir, offsetof(CirObj_s, link));
 	for (i = 0; i < NUM_OBJS; ++i) {
@@ -947,9 +947,9 @@ void testDq (unint numTests)
 	DqObj_s		*obj;
 	DqObj_s		*peeked;
 	DqTest_s	t;
-	
+
 	bzero( &t, sizeof(DqTest_s));
-	
+
 	initDq( &Adq, offsetof(DqObj_s, link));
 	initDq( &Bdq, offsetof(DqObj_s, link));
 	for (i = 0; i < NUM_OBJS; ++i) {
@@ -1019,7 +1019,7 @@ void testDq (unint numTests)
 int main (int argc, char *argv[])
 {
 	unint		numTests = 100000;
-	
+
 	if (argc > 1) numTests = atoi(argv[1]);
 
 	testStk(numTests);
@@ -1030,7 +1030,7 @@ int main (int argc, char *argv[])
 	testCir(numTests);
 	testDq(numTests);
 	testDq(numTests);
-	
+
 	return 0;
 }
 

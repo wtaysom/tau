@@ -158,7 +158,7 @@ static int wtp (int argc, char *argv[])
 	rc = receive_tau( &m);
 	if (rc) eprintf("receive_tau %d", rc);
 
-	check(start, length, m.yy_crc); 
+	check(start, length, m.yy_crc);
 
 	return 0;
 }

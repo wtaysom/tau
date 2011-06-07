@@ -101,7 +101,7 @@
  *     be found at http://www.kernel.org/doc/man-pages/.
  *
  * Linux                           2007-07-26                          CHDIR(2)
- */ 
+ */
 
 int main (int argc, char *argv[])
 {

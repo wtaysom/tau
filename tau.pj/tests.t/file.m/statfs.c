@@ -13,18 +13,18 @@
 /*
  * NAME
  *        statfs, fstatfs - get file system statistics
- * 
+ *
  * SYNOPSIS
  *        #include <sys/vfs.h>
- * 
+ *
  *        int statfs(const char *path, struct statfs *buf);
  *        int fstatfs(int fd, struct statfs *buf);
- * 
+ *
  * DESCRIPTION
  *        statfs  returns  information  about  a mounted file system.  path is
  *        the path name of any file within the mounted filesystem.  buf is  a
  *        pointer to a statfs structure defined as follows:
- * 
+ *
  *               struct statfs {
  *                  long    f_type;     // type of filesystem (see below)
  *                  long    f_bsize;    // optimal transfer block size
@@ -40,7 +40,7 @@
  *        Fields  that  are  undefined  for a particular file system are set
  *        to 0.  fstatfs returns the same information about an open  file
  *        referenced  by descriptor fd.
- * 
+ *
  * RETURN VALUE
  *        On  success,  zero  is returned.  On error, -1 is returned, and
  *        errno is set appropriately.

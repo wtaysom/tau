@@ -67,7 +67,7 @@
  *
  *	5.  Global variables begin with a capital letter.
  *
- *	6.  Use unique names in structure elements.	
+ *	6.  Use unique names in structure elements.
  *		// instead of:
  *		typedef struct paul_s {
  *			void	*link;
@@ -181,7 +181,7 @@ extern "C" {
 	#ifndef FALSE
 		enum { FALSE, TRUE };
 	#endif
-	#if defined(__KERNEL__) 
+	#if defined(__KERNEL__)
 		#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,27))
 			#undef bool
 			#define _BOOL_ 1

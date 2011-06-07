@@ -103,7 +103,7 @@ FN;
 PRx(si->si_page->flags);
 	pblk = tsb->sb_nextblock;
 	tsb->sb_nextblock += num_blocks;
-	return pblk;	
+	return pblk;
 }
 
 void pi_free_block (struct super_block *sb, u64 blkno)
@@ -405,7 +405,7 @@ static int pi_super_readpage (struct file *file, struct page *page)
 FN;
 	assert(file == NULL);
 	pi_fill_page(page, page->index);
-	return 0;	
+	return 0;
 }
 
 static int pi_readpage (struct file *file, struct page *page)
@@ -429,7 +429,7 @@ dump_stack();
 	} else {
 		zero_page(page);
 	}
-	return 0;	
+	return 0;
 }
 
 #if 0
@@ -447,7 +447,7 @@ FN;
 	return mpage_readpages(mapping, pages, nr_pages, NULL);
 }
 #endif
-	
+
 static int pi_prepare_write (
 	struct file	*file,
 	struct page	*page,
@@ -501,7 +501,7 @@ PRx(to);
 	}
 PRx(page->flags);
 	kunmap(page);
-	return 0;	
+	return 0;
 }
 
 static int pi_write_begin (
@@ -1025,7 +1025,7 @@ FN;
 	pi_put_page(si->si_page);
 	free_super_inode(isuper);
 	sb->s_fs_info = NULL;
-	kfree(si);	
+	kfree(si);
 }
 
 static int pi_statfs (struct dentry *dentry, struct kstatfs *statfs)
@@ -1205,7 +1205,7 @@ FN;
 error:
 	printk(KERN_INFO "pi error=%d\n", rc);
 	pi_cleanup();
-	return rc;	
+	return rc;
 }
 
 static void pi_exit (void)

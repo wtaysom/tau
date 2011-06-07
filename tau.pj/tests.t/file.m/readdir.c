@@ -13,27 +13,27 @@
 
 /*
  * READDIR(3)              Linux Programmer's Manual             READDIR(3)
- * 
- * 
- * 
+ *
+ *
+ *
  * NAME
  *        readdir - read a directory
- * 
+ *
  * SYNOPSIS
  *        #include <sys/types.h>
- * 
+ *
  *        #include <dirent.h>
- * 
+ *
  *        struct dirent *readdir(DIR *dir);
- * 
+ *
  * DESCRIPTION
  *        The  readdir()  function  returns a pointer to a dirent structure
  *        representing the next directory entry  in  the  directory  stream
  *        pointed  to  by dir.  It returns NULL on reaching the end-of-file
  *        or if an error occurred.
- * 
+ *
  *        On Linux, the dirent structure is defined as follows:
- * 
+ *
  *           struct dirent {
  *               ino_t          d_ino;       // inode number
  *               off_t          d_off;       // offset to the next dirent
@@ -41,27 +41,27 @@
  *               unsigned char  d_type;      // type of file
  *               char           d_name[256]; // filename
  *           };
- * 
+ *
  *        According to POSIX, the dirent structure contains  a  field  char
  *        d_name[]  of  unspecified  size, with at most NAME_MAX characters
  *        preceding the terminating null byte.  POSIX.1-2001 also documents
  *        the  field  ino_t d_ino as an XSI extension.  Use of other fields
  *        will harm the portability of your programs.
- * 
+ *
  *        The data returned by readdir() may be overwritten  by  subsequent
  *        calls to readdir() for the same directory stream.
- * 
+ *
  * RETURN VALUE
  *        The  readdir()  function returns a pointer to a dirent structure,
  *        or NULL if an error occurs or end-of-file is reached.  On  error,
  *        errno is set appropriately.
- * 
+ *
  * ERRORS
  *        EBADF  Invalid directory stream descriptor dir.
- * 
+ *
  * CONFORMING TO
  *        SVr4, 4.3BSD, POSIX.1-2001
- * 
+ *
  * SEE ALSO
  *        read(2), closedir(3), dirfd(3), ftw(3), opendir(3), rewinddir(3),
  *        scandir(3), seekdir(3), telldir(3)

@@ -38,7 +38,7 @@ static int read_memory (
 	if (n < length) return -1;
 	return 0;
 }
-	
+
 static void memory_error (
 	int			status,
 	bfd_vma			address,
@@ -99,7 +99,7 @@ static void init_disasm (struct disassemble_info *info)
 
 	if (inited) return;
 	inited = TRUE;
-	
+
 	init_disassemble_info(info, stdout, (fprintf_ftype)fprintf);
 	info->fprintf_func		= (fprintf_ftype)fprintf;
 	info->stream			= stdout;
@@ -161,7 +161,7 @@ addr disasm (addr address)
 	init_disasm( &Info);
 
 	switch (Target) {
-	
+
 	case Ti386:	n = print_insn_i386(address, &Info);
 			break;
 	default:

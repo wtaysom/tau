@@ -111,7 +111,7 @@ enum { zVALID_GET_INFO_MASK = (zGET_STD_INFO | zGET_NAME | zGET_ALL_NAMES |
 			zGET_TIMES_IN_MICROS | zGET_IDS | zGET_STORAGE_USED |
 			zGET_BLOCK_SIZE | zGET_COUNTS | zGET_DATA_STREAM_INFO |
 			zGET_DELETED_INFO | zGET_MAC_METADATA | zGET_UNIX_METADATA |
-			zGET_VOLUME_INFO | zGET_VOL_SALVAGE_INFO | zGET_POOL_INFO | 
+			zGET_VOLUME_INFO | zGET_VOL_SALVAGE_INFO | zGET_POOL_INFO |
 			zGET_DIR_QUOTA | zGET_INH_RIGHTS_MASK | zGET_ALL_TRUSTEES )};
 
 static char *pr_guid (GUID_t *guid)
@@ -634,7 +634,7 @@ static char *make_name (char *name, int i)
 	snprintf(name, MAX_NAME-1, "%u", i);
 	return name;
 }
-	
+
 static int create_file (char *name, u64 size)
 {
 	Key_t	key;
@@ -653,7 +653,7 @@ static int create_file (char *name, u64 size)
 
 	return 0;
 }
-	
+
 static int open_file (char *name, Key_t *key)
 {
 	int	rc;
@@ -667,7 +667,7 @@ static int open_file (char *name, Key_t *key)
 	}
 	return 0;
 }
-	
+
 static int delete_file (char *name)
 {
 	int	rc;
@@ -699,7 +699,7 @@ static int crfilesp (int argc, char *argv[])
 	if (argc > 2) {
 		Num_blocks = atoi(argv[2]);
 	}
-	
+
 	for (i = 0; i < Num_files; i++) {
 		make_name(name, i);
 		rc = create_file(name, Num_blocks << BLK_SHIFT);
@@ -718,7 +718,7 @@ static int openfilesp (int argc, char *argv[])
 	char	name[MAX_NAME];
 	int	i;
 	int	rc;
-	
+
 	Files = ezalloc(Num_files * sizeof(file_s));
 	for (i = 0; i < Num_files; i++) {
 		make_name(name, i);
@@ -768,7 +768,7 @@ static int deletefilesp (int argc, char *argv[])
 	char	name[MAX_NAME];
 	int	i;
 	int	rc;
-	
+
 	for (i = 0; i < Num_files; i++) {
 		make_name(name, i);
 		rc = delete_file(name);

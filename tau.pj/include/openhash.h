@@ -60,6 +60,6 @@ static inline unsigned long openchainlength (openhash_t *bucket, openhash_t x)
 		if (h >= NUM_BUCKETS) h -= NUM_BUCKETS;
 	}
 	return i;
-}		
+}
 
 #endif

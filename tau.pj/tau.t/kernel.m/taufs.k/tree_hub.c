@@ -26,7 +26,7 @@
 #include <kache.h>
 
 // Could put type info in bottom bits and top bits
-// 
+//
 enum {	TYPE_SHIFT = 56,
 	VALUE_MASK = (1LL << TYPE_SHIFT) - 1 };
 

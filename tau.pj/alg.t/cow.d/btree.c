@@ -213,7 +213,7 @@ void verify_leaf (tree_s *tree, leaf_s *leaf, char *where)
 			exit(3);
 		}
 	}
-			
+
 }
 
 leaf_s *new_leaf (tree_s *tree)

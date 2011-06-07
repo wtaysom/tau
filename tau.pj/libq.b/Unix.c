@@ -32,7 +32,7 @@ int DBG_AssertError (char *errString)
 }
 
 int DBG_AssertWarning (char *errString, int *cnt)
-{    
+{
 	++(*cnt);
 	if (*cnt == 1) {
 		printf("\nWARNING: %s\n", errString);

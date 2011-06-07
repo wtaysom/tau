@@ -61,7 +61,7 @@ void to_base64 (const void *data, int length, char *out)
 	if (r > 0) {
 		*c++ = base[x];
 	}
-	*c = '\0';	
+	*c = '\0';
 }
 
 static int value (char c)

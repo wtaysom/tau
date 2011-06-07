@@ -108,7 +108,7 @@ HashRecord_s *hashLookup (
 
 	bucket = crc & ht->mask;
 	next = ht->table[bucket];
-	
+
 	if (next == NULL)
 	{
 		return NULL;

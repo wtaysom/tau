@@ -39,7 +39,7 @@ alarm_sw_type_s	Alarm_sw_type = {
 				{ "Alarm_sw", ALARM_SW_NUM, NULL },
 				create_alarm };
 
-alarm_sw_s	Alarm_sw = { &Alarm_sw_type };	
+alarm_sw_s	Alarm_sw = { &Alarm_sw_type };
 
 typedef struct alarm_type_s {
 	type_s		ta_tag;
@@ -103,7 +103,7 @@ static void destroy_alarm (void *msg)
 	alarm_s		*alarm = m->q.q_tag;
 FN;
 	alarm->a_stop = TRUE;
-}	
+}
 
 static void start_cyclic (void *msg)
 {
@@ -113,11 +113,11 @@ FN;
 	alarm->a_key = m->q.q_passed_key;
 	alarm->a_stop = FALSE;
 	alarm->a_time = (m->al_msec * HZ / 1000);
-	
+
 	INIT_WORK( &alarm->a_work, pop_cyclic, alarm);
 
 	schedule_delayed_work( &alarm->a_work, alarm->a_time);
-}	
+}
 
 static void create_alarm (void *msg)
 {
@@ -180,7 +180,7 @@ if (!type) bug("type is null %p", obj);
 		if (m->q.q_passed_key) {
 			destroy_key_tau(m->q.q_passed_key);
 		}
-		return;	
+		return;
 	}
 	if (rc == DESTROYED) {
 		if (type->ty_destroy) type->ty_destroy(m);

@@ -90,7 +90,7 @@ void input (void)
 		case '#':	lastx();	qrand();	break;
 
 		case KEY_RESIZE:	/* Screen resize event - don't do anything */
-				break;	
+				break;
 
 		case KEY_LEFT:
 		case 'h':	Current->left(); /* left one column */
@@ -104,7 +104,7 @@ void input (void)
 		case 'k':	Current->up(); /* up one row */
 				break;
 
-		case KEY_RIGHT:						
+		case KEY_RIGHT:
 		case 'l':	Current->right(); /* right one column */
 				break;
 

@@ -67,7 +67,7 @@ FN;
 	for (i = NumBlocks - PI_CLEAR_ENDS; i < NumBlocks; ++i) {
 		zero_blk(i);
 	}
-}		
+}
 
 void writeSuperBlock (void)
 {

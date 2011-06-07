@@ -93,7 +93,7 @@ int map_argv (int argc, char *argv[], argv_f fn, void *data)
 		if (rc) return rc;
 	}
 	return 0;
-}	
+}
 
 int short_helpp (int argc, char *argv[])
 {

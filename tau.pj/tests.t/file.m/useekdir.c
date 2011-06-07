@@ -13,48 +13,48 @@
 
 /*
  * READDIR(3)               Linux Programmer's Manual              READDIR(3)
- * 
- * 
- * 
+ *
+ *
+ *
  * NAME
  *        readdir - read a directory
- * 
+ *
  * SYNOPSIS
  *        #include <sys/types.h>
- * 
+ *
  *        #include <dirent.h>
- * 
+ *
  *        struct dirent *readdir(DIR *dir);
- * 
+ *
  * DESCRIPTION
  *        The readdir() function returns a pointer to a dirent structure rep?
  *        resenting the next directory entry in the directory stream  pointed
  *        to  by  dir.   It returns NULL on reaching the end-of-file or if an
  *        error occurred.
- * 
+ *
  *        According to POSIX, the dirent  structure  contains  a  field  char
  *        d_name[] of unspecified size, with at most NAME_MAX characters pre?
  *        ceding the terminating null character.  Use of  other  fields  will
  *        harm the portability of your programs.  POSIX 1003.1-2001 also doc?
  *        uments the field ino_t d_ino as an XSI extension.
- * 
+ *
  *        The data returned by readdir() may  be  overwritten  by  subsequent
  *        calls to readdir() for the same directory stream.
- * 
+ *
  * RETURN VALUE
  *        The  readdir() function returns a pointer to a dirent structure, or
  *        NULL if an error occurs or end-of-file is reached.
- * 
+ *
  * ERRORS
  *        EBADF  Invalid directory stream descriptor dir.
- * 
+ *
  * CONFORMING TO
  *        SVID 3, BSD 4.3, POSIX 1003.1-2001
- * 
+ *
  * SEE ALSO
  *        read(2), closedir(3),  dirfd(3),  opendir(3),  rewinddir(3),  scan?
  *        dir(3), seekdir(3), telldir(3)
- * 
+ *
  */
 #include <stdlib.h>
 #include <stdio.h>
@@ -104,7 +104,7 @@ inline void vput (Vector_v *v, void *value, unsigned i)
 	}
 	v->v_data[i] = value;
 }
-	
+
 
 void create_files (unsigned n)
 {

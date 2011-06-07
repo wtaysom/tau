@@ -317,7 +317,7 @@ static void init_super_block (void)
 	}
 	bput(super);
 }
-	
+
 void init_string (dev_s *dev)
 {
 	init_tree( &Tree, &String_species, dev);

@@ -55,7 +55,7 @@ void inc(int key)
 		}
 		if (++p == &Cir[Q_SZ]) {
 			p = Cir;
-		}	
+		}
 	}
 	if (Head == Cir) {
 		Head = &Cir[Q_SZ - 1];
@@ -82,7 +82,7 @@ void dump(void)
 		printf("%2d %3d\n", p->key, p->cnt);
 		if (++p == &Cir[Q_SZ]) {
 			p = Cir;
-		}	
+		}
 	}
 	printf("Incs=%d Iterations=%d  %g iter/inc\n",
 		Incs, Iterations, (double)Iterations/(double)Incs);

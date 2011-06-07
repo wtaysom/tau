@@ -54,5 +54,5 @@ name_s *name_find (name_s *name)
 	n = emalloc(name->nm_length+1);
 	memcpy(n, name, name->nm_length+1);
 	*NextName++ = n;
-	return n; 
+	return n;
 }

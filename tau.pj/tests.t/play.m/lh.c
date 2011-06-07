@@ -90,7 +90,7 @@ void pr_dyna (dyna_s *dy)
 	pr_node(dy->dy_depth, dy->dy_node, dy, 0);
 	printf("numrecs=%lu split=%lu\n", dy->dy_numrecs, dy->dy_split);
 }
-	
+
 
 void *ith (dyna_s *dy, unint i)
 {
@@ -111,7 +111,7 @@ void *ith (dyna_s *dy, unint i)
 		node = new;
 		shift += SHIFT;
 		max = 1 << shift;
-	}		
+	}
 	for (; depth > 1; depth--) {
 		shift -= SHIFT;
 		j = (i >> shift) & MASK;
@@ -121,7 +121,7 @@ void *ith (dyna_s *dy, unint i)
 			node[j] = next;
 		}
 		node = next;
-	}	
+	}
 	return &node[i & MASK];
 }
 

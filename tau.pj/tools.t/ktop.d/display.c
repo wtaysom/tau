@@ -228,7 +228,7 @@ static void graph_total(void)
 			j = 0;
 		}
 	}
-	vplot(&TotalGraph, v, '*');	
+	vplot(&TotalGraph, v, '*');
 }
 
 void init_display(void)

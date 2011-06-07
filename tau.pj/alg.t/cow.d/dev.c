@@ -102,5 +102,5 @@ u64 dev_size (dev_s *dev)
 		return 0;
 	}
 	return size >> BLK_SHIFT;
-#endif	
+#endif
 }

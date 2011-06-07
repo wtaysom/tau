@@ -36,7 +36,7 @@ unint cnt_stk (stk_q *stk)
 {
 	unint	cnt = 0;
 	qlink_t	*link;
-		
+
 	for (link = stk->top; link; link = link->next) {
 		++cnt;
 	}
@@ -60,7 +60,7 @@ addr foreach_stk (stk_q *stk, qfunc f, void *args)
 	qlink_t	*link;
 	qlink_t	*next;
 	addr	rc;
-		
+
 	for (link = stk->top; link; link = next) {
 		next = link->next;
 		rc = f(link, args);
@@ -275,7 +275,7 @@ addr foreach_cir (cir_q *cir, qfunc f, void *args)
 {
 	qlink_t	*link;
 	addr	rc;
-		
+
 	if (is_empty_cir(cir)) return 0;
 
 	for (link = cir->last->next;; link = link->next) {
@@ -295,7 +295,7 @@ unint cnt_dq (d_q *dq)
 {
 	unint		cnt = 0;
 	dqlink_t	*link;
-		
+
 	for (link = dq->next; link != dq; link = link->next) {
 		++cnt;
 	}
@@ -318,7 +318,7 @@ addr foreach_dq (d_q *dq, qfunc f, void *args)
 	dqlink_t	*link;
 	dqlink_t	*next;
 	addr		rc;
-		
+
 	for (link = dq->next; link != dq; link = next) {
 		next = link->next;
 		qassert(link->next->prev==link);

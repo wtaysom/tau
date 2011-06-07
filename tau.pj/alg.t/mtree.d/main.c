@@ -450,7 +450,7 @@ int main (int argc, char *argv[])
 //	debugoff();
 	debugon();
 	fdebugon();
-FN;	
+FN;
 	init_string();
 	init_shell(NULL);
 	init_cmd();

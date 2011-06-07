@@ -42,7 +42,7 @@ FN;
 	pblk = tbag->tb_nextblock;
 	tbag->tb_nextblock += num_blocks;
 	tau_blog(tbag);
-	return pblk;	
+	return pblk;
 }
 
 void tau_free_block (struct super_block *sb, u64 blkno)
@@ -194,7 +194,7 @@ struct file_type_s {
 		{ ino_write,
 		  file_read,
 		  file_write,
-		  file_readdir }};		
+		  file_readdir }};
 
 static void stat_bag (void *msg)
 {
@@ -466,7 +466,7 @@ struct bag_type_s {
 		  finish_bag,
 		  ino_open,
 		  ino_lookup} };
-	
+
 static int post_bag (bag_s *bag)
 {
 	ki_t	key = 0;
@@ -519,7 +519,7 @@ PRinode(isuper);
 	tau_bput(bag->bag_block);
 	truncate_inode_pages( &isuper->i_data, 0);
 	sb->s_fs_info = NULL;
-	kfree(bag);	
+	kfree(bag);
 }
 
 #if (LINUX_VERSION_CODE > KERNEL_VERSION(2,6,16))
@@ -682,7 +682,7 @@ FN;
 		if (m->q.q_passed_key) {
 			destroy_key_tau(m->q.q_passed_key);
 		}
-		return;	
+		return;
 	}
 	if (rc == DESTROYED) {
 		type->ty_destroy(m);
@@ -743,5 +743,5 @@ FN;
 error:
 	printk(KERN_INFO "tau error=%d\n", rc);
 	tau_exit();
-	return rc;	
+	return rc;
 }

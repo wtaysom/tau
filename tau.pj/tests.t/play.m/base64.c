@@ -86,7 +86,7 @@ void compare_bufs (u8 *a_buf, u8 *b_buf, unint length)
 		++b;
 	}
 }
-		
+
 void usage (void)
 {
 	eprintf("Usage: %s [-u <uuid>]\n", getprogname());

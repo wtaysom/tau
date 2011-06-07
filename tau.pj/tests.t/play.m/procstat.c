@@ -85,7 +85,7 @@ void dump_vector (Vector_s *v)
 	}
 	printf("\n");
 }
-	
+
 int main (int argc, char *argv[])
 {
 	FILE		*f;

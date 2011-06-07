@@ -264,7 +264,7 @@ FN;
 	for (i = m->key_index; i < MAX_KEYS; i++) {
 		rc = read_key(av, i, &key);
 		if (!rc) {
-			m->key_index      = i;	
+			m->key_index      = i;
 			m->key_length     = key.k_length;
 			m->key_node_index = key.k_node;
 			m->key_type       = key.k_type;
@@ -346,7 +346,7 @@ if (!type) bug("type is null %p", obj);
 		if (m->q.q_passed_key) {
 			destroy_key_tau(m->q.q_passed_key);
 		}
-		return;	
+		return;
 	}
 	if (rc == DESTROYED) {
 		if (type->ty_destroy) type->ty_destroy(m);

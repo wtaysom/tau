@@ -292,7 +292,7 @@ void verify_leaf (tree_s *tree, leaf_s *leaf, char *where)
 			exit(3);
 		}
 	}
-			
+
 }
 
 static int log_new_node (tree_s *tree, unint log_fn, buf_s *buf)
@@ -488,7 +488,7 @@ static int compare_leaves (tree_s *a, tree_s *b, leaf_s *aleaf, leaf_s *bleaf)
 		rc = compare_rec( &aleaf->l_rec[i], &bleaf->l_rec[i]);
 		if (rc) return rc;
 	}
-	return 0;	
+	return 0;
 }
 
 static int compare_branches (tree_s *a, tree_s *b, branch_s *abranch, branch_s *bbranch)
@@ -521,7 +521,7 @@ static int compare_branches (tree_s *a, tree_s *b, branch_s *abranch, branch_s *
 		rc = compare_nodes(a, b, akey->k_block, bkey->k_block);
 		if (rc) return rc;
 	}
-	return 0;	
+	return 0;
 }
 
 static int compare_nodes (tree_s *a, tree_s *b, u64 a_blk, u64 b_blk)
@@ -1009,7 +1009,7 @@ printf("p=%llx c=%llx s=%llx\n", pbuf->b_blknum, cbuf->b_blknum, sbuf->b_blknum)
 		child->l_lsn = logrec->lr_lsn;
 		bdirty(cbuf);
 	}
-		
+
 pr_leaf(cbuf);
 pr_leaf(sbuf);
 	bput(cbuf);
@@ -1195,7 +1195,7 @@ static int redo_insert_leaf (log_s *log, logrec_s *logrec)
 	u64	block;
 	u64	key;
 	unint	len;
-	buf_s	*buf;	
+	buf_s	*buf;
 	leaf_s	*leaf;
 	rec_s	*r;
 	int	total;
@@ -1249,7 +1249,7 @@ buf->b_blknum, leaf->l_lsn, logrec->lr_lsn, key);
 PRs((char *)logrec->lr_data);
 
 	leaf->l_lsn = logrec->lr_lsn;
- 
+
 pr_leaf(buf);
 	bdirty(buf);
 	bput(buf);
@@ -1360,7 +1360,7 @@ static int redo_delete_leaf (log_s *log, logrec_s *logrec)
 {
 	u64	block;
 	u64	key;
-	buf_s	*buf;	
+	buf_s	*buf;
 	leaf_s	*leaf;
 	rec_s	*r;
 FN;
@@ -1760,7 +1760,7 @@ log_fn Tree_log_functions[] = {
 	redo_join_branch,
 	redo_grow_tree,
 	NULL};
-	
+
 
 int bind_tree_log (log_s *log, u8 slot)
 {

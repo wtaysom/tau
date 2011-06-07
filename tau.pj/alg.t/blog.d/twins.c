@@ -325,7 +325,7 @@ int next_twins (
 	}
 	return rc_a;
 }
-	
+
 
 //===================================================================
 
@@ -421,7 +421,7 @@ static void init_super_block (tree_s *tree)
 	}
 	bput(buf);
 }
-	
+
 void init_string (tree_s *tree, log_s *log)
 {
 	init_tree(tree, &String_species, log->lg_sys, log);

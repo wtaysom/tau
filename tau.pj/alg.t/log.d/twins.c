@@ -331,7 +331,7 @@ int next_twins (
 	}
 	return rc_a;
 }
-	
+
 
 //===================================================================
 
@@ -514,7 +514,7 @@ static void init_super_block (tree_s *tree)
 	}
 	bput(buf);
 }
-	
+
 void init_string (tree_s *tree, log_s *log)
 {
 	bind_tree_log(log, TREE_SLOT);

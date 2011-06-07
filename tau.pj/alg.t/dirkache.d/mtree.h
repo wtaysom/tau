@@ -51,7 +51,7 @@ typedef struct tree_species_s {
 	void	*(*ts_root)       (tree_s *tree);
 	int	(*ts_change_root) (tree_s *tree, void *root);
 	int	(*ts_pack)        (void *to, void *from, unint size);
-} tree_species_s; 
+} tree_species_s;
 
 struct tree_s {
 	tree_species_s	*t_species;

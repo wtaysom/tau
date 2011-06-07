@@ -151,7 +151,7 @@ static int replay_record (log_s *log, logrec_s *rec)
 	u8		slot_num;
 	u8		fn_num;
 	log_slot_s	*slot;
-	log_fn		fn;	
+	log_fn		fn;
 FN;
 pr_logrec(rec);
 	slot_num = rec->lr_slot;
@@ -226,7 +226,7 @@ FN;
 	if (slot_num >= MAX_SLOTS) return qERR_BAD_SLOT;
 	slot = &log->lg_slot[slot_num];
 	if (slot->sl_num_functions || slot->sl_functions) return qERR_BAD_SLOT;
-	
+
 	for (num_fn = 0, fn = functions; *fn; fn++) {
 		++num_fn;
 	}

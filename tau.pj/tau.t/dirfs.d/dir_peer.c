@@ -144,7 +144,7 @@ unsigned backup (u64 id)
 
 	share = id % MAX_SHARES; // Need to resolve total_shares and MAX_SHARES
 	return Backup[share]->sh_peer_key;
-}	
+}
 
 /* Hello */
 static void hello (void *m)
@@ -257,7 +257,7 @@ FN;
 
 	destroy_key_tau(owner->sh_peer_key);
 	free(owner);
-}	
+}
 
 static void peer_key (void *m)
 {
@@ -304,7 +304,7 @@ static void peer_destroyed (void *m)
 FN;
 	destroy_key_tau(peer->pr_share_key);
 	zero(*peer);
-}	
+}
 
 static peer_s *peer_new (void)
 {

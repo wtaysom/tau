@@ -471,7 +471,7 @@ int dirp (int argc, char *argv[])
 {
 	fill_tree(argv[1]);
 	return 0;
-}	
+}
 
 void init_cmd (void)
 {
@@ -493,7 +493,7 @@ int main (int argc, char *argv[])
 {
 //	debugoff();
 	debugon();
-FN;	
+FN;
 	init_dir();
 	init_shell(NULL);
 	init_cmd();

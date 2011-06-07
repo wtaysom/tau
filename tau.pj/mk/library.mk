@@ -33,9 +33,10 @@ include $(makedir)/$(target).mk
 #CC=/usr/local/bin/gcc
 INC+=-I. -I../include -I../../include
 
-# -pg -O -g -DUNOPT -DNDEBUG
+# -pg generate code for gprof
+# -O -g -DUNOPT -DNDEBUG
 CFLAGS += -rdynamic
-CFLAGS += -O -pg -g -Wall -Wstrict-prototypes -Werror \
+CFLAGS += -g -O -Wall -Wstrict-prototypes -Werror \
 	-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 \
 	$(.INCLUDES) $(INC)
 

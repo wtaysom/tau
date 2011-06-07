@@ -272,7 +272,7 @@ int main (int argc, char *argv[])
 
 //	debugoff();
 	debugon();
-FN;	
+FN;
 	if (argc > 1) {
 		dev = argv[1];
 	}

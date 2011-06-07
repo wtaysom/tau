@@ -124,7 +124,7 @@ void quickSort (void *a[], int n, cmp_f cmp)
 		}
 		right = qPOP();
 		left  = qPOP();
-	}		
+	}
 	insertionSort(a, n, cmp);
 }
 
@@ -192,13 +192,13 @@ main (int argc, char *argv[])
 	time( &endTime);
 
 	printf("diff=%d\n", endTime - startTime);
-	
+
 	for (i = 0; print && (i < n); ) {
 		printf("%10qd %8d", a[i]->key, a[i]->data);
 		if (++i % 4) printf(" ");
 		else printf("\n");
 	}
-	if (n % 4) printf("\n");	
+	if (n % 4) printf("\n");
 	return 0;
 }
 
@@ -216,7 +216,7 @@ pra ()
 		if (++i % 6) printf(" ");
 		else printf("\n");
 	}
-	if (N % 6) printf("\n");	
+	if (N % 6) printf("\n");
 }
 printf("partition l=%d r=%d\n", left, right);
 printf("qsort l=%d r=%d\n", l, r);

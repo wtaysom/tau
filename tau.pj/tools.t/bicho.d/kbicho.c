@@ -132,7 +132,7 @@ static void pr_avatar (
 	u32	num_msgs,
 	u8	dieing)
 {
-	printf("\t%*.*s/%llu%s %u %u\n", 
+	printf("\t%*.*s/%llu%s %u %u\n",
 			10, TAU_NAME, name, id,
 			dieing ? "!" : "",
 			num_waiters, num_msgs);
@@ -202,7 +202,7 @@ int keysp (int argc, char *argv[])
 		if (*path == '/') {	// node specified
 			get_name(node_name, path, sizeof(node_name));
 		}
-	}		
+	}
 	return 0;
 }
 #endif
@@ -297,7 +297,7 @@ static void pr_key (bicho_msg_s *m)
 	printf("\t%3lld. ", m->key_index);
 	print_gate(mg.gate_type, bicho->kb_name, mp.ps_name, mp.ps_id,
 		mg.gate_tag);
-		
+
 	if (mg.gate_type & RW_DATA) {
 		printf("\t    %s start=%llx length=%llu\n",
 			gate_data(mg.gate_type), mg.gate_start, mg.gate_length);
@@ -338,7 +338,7 @@ static addr keys_kbicho (void *obj, void *data)
 		if (rc) {
 			return 0;
 		}
-		printf("    %.*s/%llu\n", 
+		printf("    %.*s/%llu\n",
 			TAU_NAME, m.ps_name, m.ps_id);
 		keys_process(b, m.ps_id);
 	}

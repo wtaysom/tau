@@ -14,25 +14,25 @@
 /*
  * NAME
  *      rename - change the name of a file
- * 
+ *
  * SYNOPSIS
  *      #include <stdio.h>
- * 
+ *
  *      int
  *      rename(const char *from, const char *to);
- * 
+ *
  * DESCRIPTION
  *      Rename() causes the link named from to be renamed as to.  If to exists,
  *      it is first removed.  Both from and to must be of the same type (that is,
  *      both directories or both non-directories), and must reside on the same
  *      file system.
- * 
+ *
  *      Rename() guarantees that an instance of to will always exist, even if the
  *      system should crash in the middle of the operation.
- * 
+ *
  *      If the final component of from is a symbolic link, the symbolic link is
  *      renamed, not the file or directory to which it points.
- * 
+ *
  * CAVEAT
  *      The system can deadlock if a loop in the file system graph is present.
  *      This loop takes the form of an entry in directory `a', say `a/foo', being
@@ -42,12 +42,12 @@
  *      a/foo', respectively, the system may deadlock attempting to lock both
  *      directories for modification.  Hard links to directories should be
  *      replaced by symbolic links by the system administrator.
- * 
+ *
  * RETURN VALUES
  *      A 0 value is returned if the operation succeeds, otherwise rename()
  *      returns -1 and the global variable errno indicates the reason for the
  *      failure.
- * 
+ *
  * ERRORS
  *      Rename() will fail and neither of the argument files will be affected if:
  */

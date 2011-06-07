@@ -335,5 +335,5 @@ FN;
 	}
 	rc = fstat(dev->d_fd, &sb);
 
-	return dev;	
+	return dev;
 }

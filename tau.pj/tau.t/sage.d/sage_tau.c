@@ -80,7 +80,7 @@ FN;
 	strncpy(fm->fm_name, m->fm_name, sizeof(fm->fm_name));
 }
 #endif
-		
+
 void init_tau (void)
 {
 #if 0
@@ -91,7 +91,7 @@ void init_tau (void)
 FN;
 	fm  = make_type("sage_fm", NULL, have_fm, NULL);
 	key = make_gate( &fm, RESOURCE | PASS_OTHER);
-	
+
 	rc = sw_request("fm", key);
 	if (rc) eprintf("init_tau sw_request %d", rc);
 #endif

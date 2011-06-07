@@ -462,7 +462,7 @@ void *ztree (void *arg)
 
 void rate (void)
 {
-#define DELTA(x)	delta.x = new.x - old.x	
+#define DELTA(x)	delta.x = new.x - old.x
 	static inst_s	old = { 0 };
 	static inst_s	new;
 	static inst_s	delta;

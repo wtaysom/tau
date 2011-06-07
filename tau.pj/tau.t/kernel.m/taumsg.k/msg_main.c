@@ -15,7 +15,7 @@
  * Once a gate is created, is its state immutable?
  *
  * Data gates are variable length, may be I just reserve a fixed size
- * then have a larger area for large data moves. 
+ * then have a larger area for large data moves.
  *
  */
 
@@ -464,7 +464,7 @@ FN;
 		LOCK_MSG;
 		task->state = TASK_INTERRUPTIBLE;
 	}
-	task->state = TASK_RUNNING; 
+	task->state = TASK_RUNNING;
 	rmv_dq( &waiter.wt_wait);
 	return rc;
 }
@@ -634,7 +634,7 @@ FN;
 	if (signal_pending(current)) {
 		rc = -EINTR;
 	}
-	task->state = TASK_RUNNING; 
+	task->state = TASK_RUNNING;
 	return rc;
 }
 
@@ -690,7 +690,7 @@ FN;
 	out_receive(avatar, mb, p->pk_error);
 			avatar->av_recvfn(p->pk_error, &p->pk_sys);
 			LOCK_MSG;
-			
+
 			free_mb(mb);
 			deq_dq( &avatar->av_msgq, mb, mb_avatar);
 			if (!mb) break;
@@ -998,7 +998,7 @@ in_create_gate(avatar, msg);
 	// Should I return key_index as return value - avoid copy
 	msg->q.q_passed_key = key_index;
 	out_create_gate(avatar, key_index, msg->cr_id, rc);
-	
+
 	return 0;
 
 error:
@@ -1035,7 +1035,7 @@ FN;
 		sizeof(msg.q.q_passed_key));
 	if (rc) {
 		goto error;
-	}	
+	}
 	return 0;
 
 error:
@@ -1069,7 +1069,7 @@ LABEL(RightType);
 	} else {
 LABEL(WrongType);
 		free_gate(gate);
-	}		
+	}
 	return rc;
 }
 
@@ -1117,7 +1117,7 @@ in_destroy_key(avatar, key_index);
 	// We can unlock avatar here
 	deliver(mb);
 
-exit:		
+exit:
 	return rc;
 }
 
@@ -1254,7 +1254,7 @@ FN;
 	if (!mb) {
 		eprintk("Out of message buffers");
 		return 0;
-	}	
+	}
 	send_destroyed(g, mb);
 	return 0;
 }

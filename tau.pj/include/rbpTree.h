@@ -47,7 +47,7 @@
  * modified temporarily during delete operations, you must have separate
  * RBP_Tree_s for each tree that can be updated independently.
  *
- * 
+ *
  * RBP_Init		Initialize a red-black tree.
  *
  *	tree:		Pointer to type of tree being initialized
@@ -86,7 +86,7 @@
  *			be filled in.  Note: node is a pointer to the beginning
  *			of the sturcture, not the RBP_Node_s field in the
  *			structure.
- *	
+ *
  *
  */
 

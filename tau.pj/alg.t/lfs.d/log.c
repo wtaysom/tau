@@ -48,7 +48,7 @@ FN;
 		if (!buf) return 0;
 
 		head = buf->b_data;
-		bmorph(buf, log->lg_sys, head->h_blknum); 
+		bmorph(buf, log->lg_sys, head->h_blknum);
 	}
 }
 

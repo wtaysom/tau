@@ -35,7 +35,8 @@ include $(makedir)/$(target).mk
 INC+=-I. -I../include -I../../include
 
 # -E stop after preprocessor
-# -pg -O -g -DUNOPT -DNDEBUG
+# -pg generate code fro gprof
+# -O -g -DUNOPT -DNDEBUG
 # CFLAGS+=-g -O -Wall -Wstrict-prototypes -Werror
 CFLAGS += -rdynamic
 CFLAGS +=-g -O -Wall -Wstrict-prototypes -Werror \

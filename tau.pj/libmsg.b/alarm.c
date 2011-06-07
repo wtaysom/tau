@@ -20,7 +20,7 @@ int cyclic_alarm (ki_t key, u32 msec, ki_t *ret_key)
 	unsigned	local_key;
 	unint		alarm_key;
 	int		rc;
-	
+
 	rc = sw_local("alarm", &local_key);
 	if (rc) return rc;
 

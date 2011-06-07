@@ -197,7 +197,7 @@ FN;
 		if (m->q.q_passed_key) {
 			destroy_key_tau(m->q.q_passed_key);
 		}
-		return;	
+		return;
 	}
 	if (rc == DESTROYED) {
 		type->ty_destroy(m);
@@ -556,7 +556,7 @@ PRd(ino);
 
 not_found:
 	d_add(dentry, child);
-	return NULL;	
+	return NULL;
 }
 
 
@@ -699,7 +699,7 @@ static inline struct timespec itime (u64 secs)
 {
 	return ((struct timespec) { secs, 0 });
 }
- 
+
 static u32 gen_mode (u32 attr)
 {
 	u32	mode = 0666;
@@ -708,7 +708,7 @@ static u32 gen_mode (u32 attr)
 	else if (attr & zFA_IS_LINK) mode |= S_IFLNK;
 	else mode |= S_IFREG;
 
-	if (attr & zFA_READ_ONLY) mode &= ~0222;// Turn off write permission 
+	if (attr & zFA_READ_ONLY) mode &= ~0222;// Turn off write permission
 	if (attr & zFA_HIDDEN)    mode &= ~0444;// Turn off read permission
 	if ((attr & zFA_SUBDIRECTORY) || (attr & zFA_EXECUTE)) {
 		mode |= 0111;   // Turn on execute/search permission
@@ -796,7 +796,7 @@ FN;
 error:
 	exit_tau();
 	return jack_err(rc);
-	
+
 }
 
 static struct super_operations jack_sops = {
@@ -919,7 +919,7 @@ static void parse_opt (option_s *options, char *cmdline)
 	char	*name;
 	char	*value;
 	int	rc;
- 
+
 	for (;;) {
 		name = get_token( &cmdline, &separator);
 		if (separator == '=') {
@@ -1066,7 +1066,7 @@ FN;
 error:
 	printk(KERN_INFO "jack error=%d\n", rc);
 	jack_exit();
-	return jack_err(rc);	
+	return jack_err(rc);
 }
 
 MODULE_AUTHOR("Paul Taysom");

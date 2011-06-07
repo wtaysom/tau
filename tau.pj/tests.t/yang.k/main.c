@@ -62,7 +62,7 @@ static void send_tst (void *msg)
 {
 	yy_msg_s	*m = msg;
 	unint		key = m->q.q_passed_key;
-	unint		n = m->yy_num; 
+	unint		n = m->yy_num;
 	unint		i;
 	int		rc;
 
@@ -166,7 +166,7 @@ PRd(m->q.q_length);
 		if (m->q.q_passed_key) {
 			destroy_key_tau(m->q.q_passed_key);
 		}
-		vRet;	
+		vRet;
 	}
 	if (rc == DESTROYED) {
 		if (type->ty_destroy) type->ty_destroy(m);
@@ -204,7 +204,7 @@ ENTER;
 error:
 	printk(KERN_INFO "yang failed initialization\n");
 	yang_cleanup();
-	iRet(rc);	
+	iRet(rc);
 }
 
 static void yang_exit (void)

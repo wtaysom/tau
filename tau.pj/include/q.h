@@ -91,7 +91,7 @@ static inline void _push_stk (stk_q *stk, qlink_t *link)
 static inline addr _pop_stk (stk_q *stk)
 {
 	qlink_t	*link;
-	
+
 	link = stk->top;
 	stk->top   = link->next;
 	link->next = 0;
@@ -117,7 +117,7 @@ addr foreach_stk(stk_q *stk, qfunc f, void *args);
 /*
  * Ring buffer
  */
-#define is_empty_ring(_ring)	((_ring)->enq == (_ring)->deq)	
+#define is_empty_ring(_ring)	((_ring)->enq == (_ring)->deq)
 void init_ring(ring_q *ring, unint numObjs, void **ringBuffer);
 ring_q *new_ring(ring_q *ring, unint numObjs);
 bool enq_ring(ring_q *ring, void *obj);
@@ -133,7 +133,7 @@ addr foreach_ring(ring_q *ring, qfunc f, void *args);
 /*
  * Circular singlely linked list
  */
-#define is_empty_cir(_cir)	((_cir)->last == 0)	
+#define is_empty_cir(_cir)	((_cir)->last == 0)
 
 static inline void init_cir (cir_q *cir)
 {
@@ -202,7 +202,7 @@ addr foreach_cir(cir_q *cir, qfunc f, void *args);
 /*
  * Doublely linked list
  */
-#define is_empty_dq(_dq)	((_dq)->next == (_dq))	
+#define is_empty_dq(_dq)	((_dq)->next == (_dq))
 #define static_init_dq(_dq)	{ &(_dq), &(_dq) }
 
 static inline void init_dq (d_q *dq)
@@ -302,7 +302,7 @@ addr foreach_dq(d_q *dq, qfunc f, void *args);
 #define deq_back_dq(_q, _x, _l)	(_x = (is_empty_dq(_q) ? 0	\
 				    : (void *)(_deq_back_dq(_q)-field(_x, _l))))
 #define peek_dq(_q, _x, _l)	(_x = (is_empty_dq(_q) ? 0	\
-				    : (void *)(_peek_dq(_q)-field(_x, _l))))		
+				    : (void *)(_peek_dq(_q)-field(_x, _l))))
 #define next_dq(_x, _q, _l)	(_x = _next_dq(_x, _q, field(_x, _l)))
 
 #endif

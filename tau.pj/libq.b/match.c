@@ -16,7 +16,7 @@
 
 bool isPattern (char *p)
 {
-	for (;;) {	
+	for (;;) {
 		switch (*p) {
 		case '\0':	return FALSE;
 
@@ -35,10 +35,10 @@ bool isPattern (char *p)
 
 bool isMatch (char *p, char *s)
 {
-	for (;;) {	
+	for (;;) {
 		switch (*p) {
 		case '\0':	return *s == '\0';
-		
+
 		case '*':	for (;;) {
 					++p;
 					if (*p == '\0') return TRUE;
@@ -49,16 +49,16 @@ bool isMatch (char *p, char *s)
 					++s;
 					if (*s == '\0') return FALSE;
 				}
-					
+
 		case '\\':	++p;
 				if (*p == '\0') return FALSE;
 				if (*p != *s) return FALSE;
 				break;
-				
+
 		case '?':	if (*s == '\0') return FALSE;
 				++s;
 				break;
-	
+
 		default:	if (*p != *s) return FALSE;
 				++s;
 				break;
@@ -93,7 +93,7 @@ struct Test_s {
 int main (int argc, char *argv[])
 {
 	struct Test_s	*test;
-	
+
 	for (test = Tests; test->pattern; ++test)
 	{
 		if (isMatch(test->pattern, test->string) != test->isMatch)

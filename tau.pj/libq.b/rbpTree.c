@@ -46,7 +46,7 @@ enum { BLACK, RED };
 
 void RBP_Init (
 	RBP_Tree_s	*tree,
-	snint		(*nodeCompare)(void *x, void *y),	
+	snint		(*nodeCompare)(void *x, void *y),
 	snint		(*keyCompare)(void *key, void *x),
 	bool		(*destroyNode)(void *x),
 	bool		(*dumpNode)(void *x, unint depth, addr msg),

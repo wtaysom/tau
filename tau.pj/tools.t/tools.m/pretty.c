@@ -110,7 +110,7 @@ int main (int argc, char *argv[])
 					if (c == EOF) {
 						return 0;
 					}
-					break;	
+					break;
 				}
 			}
 		}

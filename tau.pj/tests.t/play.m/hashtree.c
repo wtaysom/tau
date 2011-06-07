@@ -114,7 +114,7 @@ void split_leaf (node_s *leaf)
 	new = ezalloc(sizeof(node_s));
 	new->n_type = LEAF;
 	new->n_parent = leaf->n_parent;
-}	
+}
 
 void insert_leaf (node_s *node, name_s *nm, u32 shift)
 {

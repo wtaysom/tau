@@ -87,7 +87,7 @@ void input (void)
 
 		case KEY_RESIZE:
 					break;
-	
+
 		case CNTRL('R'):	rotate();
 					break;
 

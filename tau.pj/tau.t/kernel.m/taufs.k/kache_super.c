@@ -434,7 +434,7 @@ FN;
 	unlock_page(page);
 	kunmap(page);
 	exit_tau();
-	return 0;	
+	return 0;
 }
 
 static int kache_readpage (struct file *file, struct page *page)
@@ -457,7 +457,7 @@ FN;
 	} else {
 		zero_page(page);
 	}
-	return 0;	
+	return 0;
 }
 
 #if 0
@@ -477,7 +477,7 @@ FN;
 #endif
 
 //XXX: in version 2.6.25, prepare_write and commit_write are replaced
-//XXX: by write_begin and write_end.  See //lwn.net/Articles/254856	
+//XXX: by write_begin and write_end.  See //lwn.net/Articles/254856
 static int kache_prepare_write (
 	struct file	*file,
 	struct page	*page,
@@ -514,7 +514,7 @@ FN;
 	}
 	kunmap(page);
 	exit_tau();
-	return 0;	
+	return 0;
 }
 
 static int kache_writepages (
@@ -847,7 +847,7 @@ PRd(ino);
 
 not_found:
 	d_add(dentry, child);
-	return NULL;	
+	return NULL;
 }
 
 static int kache_unlink (
@@ -1023,7 +1023,7 @@ typedef struct ksw_s {
 	struct semaphore	ksw_mutex;//XXX: would prefer to use synchronous
 						// message operations.
 	unint			ksw_key;
-} ksw_s;	
+} ksw_s;
 
 static void ksw_key_supplied (void *msg)
 {
@@ -1147,7 +1147,7 @@ static void parse_opt (option_s *options, char *cmdline)
 	char	*name;
 	char	*value;
 	int	rc;
- 
+
 	for (;;) {
 		name = get_token( &cmdline, &separator);
 		if (separator == '=') {
@@ -1198,7 +1198,7 @@ FN;
 	ksi->ksi_key = ksw->ksw_key;
 	//XXX: ksw has to be left around because we might receive more messages
 	// on it. This needs to be rethought.
-	
+
 	return 0;
 #endif
 	return 0;
@@ -1235,7 +1235,7 @@ static int stat_vol (ki_t key, volume_s *volume)
 		eprintk("bag in wrong state %lld", m.bag_state);
 		return qERR_NOT_FOUND;
 	}
-	
+
 	uuid_copy(volume->vol_guid, m.bag_guid_vol);
 	volume->vol_num_shards   = m.bag_num_shards;
 	volume->vol_num_replicas = m.bag_num_replicas;
@@ -1288,7 +1288,7 @@ FN;
 		if (m->q.q_passed_key) {
 			destroy_key_tau(m->q.q_passed_key);
 		}
-		return;	
+		return;
 	}
 	if (rc == DESTROYED) {
 		type->ty_destroy(m);
@@ -1443,7 +1443,7 @@ FN;
 error:
 	printk(KERN_INFO "tau error=%d\n", rc);
 	kache_exit();
-	return kache_err(rc);	
+	return kache_err(rc);
 }
 
 MODULE_AUTHOR("Paul Taysom");

@@ -295,19 +295,19 @@ void prStatSizes (struct stat *sb)
 {
 	printf("dev=%d ino=%d mode=%d nlink=%d uid=%d gid=%d rdev=%d"
 		" size=%d blocks=%d blksize=%d atime=%d mtime=%d ctime=%d\n",
-		(u32)sizeof(sb->st_dev),		
-		(u32)sizeof(sb->st_ino),		
-		(u32)sizeof(sb->st_mode),	
-		(u32)sizeof(sb->st_nlink),	
-		(u32)sizeof(sb->st_uid),		
-		(u32)sizeof(sb->st_gid),		
-		(u32)sizeof(sb->st_rdev),	
-		(u32)sizeof(sb->st_size),	
-		(u32)sizeof(sb->st_blocks),	
-		(u32)sizeof(sb->st_blksize),	
-		(u32)sizeof(sb->st_atime),	
-		(u32)sizeof(sb->st_mtime),	
-		(u32)sizeof(sb->st_ctime)	
+		(u32)sizeof(sb->st_dev),
+		(u32)sizeof(sb->st_ino),
+		(u32)sizeof(sb->st_mode),
+		(u32)sizeof(sb->st_nlink),
+		(u32)sizeof(sb->st_uid),
+		(u32)sizeof(sb->st_gid),
+		(u32)sizeof(sb->st_rdev),
+		(u32)sizeof(sb->st_size),
+		(u32)sizeof(sb->st_blocks),
+		(u32)sizeof(sb->st_blksize),
+		(u32)sizeof(sb->st_atime),
+		(u32)sizeof(sb->st_mtime),
+		(u32)sizeof(sb->st_ctime)
 	);
 }
 

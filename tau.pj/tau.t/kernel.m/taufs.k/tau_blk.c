@@ -299,7 +299,7 @@ int tau_readpage (struct file *file, struct page *page)
 FN;
 	assert(file == NULL);
 	tau_fill_page(page, page->index);
-	return 0;	
+	return 0;
 }
 
 int tau_invalidatepage (struct page *page, unsigned long offset)

@@ -21,7 +21,7 @@
 #include <string.h>
 
 #include "sack.h"
-			
+
 unsigned sack_put (sack_s *sk, void *d)
 {
 	void		**p;
@@ -107,10 +107,10 @@ int sack_for_each (sack_s *sk, sack_fn fn, void *data)
 			&& ((void **)d < &sk->sk_data[sk->sk_end]))
 		{
 			rc = fn(d, data);
-			if (rc) return rc; 
+			if (rc) return rc;
 		}
 	}
-	return 0;	
+	return 0;
 }
 
 void sack_init (sack_s *sk)

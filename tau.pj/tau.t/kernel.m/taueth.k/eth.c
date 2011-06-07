@@ -225,7 +225,7 @@ static void set_counts (node_s *node, eth_hdr_s *h)
 {
 	h->h_sent = ++node->n_sent;
 	h->h_recv = node->n_recv;
-}		
+}
 
 static u8 *key_to_mac (key_s *key, void *dst)
 {
@@ -442,7 +442,7 @@ static int net_write (
 	u8	*start = data->q_start;
 	u64	length = data->q_length;
 	u64	offset = data->q_offset;
-	unint	size = CHUNK_SIZE;	
+	unint	size = CHUNK_SIZE;
 	int	rc;
 FN;
 	for (;;) {
@@ -471,7 +471,7 @@ static int net_read (
 	u64	length = data->q_length;
 	u64	offset = data->q_offset;
 	unint	size = CHUNK_SIZE;
-	bool	is_last = FALSE;	
+	bool	is_last = FALSE;
 	int	rc;
 FN;
 	for (;;) {

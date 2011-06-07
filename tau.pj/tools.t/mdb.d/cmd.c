@@ -198,7 +198,7 @@ static void db_repeat (void)
 
 static void db (int argc, char *argv[])
 {
-	if (d_args(argc, argv)) {	
+	if (d_args(argc, argv)) {
 		Arg.a_cmd = db_repeat;
 		db_repeat();
 	}
@@ -228,7 +228,7 @@ static void dd_repeat (void)
 
 static void dd (int argc, char *argv[])
 {
-	if (d_args(argc, argv)) {	
+	if (d_args(argc, argv)) {
 		Arg.a_cmd = dd_repeat;
 		dd_repeat();
 	}
@@ -258,7 +258,7 @@ static void dq_repeat (void)
 
 static void dq (int argc, char *argv[])
 {
-	if (d_args(argc, argv)) {	
+	if (d_args(argc, argv)) {
 		Arg.a_cmd = dq_repeat;
 		dq_repeat();
 	}
@@ -277,7 +277,7 @@ static void ds_repeat (void)
 
 static void ds (int argc, char *argv[])
 {
-	if (d_args(argc, argv)) {	
+	if (d_args(argc, argv)) {
 		Arg.a_cmd = ds_repeat;
 		ds_repeat();
 	}
@@ -428,7 +428,7 @@ static void pr_sym (Sym_s *sym)
 		printf("%8llx: %s\n", sym_address(sym), sym_name(sym));
 	}
 }
-		
+
 static void where_repeat (void)
 {
 	addr	address = Arg.a_addr;
@@ -525,7 +525,7 @@ static void u_repeat (void)
 
 static void u (int argc, char *argv[])
 {
-	if (u_args(argc, argv)) {	
+	if (u_args(argc, argv)) {
 		Arg.a_cmd = u_repeat;
 		u_repeat();
 	}

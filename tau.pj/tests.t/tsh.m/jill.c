@@ -235,7 +235,7 @@ void jill_create (void *msg)
 		destroy_key_tau(reply);
 		warn("make_gate");
 		return;
-	}	
+	}
 	rc = send_key_tau(reply, m);
 	if (rc) {
 		destroy_key_tau(m->q.q_passed_key);
@@ -300,7 +300,7 @@ void jill_open (void *msg)
 		destroy_key_tau(reply);
 		return;
 	}
-	
+
 	jopen = ezalloc(sizeof(*jopen));
 	*jopen = *j;
 	jopen->j_type = &Jill_open.jt_tag;
@@ -318,7 +318,7 @@ void jill_open (void *msg)
 		destroy_key_tau(reply);
 		warn("make_gate");
 		return;
-	}	
+	}
 	rc = send_key_tau(reply, m);
 	if (rc) {
 		destroy_key_tau(reply);
@@ -553,7 +553,7 @@ void jill_zid_open (void *msg)
 		destroy_key_tau(reply);
 		warn("make_gate");
 		return;
-	}	
+	}
 	rc = send_key_tau(reply, m);
 	if (rc) {
 		destroy_key_tau(reply);

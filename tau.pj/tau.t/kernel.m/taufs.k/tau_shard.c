@@ -56,7 +56,7 @@ static hub_s *get_hub (shard_s *shard, u64 ino)
 		}
 		prev = next;
 	}
-}	
+}
 
 static void add_hub (shard_s *shard, hub_s *hub)
 {
@@ -361,7 +361,7 @@ FN;
 }
 
 hub_s *open_hub (shard_s *shard, u64 ino)
-{		
+{
 	hub_s	*hub;
 	int		rc;
 FN;
@@ -463,7 +463,7 @@ FN;
 		return 0;
 	}
 	return ino;
-}	
+}
 
 static void create_spoke (void *msg)
 {
@@ -567,7 +567,7 @@ FN;
 		if (m->q.q_passed_key) {
 			destroy_key_tau(m->q.q_passed_key);
 		}
-		return;	
+		return;
 	}
 	if (rc == DESTROYED) {
 		type->ty_destroy(m);

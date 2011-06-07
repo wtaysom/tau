@@ -117,7 +117,7 @@ void parse_opt (option_s *options, char *cmdline)
 	char	*name;
 	char	*value;
 	int	rc;
- 
+
 	for (;;) {
 		name = get_token( &cmdline, &separator);
 		if (separator == '=') {

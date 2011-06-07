@@ -103,14 +103,14 @@ void pr_node (unint depth, void **node, dyna_s *da, unint indent)
 		for (i = 0; i < ALLOC_SIZE; i += size) {
 			pr_mem((u8 *)((addr)node + i), size, indent+1);
 		}
-	}	
+	}
 }
 
 void pr_dyna (dyna_s *da)
 {
 	pr_node(da->depth, da->node, da, 0);
 }
-	
+
 
 void *ith (dyna_s *da, unint i)
 {
@@ -131,7 +131,7 @@ void *ith (dyna_s *da, unint i)
 		node = new;
 		shift += SHIFT;
 		max = 1 << shift;
-	}		
+	}
 	for (; depth; depth--) {
 		shift -= SHIFT;
 		j = (i >> shift) & MASK;
@@ -141,7 +141,7 @@ void *ith (dyna_s *da, unint i)
 			node[j] = next;
 		}
 		node = next;
-	}	
+	}
 	return (void *)((addr)node + ((i & da->mask) << da->shift));
 }
 

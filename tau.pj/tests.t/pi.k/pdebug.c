@@ -159,10 +159,10 @@ static void format (const char *fmt, ...)
 
 static int match (const char *p, const char *s)
 {
-	for (;;) {	
+	for (;;) {
 		switch (*p) {
 		case '\0':	return *s == '\0';
-		
+
 		case '*':	for (;;) {
 					++p;
 					if (*p == '\0') return 1;
@@ -173,16 +173,16 @@ static int match (const char *p, const char *s)
 					++s;
 					if (*s == '\0') return 0;
 				}
-					
+
 		case '\\':	++p;
 				if (*p == '\0') return 0;
 				if (*p != *s) return 0;
 				break;
-				
+
 		case '?':	if (*s == '\0') return 0;
 				++s;
 				break;
-	
+
 		default:	if (*p != *s) return 0;
 				++s;
 				break;

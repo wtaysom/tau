@@ -13,7 +13,7 @@
 #define PAGE_MASK	(~(PAGE_SIZE-1))
 #define PHYSICAL_PAGE_MASK	(~(PAGE_SIZE-1) & __PHYSICAL_MASK)
 
-#define THREAD_ORDER 1 
+#define THREAD_ORDER 1
 #define THREAD_SIZE  (PAGE_SIZE << THREAD_ORDER)
 #define CURRENT_MASK (~(THREAD_SIZE-1))
 
@@ -99,7 +99,7 @@ typedef struct { unsigned long pgprot; } pgprot_t;
 #define __VIRTUAL_MASK		((1UL << __VIRTUAL_MASK_SHIFT) - 1)
 
 #define KERNEL_TEXT_SIZE  (40UL*1024*1024)
-#define KERNEL_TEXT_START 0xffffffff80000000UL 
+#define KERNEL_TEXT_START 0xffffffff80000000UL
 
 #ifndef __ASSEMBLY__
 
@@ -110,10 +110,10 @@ typedef struct { unsigned long pgprot; } pgprot_t;
 #define PAGE_OFFSET		((unsigned long)__PAGE_OFFSET)
 
 /* Note: __pa(&symbol_visible_to_c) should be always replaced with __pa_symbol.
-   Otherwise you risk miscompilation. */ 
+   Otherwise you risk miscompilation. */
 #define __pa(x)			(((unsigned long)(x)>=__START_KERNEL_map)?(unsigned long)(x) - (unsigned long)__START_KERNEL_map:(unsigned long)(x) - PAGE_OFFSET)
 /* __pa_symbol should be used for C visible symbols.
-   This seems to be the official gcc blessed way to do such arithmetic. */ 
+   This seems to be the official gcc blessed way to do such arithmetic. */
 #define __pa_symbol(x)		\
 	({unsigned long v;  \
 	  asm("" : "=r" (v) : "0" (x)); \
@@ -136,7 +136,7 @@ typedef struct { unsigned long pgprot; } pgprot_t;
 	(((current->personality & READ_IMPLIES_EXEC) ? VM_EXEC : 0 ) | \
 	 VM_READ | VM_WRITE | VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
 
-#define __HAVE_ARCH_GATE_AREA 1	
+#define __HAVE_ARCH_GATE_AREA 1
 
 #endif /* __KERNEL__ */
 

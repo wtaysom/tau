@@ -60,7 +60,7 @@ void process_command (char *line)
 	char	**argv;
 
 	if (setjmp(Err_jmp)) return;
-	argc = line2argv(line, &argv);		
+	argc = line2argv(line, &argv);
 	execute(argc, argv);
 	if (debug_is_on()) dump_args(argc, argv);
 }
@@ -69,13 +69,13 @@ void tty_died (void *msg)
 {
 	printf("tty went away\n");
 	exit(2);
-}	
+}
 
 void sw_died (void *msg)
 {
 	printf("switchboard went away\n");
 	exit(2);
-}	
+}
 
 void get_line (void *msg)
 {

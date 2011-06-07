@@ -78,7 +78,7 @@ typedef struct key_chain_s {
 	key_s	*kc_top;
 	key_s	kc_chain[MAX_KEYS];
 } key_chain_s;
-	
+
 
 struct super_s {
 	struct list_head	sp_avatars;
@@ -106,7 +106,7 @@ struct super_s {
 }
 
 struct gate_s		GATE_S;
-struct datagate_s	DATA_S;	
+struct datagate_s	DATA_S;
 
 struct replygate_s {
 	struct		DATA_S;

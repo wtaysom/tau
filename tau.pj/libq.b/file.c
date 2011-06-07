@@ -41,7 +41,7 @@ void fstatq (int fd, struct stat *sb)
 	}
 }
 
-void lseekq (int fd, off_t offset) 
+void lseekq (int fd, off_t offset)
 {
 	if (lseek(fd, offset, 0) == -1) {
 		io_error("lseek", NULL);

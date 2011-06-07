@@ -3,9 +3,9 @@
  * taken from the PNG Specification: Sample CRC Code
  * PNG (Portable Network Graphics) Specification,
  * Version 1.2
- * 
+ *
  * 15. Appendix: Sample CRC Code
- * 
+ *
  * The following sample code represents a practical
  * implementation of the CRC (Cyclic Redundancy Check)
  * employed in PNG chunks.  (See also ISO 3309 or
@@ -107,7 +107,7 @@ static const u32 CRC32_Table[256] =
 	 * Initially false.
 	 */
 int CRCtableComputed = 0;
-   
+
 	/*
 	 * Make the table for a fast CRC.
 	 */
@@ -131,7 +131,7 @@ void makeCRCtable(void)
 }
 	if (!CRCtableComputed) makeCRCtable();
 #endif
-   
+
 	/*
 	 * Update a running CRC with the bytes
 	 * buf[0..len-1]--the CRC should be

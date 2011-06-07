@@ -50,7 +50,7 @@ typedef struct bag_s {
 	u64		bg_num_blocks;
 	ki_t		bg_key;
 } bag_s;
-	
+
 static d_q	Bag_list = static_init_dq(Bag_list);
 static bag_s	**Bag_array;
 static vol_s	Volume;
@@ -299,7 +299,7 @@ static void new_bag (ki_t key, guid_t vol_guid)
 		fatal("bag in wrong state %lld", m.bag_state);
 		return;
 	}
-	
+
 	bag = ezalloc(sizeof(*bag));
 
 	uuid_copy(bag->bg_guid_vol, m.bag_guid_vol);

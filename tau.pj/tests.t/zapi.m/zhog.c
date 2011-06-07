@@ -44,7 +44,7 @@ static void init (char *vol)
 		return;
 	}
 }
-	
+
 static Key_t create_file (char *name)
 {
 	Key_t	key;
@@ -130,11 +130,11 @@ int main (int argc, char *argv[])
 		case 'z':	Zero_fill = TRUE;	break;
 		case 'f':	fib = TRUE;		break;
 		case 'v':	vol = optarg;		break;
-		case 'k':	x = size(optarg, KILO);	break;	
-		case 'm':	x = size(optarg, MEGA);	break;	
-		case 'g':	x = size(optarg, GIGA);	break;	
-		case 't':	x = size(optarg, TERA);	break;	
-		case 'p':	x = size(optarg, PETA);	break;	
+		case 'k':	x = size(optarg, KILO);	break;
+		case 'm':	x = size(optarg, MEGA);	break;
+		case 'g':	x = size(optarg, GIGA);	break;
+		case 't':	x = size(optarg, TERA);	break;
+		case 'p':	x = size(optarg, PETA);	break;
 		case '?':
 		default:	usage();		break;
 		}

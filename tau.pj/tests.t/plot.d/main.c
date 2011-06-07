@@ -118,7 +118,7 @@ vector_s vinit(int n, double f(double))
 	point_s *p = v.p;
 	point_s *end;
 	double x;
-	
+
 	for (x = 0, end = &v.p[n]; p < end; p++, x++) {
 		p->x = x;
 		p->y = f(x);

@@ -124,7 +124,7 @@ typedef struct file_s {
 	bag_s		*f_bag;
 	tree_s		f_tree;
 } file_s;
-	
+
 extern avatar_s	*Fs_avatar;
 
 extern tree_species_s	Tau_dir_species;

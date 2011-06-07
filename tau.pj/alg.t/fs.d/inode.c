@@ -260,7 +260,7 @@ FN;
 	info->in_next = *bucket;
 	*bucket = info;
 	++info->in_use;
-}	
+}
 
 info_s *get_info (u64 ino)
 {

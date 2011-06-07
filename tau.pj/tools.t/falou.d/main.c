@@ -43,7 +43,7 @@ static char *stripwhite (char *string)
 
 	for (s = string; isspace(*s); s++)
 		;
-		
+
 	if (*s == 0) return (s);
 
 	t = s + strlen (s) - 1;
@@ -77,7 +77,7 @@ void get_lines (unint key)
 		m.m_method = 0;
 		rc = putdata_tau(key, &m, len, s);
 		if (rc) eprintf("get_lines putdata_tau %d", rc);
-	
+
 		free(line);
 	}
 	printf("\n");
@@ -95,7 +95,7 @@ void connect (void *msg)
 	}
 	Connect.cn_key = m->q.q_passed_key;
 	get_lines(Connect.cn_key);
-}	
+}
 
 void connect_with_bicho (void)
 {
