@@ -65,7 +65,7 @@ FN;
 
 void dev_flush(Buf_s *b)
 {
-FN;
+//FN;
 	Dev_s *dev = b->cache->dev;
 	int rc = pwrite(dev->fd, b->d, dev->block_size,
 			b->block * dev->block_size);

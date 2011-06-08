@@ -4,7 +4,7 @@ package main
 
 import (
 	"fmt"
-//	"exp/draw"
+	"exp/draw"
 	"exp/draw/x11"
 	"image"
 )
@@ -15,12 +15,12 @@ func main() {
 //	var color image.Color
 //	color = 0xff00ff
 //	color.RGBA(1000, 0, 0, 1000)
-	c, err := x11.NewWindow()
+	w, err := x11.NewWindow()
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		return
 	}
-	s := c.Screen()
+	s := w.Screen()
 	for x := 0; x < 256; x++ {
 		for y := 0; y < 256; y++ {
 			color = image.RGBAColor{uint8(x), uint8(y), 0, 255}
@@ -33,9 +33,27 @@ func main() {
 		if y >= b.Max.X { break; }
 		s.Set(x, y, color)
 	}
-	c.FlushImage();
+	w.FlushImage();
 	fmt.Printf("Press any key to exit.\n")
-	<-c.EventChan();
+	i := 0
+	for event := range w.EventChan() {
+		i++
+		fmt.Println("event type: ", event, i);
+		switch e := event.(type) {
+		case draw.KeyEvent:
+			if (e.Key > 0) {
+				switch e.Key {
+				case 'q': return
+				default: fmt.Println("key=", e.Key)
+				}
+			}
+		case draw.ConfigEvent:
+			s = w.Screen()
+			b = s.Bounds()
+			fmt.Println("Bounds: ", b)
+			return
+		}
+	}
 }
 /*
         s := c.Screen(); 

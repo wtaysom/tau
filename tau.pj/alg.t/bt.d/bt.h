@@ -35,6 +35,7 @@ typedef struct Stat_s {
 	u64	insert;
 	u64	find;
 	u64	delete;
+	u64	join;
 } Stat_s;
 
 Btree_s *t_new(char *file, int num_bufs);

@@ -69,7 +69,7 @@ void *writer (void *arg)
 
 	fd = open(Option.file, O_WRONLY | O_CREAT | O_TRUNC, 0700);
 	if (fd == -1) fatal("open %s:", Option.file);
-	unlink(Option.file);
+//	unlink(Option.file);
 	for (;;) {
 		rc = write(fd, Buf, sizeof(Buf));
 		if (rc == -1) {
