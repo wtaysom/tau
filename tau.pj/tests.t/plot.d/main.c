@@ -12,105 +12,16 @@
 #include <unistd.h>
 
 #include <eprintf.h>
-
-typedef struct point_s {
-	double	x;
-	double	y;
-} point_s;
-
-typedef struct pixel_s {
-	int	col;
-	int	row;
-} pixel_s;
-
-typedef struct graph_s {
-	point_s	max;
-	pixel_s	view;
-} graph_s;
-
-typedef struct vector_s {
-	int	n;
-	point_s	*p;
-} vector_s;
-
-void pr_point(point_s p)
-{
-	fprintf(stderr, "x=%g y=%g\n", p.x, p.y);
-}
-
-void pr_pixel(pixel_s p)
-{
-	fprintf(stderr, "colx=%d row=%d\n", p.col, p.row);
-}
-
-vector_s new_vector(int n)
-{
-	vector_s v;
-
-	if (!n) {
-		v.p = NULL;
-		return v;
-	}
-	v.p = ezalloc(n * sizeof(*v.p));
-	v.n = n;
-	return v;
-}
-
-static int x2col(graph_s *g, double x)
-{
-	return round((x * g->view.col) / g->max.x);
-}
-
-static int y2row(graph_s *g, double y)
-{
-	int row = round(g->view.row - ((y * g->view.row) / g->max.y));
-fprintf(stderr, "y=%g row=%d\n", y, row);
-	return row;
-}
-
-pixel_s scale(graph_s *g, point_s p)
-{
-	pixel_s	q = { x2col(g, p.x), y2row(g, p.y) };
-pr_point(p);
-pr_pixel(q);
-	return q;
-}
-
-void plot(graph_s *g, point_s p, char c)
-{
-	pixel_s q = scale(g, p);
-
-	mvprintw(q.row, q.col, "%c", c);
-}
-
-point_s vmax(vector_s v)
-{
-	point_s max = { DBL_MIN, DBL_MIN };
-	point_s	*p = v.p;
-	point_s *end;
-
-	if (!p) return max;
-	for (end = &v.p[v.n]; p < end; p++) {
-		if (p->x > max.x) max.x = p->x;
-		if (p->y > max.y) max.y = p->y;
-	}
-	return max;
-}
-
-void vplot(graph_s *g, vector_s v, char c)
-{
-	int i;
-
-	g->max = vmax(v);
-	for (i = 0; i < v.n; i++) {
-		plot(g, v.p[i], c);
-	}
-}
+#include <plot.h>
+#include <chart.h>
+#include <debug.h>
 
 double f(double x)
 {
-	return sin(x/3) + 1;
+	return sin(x/12);
 }
+
+#if 0
 
 vector_s vinit(int n, double f(double))
 {
@@ -128,11 +39,40 @@ vector_s vinit(int n, double f(double))
 
 void graph(void)
 {
-	graph_s g = { { 0, 0}, { 80, 10} };
+	graph_s g = { {0, 0}, { {10, 10}, {80, 10} } };
 	vector_s v;
 
 	v = vinit(80, f);
 	vplot(&g, v, '*');
+}
+#endif
+
+void chart1(void)
+{
+	enum { ROWS = 20, COLS = 132 };
+	chart_s	*ch;
+	int	i;
+
+	ch = new_chart(3, 3, ROWS, COLS, -1.0, 1.0, '*', FALSE);
+	
+	for (i = 0; i < 1000; i++) {
+		chart(ch, f(i));
+		usleep(10000);
+	}
+}
+
+void chart2(void)
+{
+	enum { ROWS = 20, COLS = 132 };
+	chart_s	*ch;
+	int	i;
+
+	ch = new_chart(3, 3, ROWS, COLS, 0, 100000000, '@', TRUE);
+	
+	for (i = 0; i < 1000; i++) {
+		chart(ch, i * i);
+		usleep(10000);
+	}
 }
 
 static void init(void)
@@ -170,10 +110,11 @@ void set_signals(void)
 
 int main(int argc, char *argv[])
 {
+	debugstderr();
 	set_signals();
 	init();
-	graph();
-	refresh();
+	chart1();
+	chart2();
 	getchar();
 	cleanup(0);
 	return 0;
