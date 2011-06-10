@@ -140,11 +140,7 @@ void pr_stats (Btree_s *t) {
 
 void t_print (Btree_s *t) {
 	if (Option.print) {
-		extern int FnDebugIsOn;
-		int is_on = FnDebugIsOn;
-		if (is_on) fdebugoff();
 		t_dump(t);
-		if (is_on) fdebugon();
 	}
 }
 
@@ -366,14 +362,12 @@ void test_level(int n, int level)
 	if (FALSE) seed_random();
 	t = t_new(".tfile", NUM_BUFS);
 	for (i = 0; i < n; i++) {
-#if 0
-if (i > 585) {
+if (i >= 596) {
 	fdebugon();
 	Option.debug = TRUE;
 	Option.print = TRUE;
 printf("=========%d======\n", i);
 }
-#endif
 		if (should_delete(count, level)) {
 			key = r_delete_rand();
 if (Option.print) {

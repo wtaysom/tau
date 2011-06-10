@@ -26,53 +26,26 @@
 
 #include <style.h>
 
-int	DebugIsOn = 1;
-int	AssertIsOn = 1;
-int	FnDebugIsOn = 1;
+bool	DebugIsOn = 1;
+bool	AssertIsOn = 1;
+bool	FnDebugIsOn = 1;
 
 static FILE **stdbug = &stdout;
 
-int debugon (void)
-{
-	return DebugIsOn = 1;
-}
+bool debugon (void) { return DebugIsOn = TRUE; }
+bool debugoff (void) { return DebugIsOn = FALSE; }
+bool debug_is_on (void) { return DebugIsOn; }
+bool debug_is_off (void) { return !DebugIsOn; }
 
-int debugoff (void)
-{
-	return DebugIsOn = 0;
-}
+bool fdebugon (void) { return FnDebugIsOn = TRUE; }
+bool fdebugoff (void) { return FnDebugIsOn = FALSE; }
+bool fdebug_is_on (void) { return FnDebugIsOn; }
+bool fdebug_is_off (void) { return !FnDebugIsOn; }
 
-int fdebugon (void)
-{
-	return FnDebugIsOn = 1;
-}
+void debugstderr (void) { stdbug = &stderr; }
+void debugstdout (void) { stdbug = &stdout; }
 
-int fdebugoff (void)
-{
-	return FnDebugIsOn = 0;
-}
-
-void debugstderr (void)
-{
-	stdbug = &stderr;
-}
-
-void debugstdout (void)
-{
-	stdbug = &stdout;
-}
-
-bool debug_is_on (void)
-{
-	return DebugIsOn;
-}
-
-bool debug_is_off (void)
-{
-	return !DebugIsOn;
-}
-
-int debugenv (void)
+bool debugenv (void)
 {
 	char	*c;
 

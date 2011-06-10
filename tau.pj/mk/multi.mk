@@ -44,7 +44,6 @@ all: $(objects)
 
 $(objdir)/% : %.c $(headers)
 	@ mkdir -p $(objdir)
-	echo $(LIBS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 	cp $@ $(bin)
 

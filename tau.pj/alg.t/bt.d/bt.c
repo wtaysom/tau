@@ -141,6 +141,9 @@ int bt_err(
 	op->err.err   = err;
 	printf("ERROR: %s<%d> %s: %d\n",
 		fn, line, label, err);
+
+	printf("bt_err\n");
+	t_dump(op->tree);
 	return err;
 }	
 
@@ -1277,10 +1280,6 @@ FN;
 			if (child->free <= sibling->free) break;
 		}
 	} else {
-//XXX: this is not quite right because it doesn't handle last
-// Two problems:
-//	*1. Get the right key
-//	2. Make sure there is the correct amount of space
 		Twig_s	twig;
 		int	used = inuse(child);
 
@@ -1353,6 +1352,11 @@ HERE;
 			if (child->free <= sibling->free) break;
 		}
 	} else {
+		// Have to manage moving the record the key that represents
+		// the split. The last record adds an extra complication
+		// This is really getting complicated. I'm going to need
+		// a state chart. I'm not sure supporting last is really
+		// that good of an idea. We didn't in NSS.
 		br_compact(child);
 		for (i = 0; ;i++) {
 			//XXX: see comments above.
@@ -1436,8 +1440,12 @@ FN;
 
 void t_dump(Btree_s *t)
 {
+	int is_on = fdebug_is_on();
+
 	printf("**************************************************\n");
+	if (is_on) fdebugoff();
 	node_dump(t, t->root, 0);
+	if (is_on) fdebugon();
 	cache_balanced(t->cache);
 }
 
