@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
- * Distributed under the terms of the GNU General Public License v2
+ * Use of this source code is governed by a BSD-style license that
+ * can be found in the LICENSE file.
  */
 /*
  * Chart plots a point at each tick.
@@ -14,10 +15,11 @@ void chart(chart_s *ch, double y);
 chart_s *new_chart(
 	int row_start,
 	int col_start,
-	int rows,
 	int cols,
 	double ymin,
-	double ymax,
+	double ystep,
+	int ystepsize,
+	int ynumsteps,
 	char sym,
 	bool logarithmic);
 
