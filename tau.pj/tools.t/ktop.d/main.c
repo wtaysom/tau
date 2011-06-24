@@ -87,6 +87,7 @@ static void usage(void)
 		"\tq - quit\n"
 		"\tc - reset internal counters\n"
 		"\tk - display top kernel operations (default)\n"
+		"\tp - display plot of selected operation\n"
 		"\tf - display just file system operations\n"
 		"\ti - display counters internal to ktop for debugging\n"
 		"\t< - reduce redisplay interval\n"
@@ -155,6 +156,9 @@ void commander(void)
 			break;
 		case 'k':
 			Display = kernel_display;
+			break;
+		case 'p':
+			Display = plot_display;
 			break;
 		case 'f':
 			Display = file_system_display;

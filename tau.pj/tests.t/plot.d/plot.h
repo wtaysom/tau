@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
- * Distributed under the terms of the GNU General Public License v2
+ * Use of this source code is governed by a BSD-style license that
+ * can be found in the LICENSE file.
  */
 #ifndef _PLOT_H_
 #define _PLOT_H_ 1

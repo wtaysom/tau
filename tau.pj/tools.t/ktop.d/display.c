@@ -69,8 +69,9 @@ Display_call_s Display_call[] = {
 static void help(void)
 {
 	mvprintw(HELP_ROW, HELP_COL,
-		"q quit  c clear  k kernel ops  i internal ops  f file ops "
-		" < shorter  > longer %d.%.3d",
+		"q quit  c clear  k kernel ops  p plot op"
+		"  i internal ops  f file ops"
+		"  < shorter  > longer %d.%.3d",
 		Sleep.tv_sec, Sleep.tv_nsec / A_MILLION);
 }
 
@@ -108,6 +109,9 @@ static void self(void)
 		mvprintw(SELF_ROW+8, SELF_COL, "Avg:              %g", avg);
 		mvprintw(SELF_ROW+9, SELF_COL, "Max:              %g", max);
 	}
+	mvprintw(SELF_ROW+12, SELF_COL, "COLS:       %12d", COLS);
+	mvprintw(SELF_ROW+13, SELF_COL, "LINES:      %12d", LINES);
+
 }
 
 static void top_pid(void)
@@ -247,13 +251,17 @@ void kernel_display(void)
 {
 	clear();
 	top_ten();
-	if (Plot) {
-		clear();
-		graph_total();
-	} else {
-		display_pidcall();
-		display_top_ten();
-	}
+	display_pidcall();
+	display_top_ten();
+	help();
+	refresh();
+}
+
+void plot_display(void)
+{
+	clear();
+	top_ten();
+	graph_total();
 	help();
 	refresh();
 }

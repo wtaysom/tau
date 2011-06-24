@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
- * Distributed under the terms of the GNU General Public License v2
+ * Use of this source code is governed by a BSD-style license that
+ * can be found in the LICENSE file.
  */
 
 #include <float.h>
@@ -53,7 +54,16 @@ void chart1(void)
 	chart_s	*ch;
 	int	i;
 
-	ch = new_chart(3, 3, ROWS, COLS, -1.0, 1.0, '*', FALSE);
+	ch = new_chart(
+		2,	// Row start
+		8,	// Col start
+		100, 	// Number of columns (time)
+		-1, 	// y min
+		0.1,	// y step size
+		1,	// num rows per step
+		20,	// number of steps
+		'*', 	// symbol for graph
+		FALSE);
 	
 	for (i = 0; i < 1000; i++) {
 		chart(ch, f(i));
@@ -63,13 +73,20 @@ void chart1(void)
 
 void chart2(void)
 {
-	enum { ROWS = 20, COLS = 132 };
 	chart_s	*ch;
 	int	i;
 
-	ch = new_chart(3, 3, ROWS, COLS, 0, 100000000, '@', TRUE);
-	
-	for (i = 0; i < 1000; i++) {
+	ch = new_chart(
+		2,	// Row start
+		8,	// Col start
+		100, 	// Number of columns (time)
+		1, 	// y min
+		10,	// y step size
+		5,	// num rows per step
+		6,	// number of steps
+		'@', 	// symbol for graph
+		TRUE);	// Logarithmic scale
+	for (i = 0; i < 400; i++) {
 		chart(ch, i * i);
 		usleep(10000);
 	}

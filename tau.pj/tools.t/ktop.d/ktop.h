@@ -65,6 +65,7 @@ extern bool Trace_self;	/* Trace myself and ignore others */
 extern display_fn Display;
 void internal_display(void);
 void kernel_display(void);
+void plot_display(void);
 void file_system_display(void);
 
 extern u64 Syscall_count[NUM_SYS_CALLS];

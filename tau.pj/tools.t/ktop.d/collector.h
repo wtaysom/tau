@@ -37,8 +37,8 @@ enum {	BUF_SIZE = 1 << 12,
  * Documentation/trace/ftrace.txt
  */
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,38))
-//#if 0
+//#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,38))
+#if 0
 
 	#define EVENT_PATH	"events/syscalls/%s/enable"
 
