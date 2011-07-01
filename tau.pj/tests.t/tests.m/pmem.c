@@ -57,6 +57,7 @@ int number_of_entries (const char *path)
 }
 
 mem_s	*Mem;
+int	Max;
 
 bool init_entry (int i, char *name, u64 value)
 {
@@ -69,40 +70,53 @@ bool init_entry (int i, char *name, u64 value)
 
 void init_table (const char *path)
 {
-	int	n = number_of_entries(path);
-
-	Mem = ezalloc(n * sizeof(mem_s));
+	Max = number_of_entries(path);
+	Mem = ezalloc(Max * sizeof(mem_s));
 	scan_file(path, init_entry);
+}
+
+bool tick_entry (int i, char *name, u64 value)
+{
+	mem_s	*m;
+
+	if (i < 0)  fatal("%d  for %s=%lld", i, name , value);
+	if (i >= Max) {
+		fatal("Bad index %d >= %d for %s=%lld",
+				i, Max, name , value);
+	}
+	m = &Mem[i];
+	if (strncmp(m->name, name, MAX_NAME) != 0) {
+		fatal("Bad name %s expected %s", name, m->name);
+	}
+	m->old_value = m->new_value;
+	m->new_value = value;
+	return TRUE;
+}
+
+void tick (const char *path)
+{
+	scan_file(path, tick_entry);
+}
+
+void display (void)
+{
+	int	i;
+	mem_s	*m;
+
+	for (i = 0; i < Max; i++) {
+		m = &Mem[i];
+		printf("%-20s %lld\n", m->name, m->new_value - m->old_value);
+	}
 }
 
 int main (int argc, char *argv[])
 {
 	const char	path[] = "/proc/meminfo";
-	const char	pattern[] = "MemFree:";
-	char	name[MAX_NAME];
-	u64	value;
-	u64	old = 0;
-	FILE	*f;
-	int	k;
 
-	PRd(number_of_entries(path));
+	init_table(path);
 	for (;;) {
-		f = fopen(path, "r");
-		if (!f) {
-			fatal("fopen %s:", path);
-		}
-		for (;;) {
-			k = fscanf(f, "%30s %llu%*[^\n]\n", name, &value);
-			if (k == EOF) {
-				fatal("didn't find %s", pattern);
-			}
-			if (strncmp(pattern, name, 30) == 0) {
-				printf("%lld\n", value - old);
-				old = value;
-				break;
-			}
-		}
-		fclose(f);
+		tick(path);
+		display();
 		usleep(1000000);
 	}
 	return 0;

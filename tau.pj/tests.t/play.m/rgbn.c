@@ -63,9 +63,9 @@ int main (int aragc, char *argv[]) { return 0; }
 #else
 
 #define DEBUG	0
-#define SPIN	1
+#define SPIN	0
 #define MUTEX	0
-#define TSPIN	0
+#define TSPIN	1
 
 #if SPIN
 	#include <spinlock.h>
@@ -145,14 +145,14 @@ static void init_locks (unint n)
 #endif
 	}
 #if MUTEX
-	pthread_mutex_init( &StartLock->lock, NULL);
-	pthread_mutex_init( &CountLock->lock, NULL);
+	pthread_mutex_init( &StartLock.lock, NULL);
+	pthread_mutex_init( &CountLock.lock, NULL);
 #elif SPIN
 	StartLock.lock = Init_spin_lock;
 	CountLock.lock = Init_spin_lock;
 #elif TSPIN
-	pthread_spin_init( &StartLock->lock, PTHREAD_PROCESS_PRIVATE);
-	pthread_spin_init( &CountLock->lock, PTHREAD_PROCESS_PRIVATE);
+	pthread_spin_init( &StartLock.lock, PTHREAD_PROCESS_PRIVATE);
+	pthread_spin_init( &CountLock.lock, PTHREAD_PROCESS_PRIVATE);
 #elif GLOBAL
 	StartLock.lock = 0;
 	CountLock.lock = 0;
