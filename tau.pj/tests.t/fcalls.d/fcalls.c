@@ -70,7 +70,10 @@ setxattr
 
 // XXX: May want to track or print working directory in error
 
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -128,5 +131,19 @@ int chdirE (HERE_PRM, int err, const char *path)
 			pr_error(HERE_ARG, "expected %d chdir %s:", err, path);
 		}
 	}
+	return rc;
+}
+
+int openq (HERE_PRM, const char *path, int flags, mode_t mode)
+{
+	int fd = open(path, flags, mode);
+	if (fd == -1) pr_error(HERE_ARG, "open %s:", path);
+	return fd;
+}
+
+int closeq (HERE_PRM, int fd)
+{
+	int rc = close(fd);
+	if (rc == -1) pr_error(HERE_ARG, "clsoe %d:", fd);
 	return rc;
 }

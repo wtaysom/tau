@@ -29,9 +29,13 @@
 
 #define chdir(_p)		chdirq(HERE, _p)
 #define chdirErr(_err, _p)	chdirE(HERE, _err, _p)
+#define close(_fd)		closeq(HERE, _fd)
+#define open(_p, _f, _m)	openq(HERE, _p, _f, _m)
 
 int chdirq(HERE_PRM, const char *path);
 int chdirE(HERE_PRM, int err, const char *path);
+int openq(HERE_PRM, const char *path, int flags, int mode);
+int closeq(HERE_PRM, int fd);
 
 
 #endif

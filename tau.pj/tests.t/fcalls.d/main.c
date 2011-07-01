@@ -20,8 +20,11 @@ void usage (void)
 
 int main (int argc, char *argv[])
 {
+	void rw_test(void);
+
 	punyopt(argc, argv, NULL, NULL);
 	chdir(Option.dir);
 	chdirErr(ENOTDIR, "/etc/passwd");
+	rw_test();
 	return 0;
 }
