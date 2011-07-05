@@ -90,10 +90,56 @@ setxattr
 static bool Fatal = TRUE;	/* Exit on unexpected errors */
 static bool Stacktrace = TRUE;
 
-/* pr_error: print error message and exit if Fatal flag is set */
-void pr_error (HERE_PRM, const char *fmt, ...)
+s64 check (HERE_PRM, s64 rc, int err, s64 rtn, const char *fmt, ...)
 {
+	int	lasterr = errno;
 	va_list args;
+
+	va_start(args, fmt);
+	if (rc == -1) {
+		if (err && (lasterr == err)) return rc;
+	} else {
+		if (!err && (rc == rtn)) return rc;
+	}
+	fflush(stdout);
+	fprintf(stderr, "ERROR ");
+	if (getprogname() != NULL) {
+		fprintf(stderr, "%s ", getprogname());
+	}
+	fprintf(stderr, "%s:%s<%d> ", HERE_ARG);
+	va_start(args, fmt);
+	if (rc == -1) {
+		if (err) {
+			fprintf(stderr, "expected: %s<%d>\n\t",
+				strerror(err), err);
+		}
+		if (fmt) {
+			vfprintf(stderr, fmt, args);
+
+			if (fmt[0] != '\0' && fmt[strlen(fmt)-1] == ':') {
+				fprintf(stderr, " %s<%d>",
+					strerror(lasterr), lasterr);
+			}
+		}
+	} else {
+		if (fmt) {
+			vfprintf(stderr, fmt, args);
+
+			fprintf(stderr, "expected %lld but returned %lld",
+				rtn, rc);
+		}
+	}
+	va_end(args);
+	fprintf(stderr, "\n");
+	if (Stacktrace) stacktrace_err();
+	if (Fatal) exit(2); /* conventional value for failed execution */
+	return rc;
+}
+
+#if 0
+static void vpr_error (HERE_PRM, int expected, const char *fmt, va_list ap)
+{
+	int	lasterr = errno;
 
 	fflush(stdout);
 	fprintf(stderr, "Fatal ");
@@ -101,13 +147,12 @@ void pr_error (HERE_PRM, const char *fmt, ...)
 		fprintf(stderr, "%s ", getprogname());
 	}
 	fprintf(stderr, "%s:%s<%d> ", HERE_ARG);
+	if (expected) fprintf(stderr, "expected=%d ", expected);
 	if (fmt) {
-		va_start(args, fmt);
-		vfprintf(stderr, fmt, args);
-		va_end(args);
+		vfprintf(stderr, fmt, ap);
 
 		if (fmt[0] != '\0' && fmt[strlen(fmt)-1] == ':') {
-			fprintf(stderr, " %s<%d>", strerror(errno), errno);
+			fprintf(stderr, " %s<%d>", strerror(lasterr), lasterr);
 		}
 	}
 	fprintf(stderr, "\n");
@@ -115,35 +160,63 @@ void pr_error (HERE_PRM, const char *fmt, ...)
 	if (Fatal) exit(2); /* conventional value for failed execution */
 }
 
-int chdirq (HERE_PRM, const char *path)
+int is_expected (HERE_PRM, int rc, int expected, const char *fmt, ...)
 {
-	int rc = chdir(path);
-	if (rc == -1) pr_error(HERE_ARG, "chdir %s:", path);
-	return rc;
-}
+	va_list args;
 
-int chdirE (HERE_PRM, int err, const char *path)
-{
-	int rc = chdir(path);
-	if (rc == 0) pr_error(HERE_ARG, "chdir %s:", path);
-	if (rc == -1) {
-		if (errno != err) {
-			pr_error(HERE_ARG, "expected %d chdir %s:", err, path);
+	va_start(args, fmt);
+	if (expected == 0) {
+		if (rc == -1) vpr_error(HERE_ARG, expected, fmt, args);
+	} else {
+		if (rc == 0) {
+			vpr_error(HERE_ARG, expected, fmt, args);
+		} else if (rc == -1) {
+			if (errno != expected) {
+				vpr_error(HERE_ARG, expected, fmt, args);
+			}
 		}
 	}
+	va_end(args);
 	return rc;
 }
+#endif
 
-int openq (HERE_PRM, const char *path, int flags, mode_t mode)
+int chdirp (HERE_PRM, int err, const char *path)
+{
+	int rc = chdir(path);
+	return check(HERE_ARG, rc, err, 0, "chdir %s:", path);
+}
+
+s64 lseekp (HERE_PRM, int err, int fd, off_t offset, int whence, size_t seek)
+{
+	int rc = lseek(fd, offset, whence);
+	return check(HERE_ARG, rc, err, seek, "lseek(%s, %zu, %d):",
+		fd, offset, whence);
+}
+
+int openp (HERE_PRM, int err, const char *path, int flags, mode_t mode)
 {
 	int fd = open(path, flags, mode);
-	if (fd == -1) pr_error(HERE_ARG, "open %s:", path);
-	return fd;
+	return check(HERE_ARG, fd, err, fd, "open(%s, 0x%x, 0%o):",
+		path, flags, mode);
 }
 
-int closeq (HERE_PRM, int fd)
+int closep (HERE_PRM, int err, int fd)
 {
 	int rc = close(fd);
-	if (rc == -1) pr_error(HERE_ARG, "clsoe %d:", fd);
-	return rc;
+	return check(HERE_ARG, rc, err, 0, "close %d:", fd);
+}
+
+s64 readp (HERE_PRM, int err, int fd, void *buf, size_t nbyte, size_t size)
+{
+	int rc = read(fd, buf, nbyte);
+	return check(HERE_ARG, rc, err, size, "read(%d, %p, %zu):",
+		fd, buf, nbyte);
+}
+
+s64 writep (HERE_PRM, int err, int fd, void *buf, size_t nbyte, size_t size)
+{
+	int rc = write(fd, buf, nbyte);
+	return check(HERE_ARG, rc, err, nbyte, "write(%d, %p, %zu):",
+		fd, buf, nbyte);
 }

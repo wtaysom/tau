@@ -13,6 +13,8 @@
 
 #include <fcalls.h>
 
+void rw_test(void);
+
 void usage (void)
 {
 	pr_usage("-d<directory>");

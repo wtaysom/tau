@@ -16,9 +16,15 @@
 
 void rw_test (void)
 {
+	char	buf[227];
 	char	file[] = "file_a";
 	int	fd;
 
 	fd = open(file, O_CREAT | O_TRUNC | O_RDWR, 0666);
+	write(fd, buf, sizeof(buf));
+	write(fd, buf, 17);
+	lseek(fd, 0, 0);
+	read(fd, buf, sizeof(buf));
+	readSz(fd, buf, sizeof(buf), 17);
 	close(fd);
 }

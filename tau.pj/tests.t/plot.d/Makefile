@@ -13,5 +13,5 @@
 ############################################################################
 
 include ../../mk/default.mk
-LIBS += ../../libq.b/$(objdir)/libq -lrt -lm -lpthread -lncurses
+LIBS += ../../libq.b/$(objdir)/libq -lm -lpthread -lncurses
 
