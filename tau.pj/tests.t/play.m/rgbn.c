@@ -259,16 +259,16 @@ void usage (void)
 	pr_usage("-i<iterations> -k<num_locks> -t<threads>");
 }
 
-void myopt (int c)
+bool myopt (int c)
 {
 	switch (c) {
 	case 'k':
 		Num_locks = strtoll(optarg, NULL, 0);
 		break;
 	default:
-		usage();
-		break;
+		return FALSE;
 	}
+	return TRUE;
 }
 
 int main (int argc, char *argv[])

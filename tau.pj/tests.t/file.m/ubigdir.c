@@ -36,16 +36,16 @@ void usage (void)
 
 int Numfiles = 1000;
 
-void myopt (int c)
+bool myopt (int c)
 {
 	switch (c) {
 	case 'k':
 		Numfiles = strtoll(optarg, NULL, 0);
 		break;
 	default:
-		usage();
-		break;
+		return FALSE;
 	}
+	return TRUE;
 }
 
 int main (int argc, char *argv[])

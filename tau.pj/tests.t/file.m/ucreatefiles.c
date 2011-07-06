@@ -42,7 +42,7 @@ void usage (void)
 	pr_usage("-d<directory> -i<num_iterations> -q<prefix> -k<start>");
 }
 
-void myopt (int c)
+bool myopt (int c)
 {
 	switch (c) {
 	case 'q':
@@ -52,9 +52,9 @@ void myopt (int c)
 		Myopt.start = strtoll(optarg, NULL, 0);
 		break;
 	default:
-		usage();
-		break;
+		return FALSE;
 	}
+	return TRUE;
 }
 
 int main (int argc, char *argv[])

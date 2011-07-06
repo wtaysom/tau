@@ -24,16 +24,16 @@ void usage(void)
 }
 #endif
 
-void myopt(int c)
+bool myopt (int c)
 {
 	switch (c) {
 	case 'y':
 		My_option = TRUE;
 		break;
 	default:
-		usage();
-		break;
+		return FALSE;
 	}
+	return TRUE;
 }
 
 int main(int argc, char *argv[])

@@ -328,7 +328,7 @@
 int Flags = O_CREAT | O_TRUNC | O_WRONLY;
 int Mode = 0660;
 
-void myopt (int c)
+bool myopt (int c)
 {
 	switch (c) {
 	case 'g':
@@ -338,9 +338,9 @@ void myopt (int c)
 		Mode = strtoll(optarg, NULL, 0);
 		break;
 	default:
-		usage();
-		break;
+		return FALSE;
 	}
+	return TRUE;
 }
 
 void usage (void)

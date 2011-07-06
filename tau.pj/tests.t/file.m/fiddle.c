@@ -370,7 +370,7 @@ void start_threads (
 u64	Numfiles = 2;
 u64	Fiddle = 2;
 
-void myopt (int c)
+bool myopt (int c)
 {
 	switch (c) {
 	case 'k':
@@ -380,9 +380,9 @@ void myopt (int c)
 		Fiddle = strtoll(optarg, NULL, 0);
 		break;
 	default:
-		usage();
-		break;
+		return FALSE;
 	}
+	return TRUE;
 }
 
 void usage (void)

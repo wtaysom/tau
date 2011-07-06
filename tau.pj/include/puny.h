@@ -36,10 +36,12 @@ void usage(void);
 void punyopt(
 	int  argc,
 	char *argv[],
-	void (*myfun)(int c),	/* Function to call to process extra
+	bool (*myfun)(int c),	/* Function to call to process extra
 				 * option specified by 'c'
 				 */
-	char *myoptions);	/* Extra options used by this test */
+	char *myoptions);	/* Extra options used by this test
+				 * These options can override puny flags.
+				 */
 
 extern Option_s Option;
 

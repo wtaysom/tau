@@ -7,3 +7,4 @@
 
 include ../../mk/default.mk
 LIBS += ../../libq.b/$(objdir)/libq
+LIBS += -lrt

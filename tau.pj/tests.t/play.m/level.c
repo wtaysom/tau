@@ -57,16 +57,16 @@ void test1(int n)
 		Level, Count, ((double)sum) / n);
 }
 
-void myopt(int c)
+bool myopt (int c)
 {
 	switch(c) {
 	case 'k':
 		Level = strtoll(optarg, NULL, 0);
 		break;
 	default:
-		usage();
-		break;
+		return FALSE;
 	}
+	return TRUE;
 }
 
 int main (int argc, char *argv[])

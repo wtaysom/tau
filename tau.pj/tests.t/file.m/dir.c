@@ -214,16 +214,16 @@ int doDirectory (char *name)
 	return 0;
 }
 
-void myopt (int c)
+bool myopt (int c)
 {
 	switch (c) {
 	case 'w':
 		Wait = TRUE;
 		break;
 	default:
-		usage();
-		break;
+		return FALSE;
 	}
+	return TRUE;
 }
 
 int main (int argc, char *argv[])

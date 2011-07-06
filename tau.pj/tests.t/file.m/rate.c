@@ -535,7 +535,7 @@ struct {
 	.from  = "ztree",
 	.to    = "copy" };
 
-void myopt (int c)
+bool myopt (int c)
 {
 	switch (c) {
 	case 'k':
@@ -551,9 +551,9 @@ void myopt (int c)
 		Myopt.to = optarg;
 		break;
 	default:
-		usage();
-		break;
+		return FALSE;
 	}
+	return TRUE;
 }
 
 int main (int argc, char *argv[])

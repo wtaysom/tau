@@ -70,16 +70,16 @@ void fill_file (int fd, u64 size)
 	lseek(fd, 0, 0);
 }
 
-void myopt (int c)
+bool myopt (int c)
 {
 	switch (c) {
 	case 'b':
 		Bufsize_log2 = strtoll(optarg, NULL, 0);
 		break;
 	default:
-		usage();
-		break;
+		return FALSE;
 	}
+	return TRUE;
 }
 
 int main (int argc, char *argv[])

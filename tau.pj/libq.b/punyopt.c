@@ -51,7 +51,7 @@ static void pr_cmd_line (int argc, char *argv[])
 void punyopt (
 	int  argc,
 	char *argv[],
-	void (*myfun)(int c),
+	bool (*myfun)(int c),
 	char *myoptions)
 {
 	char	*options;
@@ -61,13 +61,16 @@ void punyopt (
 
 	if (myoptions) {
 		options = emalloc(strlen(myoptions) + strlen(Default) + 1);
-		cat(options, Default, myoptions, NULL);
+		cat(options, myoptions, Default, NULL);
 	} else {
 		options = Default;
 	}
 	setprogname(argv[0]);
 	setlocale(LC_NUMERIC, "en_US");
 	while ((c = getopt(argc, argv, options)) != -1) {
+		if (myfun) {
+			if (myfun(c)) continue;
+		}
 		switch (c) {
 		case 'h':
 		case '?':
@@ -116,11 +119,7 @@ void punyopt (
 			Option.file_size = strtoll(optarg, NULL, 0);
 			break;
 		default:
-			if (myfun) {
-				myfun(c);
-			} else {
-				usage();
-			}
+			usage();
 			break;
 		}
 	}
