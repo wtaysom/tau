@@ -200,6 +200,7 @@ void wtseek (void)
 	for (i = 0; Segment[i].offset >= 0; i++) {
 		check_hole(fd, Hole[i]);
 	}
+	close(fd);
 }
 
 void rw_test (void)
