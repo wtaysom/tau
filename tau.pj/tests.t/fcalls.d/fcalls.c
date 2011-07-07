@@ -206,22 +206,33 @@ int chdirp (HERE_DCL, int err, const char *path)
 	return check(HERE_ARG, rc, err, 0, "chdir %s:", path);
 }
 
+int creatp (HERE_DCL, int err, const char *path, mode_t mode)
+{
+	int fd = creat(path, mode);
+	verbose(HERE_ARG, "creat(%s, 0%o)", path, mode);
+	return check(HERE_ARG, fd, err, fd, "creat(%s, 0%o):",
+		path, mode);
+}
+
 s64 lseekp (HERE_DCL, int err, int fd, off_t offset, int whence, size_t seek)
 {
-	int rc = lseek(fd, offset, whence);
-	return check(HERE_ARG, rc, err, seek, "lseek(%s, %zu, %d):",
+	s64 rc = lseek(fd, offset, whence);
+	verbose(HERE_ARG, "lseek(%d, %zu, %d)", fd, offset, whence);
+	return check(HERE_ARG, rc, err, seek, "lseek(%d, %zu, %d):",
 		fd, offset, whence);
 }
 
 int mkdirp (HERE_DCL, int err, const char *path, mode_t mode)
 {
 	int rc = mkdir(path, mode);
+	verbose(HERE_ARG, "mkdir(%s, 0%o)", path, mode);
 	return check(HERE_ARG, rc, err, 0, "mkdir(%s, 0%o):", path, mode);
 }
 
 int openp (HERE_DCL, int err, const char *path, int flags, mode_t mode)
 {
 	int fd = open(path, flags, mode);
+	verbose(HERE_ARG, "open(%s, 0x%x, 0%o)", path, flags, mode);
 	return check(HERE_ARG, fd, err, fd, "open(%s, 0x%x, 0%o):",
 		path, flags, mode);
 }
@@ -229,19 +240,22 @@ int openp (HERE_DCL, int err, const char *path, int flags, mode_t mode)
 int closep (HERE_DCL, int err, int fd)
 {
 	int rc = close(fd);
+	verbose(HERE_ARG, "close(%d)", fd);
 	return check(HERE_ARG, rc, err, 0, "close %d:", fd);
 }
 
 s64 readp (HERE_DCL, int err, int fd, void *buf, size_t nbyte, size_t size)
 {
-	int rc = read(fd, buf, nbyte);
+	s64 rc = read(fd, buf, nbyte);
+	verbose(HERE_ARG, "read(%d, %p, %zu)", fd, buf, nbyte);
 	return check(HERE_ARG, rc, err, size, "read(%d, %p, %zu):",
 		fd, buf, nbyte);
 }
 
 s64 writep (HERE_DCL, int err, int fd, void *buf, size_t nbyte, size_t size)
 {
-	int rc = write(fd, buf, nbyte);
+	s64 rc = write(fd, buf, nbyte);
+	verbose(HERE_ARG, "write(%d, %p, %zu)", fd, buf, nbyte);
 	return check(HERE_ARG, rc, err, nbyte, "write(%d, %p, %zu):",
 		fd, buf, nbyte);
 }

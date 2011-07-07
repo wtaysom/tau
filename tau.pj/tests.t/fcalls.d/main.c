@@ -25,12 +25,29 @@ void rw_test(void);
  */
 
 char *Scratch;
-char BigFile[] = "scratch/bigfile";
-char NilFile[] = "scratch/nilfile";
-char OneFile[] = "scratch/onefile";
+char BigFile[] = "bigfile";
+char NilFile[] = "nilfile";
+char OneFile[] = "onefile";
 
 static bool Randomize = TRUE;
 bool Verbose = FALSE;
+
+static void cr_file (char *name, u64 size)
+{
+	char	buf[SZ_BLOCK];
+	int	fd;
+	u64	offset;
+
+	fd = creat(name, 0666);
+	for (offset = 0; size; offset += SZ_BLOCK) {
+		unint n = SZ_BLOCK;
+		if (n > size) n = size;
+		fill(buf, n, offset);
+		write(fd, buf, n);
+		size -= n;
+	}
+	close(fd);
+}
 
 /*
  * init_test creates a scratch directory in the given directory
@@ -38,13 +55,21 @@ bool Verbose = FALSE;
  */
 void init_test (char *dir)
 {
+	char	*suffix;
+
 	if (Randomize) srandom(nsecs());
 	chdir(dir);
 	chdirErr(ENOTDIR, "/etc/passwd");
 
-	Scratch = rndname(8);
+	suffix = rndname(10);
+	Scratch = mkstr("scratch_", suffix, 0);
+	free(suffix);
 	mkdir(Scratch, 0777);
 	chdir(Scratch);
+
+	cr_file(BigFile, SZ_BIG_FILE);
+	cr_file(NilFile, 0);
+	cr_file(OneFile, 1);
 }
 
 /*
@@ -63,7 +88,6 @@ void cleanup (void)
 	if (rc == -1) error("%s:", cmd);
 	free(cmd);
 	free(Scratch);
-	if (Verbose) printf("Verbose\n");
 }	
 
 void all_tests (char *dir)
@@ -94,7 +118,9 @@ bool myopt (int c)
 
 void usage (void)
 {
-	pr_usage("-r [<directory>]*");
+	pr_usage("[-rv] [<directory>]*\n"
+		"\tr - Don't see random number generator\n"
+		"\tv - Verbose");
 }
 
 int main (int argc, char *argv[])

@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <crc.h>
 #include <debug.h>
 #include <style.h>
 #include <util.h>
@@ -98,31 +99,37 @@ char *mkstr (char *s, ...)
 	return u;
 }	
 
+static inline u8 hash (s64 offset)
+{
+	return crc32( &offset, sizeof(offset));
+}
+
 /* fill a buffer of size n with bytes starting with a seed */
-void fill (void *buf, int n, int seed)
+void fill (void *buf, int n, s64 offset)
 {
 	u8	*b = buf;
 	u8	*end = &b[n];
 
 	for (; b < end; b++) {
-		*b = seed;
-		seed += 17;
+		*b = hash(offset);
+		++offset;
 	}
 }
 
 /* is_same: does the buffer have the same content that was set by fill */
-bool is_same (void *buf, int n, int seed)
+bool is_samep (HERE_DCL, void *buf, int n, s64 offset)
 {
 	u8	*b = buf;
 	u8	*end = &b[n];
 
 	for (; b < end; b++) {
-		if (*b != (u8)seed) {
-			error("is_same at offset %td expected 0x%2x but is 0x%2x",
-				b - (u8 *)buf, (u8)seed, *b);
+		if (*b != hash(offset)) {
+			pr_error(HERE_ARG,
+				"is_same at offset %td expected 0x%2x but is 0x%2x",
+				b - (u8 *)buf, hash(offset), *b);
 			return FALSE;
 		}
-		seed += 17;
+		++offset;
 	}
 	return TRUE;
 }
