@@ -12,7 +12,13 @@
  +-------------------------------------------------------------------------*/
 
 /*
- * Random read microbenchmark
+ * Random read microbenchmark. Creates a large file and randomly reads
+ * blocks form the file. The file should be large enough that most
+ * of it does not fit in cache so there is a high probablity of a
+ * buffer cache miss.
+ * -z <file_size> should be much larger that buffer cache
+ * -b <bufsize_log2> block size that will be used to read file
+ *	typically 12 which is 4096
  */
 
 #define _XOPEN_SOURCE 600

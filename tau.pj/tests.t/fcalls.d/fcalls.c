@@ -88,7 +88,8 @@ setxattr
 #define HERE_DCL	const char *file, const char *function, int line
 #define HERE_ARG	file, function, line
 
-extern bool Verbose;
+extern bool Verbose;	/* Print each called file system operations */
+
 bool Fatal = TRUE;	/* Exit on unexpected errors */
 bool StackTrace = TRUE;
 

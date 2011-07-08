@@ -3,6 +3,10 @@
  * Use of this source code is governed by a BSD-style license that
  * can be found in the LICENSE file.
  */
+/*
+ * fcalls tests the file system call. By providing a list of mount
+ * points or directories, several different file systems can be tested.
+ */
 
 #include <errno.h>
 #include <stdio.h>
@@ -17,30 +21,26 @@
 #include <fcalls.h>
 #include <util.h>
 
-void rw_test(void);
-
-/*
- * init_test creates test files that can be used by any test.
- * Some of these take a long time to create, so we only do it once.
- */
-
 char *Scratch;
 char BigFile[] = "bigfile";
 char NilFile[] = "nilfile";
 char OneFile[] = "onefile";
 
 static bool Randomize = TRUE;
-bool Verbose = FALSE;
+bool	Verbose = FALSE;
+unint	BlockSize = 4096;
+s64	SzBigFile = (1LL << 32) + (1LL << 13) + 137;
 
+/* cr_file creates a file of specified size and fills it with data. */
 static void cr_file (char *name, u64 size)
 {
-	char	buf[SZ_BLOCK];
+	u8	buf[BlockSize];
 	int	fd;
 	u64	offset;
 
 	fd = creat(name, 0666);
-	for (offset = 0; size; offset += SZ_BLOCK) {
-		unint n = SZ_BLOCK;
+	for (offset = 0; size; offset += BlockSize) {
+		unint n = BlockSize;
 		if (n > size) n = size;
 		fill(buf, n, offset);
 		write(fd, buf, n);
@@ -50,8 +50,13 @@ static void cr_file (char *name, u64 size)
 }
 
 /*
- * init_test creates a scratch directory in the given directory
- * for the test.
+ * init_test creates a scratch directory in the specified
+ * test directory.
+ *
+ * It also creates some test files to help in testing. Because,
+ * we want to test >4 Gigfiles but it takes time to create a file
+ * that big, we create it here and allow its size to be set by
+ * the user -- set in small when developing the tests.
  */
 void init_test (char *dir)
 {
@@ -67,7 +72,7 @@ void init_test (char *dir)
 	mkdir(Scratch, 0777);
 	chdir(Scratch);
 
-	cr_file(BigFile, SZ_BIG_FILE);
+	cr_file(BigFile, SzBigFile);
 	cr_file(NilFile, 0);
 	cr_file(OneFile, 1);
 }
@@ -104,6 +109,9 @@ void all_tests (char *dir)
 bool myopt (int c)
 {
 	switch (c) {
+	case 'b':
+		BlockSize = strtoll(optarg, NULL, 0);
+		break;
 	case 'r':
 		Randomize = FALSE;
 		break;
@@ -119,15 +127,25 @@ bool myopt (int c)
 void usage (void)
 {
 	pr_usage("[-rv] [<directory>]*\n"
-		"\tr - Don't see random number generator\n"
-		"\tv - Verbose");
+		"\tb - Block size [%ld]\n"
+		"\tr - Don't seed random number generator\n"
+		"\tv - Verbose\n"
+		"\tz - size of big file [0x%llx]",
+		BlockSize, SzBigFile);
 }
 
 int main (int argc, char *argv[])
 {
 	int	i;
 
-	punyopt(argc, argv, myopt, "rv");
+	Option.file_size = SzBigFile;
+	Option.dir = ".";
+	punyopt(argc, argv, myopt, "b:rv");
+	SzBigFile = Option.file_size;
+	
+	if (SzBigFile < (1LL << 32)) {
+		fprintf(stderr, "Size of big file only 0x%llx\n", SzBigFile);
+	}
 	if (argc == optind) {
 		all_tests(Option.dir);
 	} else for (i = optind; i < argc; i++) {

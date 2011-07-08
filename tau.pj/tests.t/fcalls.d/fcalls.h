@@ -28,9 +28,6 @@
  * to read and write.
  */
 
-enum {	SZ_BLOCK = 4096,
-	SZ_BIG_FILE = (1ULL << 16 /*32*/) + SZ_BLOCK + 37 };
-
 #define HERE_PRM	MYFILE, __FUNCTION__, __LINE__
 #define HERE_DCL	const char *file, const char *function, int line
 #define HERE_ARG	file, function, line
@@ -62,6 +59,8 @@ int openp(HERE_DCL, int expected, const char *path, int flags, int mode);
 s64 readp(HERE_DCL, int expected, int fd, void *buf, size_t nbyte, size_t size);
 s64 writep(HERE_DCL, int expected, int fd, void *buf, size_t nbyte, size_t size);
 
+extern unint	BlockSize;	/* Block size and buffer sizes */
+extern s64	SzBigFile;	/* Size of the "Big File" in bytes */
 
 extern bool Fatal;	/* Exit on unexpected errors */
 extern bool StackTrace;	/* Print a stack trace on error */

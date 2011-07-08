@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 #include <fcalls.h>
@@ -41,16 +42,16 @@ static void simple (void)
 /* Normal read/lseek tests */
 static void rdseek (void)
 {
-	u8	buf[SZ_BLOCK];
+	u8	buf[BlockSize];
 	int	fd;
 	s64	offset;
 	u64	size;
 
 	/* Read BigFile and verify contents */
 	fd = open(BigFile, O_RDWR, 0);
-	size = SZ_BIG_FILE;
-	for (offset = 0; size; offset += SZ_BLOCK) {
-		unint n = SZ_BLOCK;
+	size = SzBigFile;
+	for (offset = 0; size; offset += BlockSize) {
+		unint n = BlockSize;
 		if (n > size) n = size;
 		read(fd, buf, n);
 		is_same(buf, n, offset);
@@ -61,33 +62,33 @@ static void rdseek (void)
 	readSz(fd, buf, sizeof(buf), 0);
 
 	/* Start read before eof but go beyond eof */
-	offset = SZ_BIG_FILE - 47;
+	offset = SzBigFile - 47;
 	lseek(fd, offset, SEEK_SET);
-	readSz(fd, buf, SZ_BLOCK, 47);
+	readSz(fd, buf, BlockSize, 47);
 	is_same(buf, 47, offset);
 	
 	/* Seek to middle of file and verify contents */
-	offset = SZ_BIG_FILE / 2;
+	offset = SzBigFile / 2;
 	lseek(fd, offset, SEEK_SET);
-	read(fd, buf, SZ_BLOCK);
-	is_same(buf, SZ_BLOCK, offset);
+	read(fd, buf, BlockSize);
+	is_same(buf, BlockSize, offset);
 
 	/* Seek from current position forward 2 blocks */
-	offset += 3 * SZ_BLOCK;
-	lseekOff(fd, 2 * SZ_BLOCK, SEEK_CUR, offset);
-	read(fd, buf, SZ_BLOCK);
-	is_same(buf, SZ_BLOCK, offset);
+	offset += 3 * BlockSize;
+	lseekOff(fd, 2 * BlockSize, SEEK_CUR, offset);
+	read(fd, buf, BlockSize);
+	is_same(buf, BlockSize, offset);
 
 	/* Seek from eof back 3 blocks */
-	offset = SZ_BIG_FILE - 3 * SZ_BLOCK;
-	lseekOff(fd, -(3 * SZ_BLOCK), SEEK_END, offset);
-	read(fd, buf, SZ_BLOCK);
-	is_same(buf, SZ_BLOCK, offset);
+	offset = SzBigFile - 3 * BlockSize;
+	lseekOff(fd, -(3 * BlockSize), SEEK_END, offset);
+	read(fd, buf, BlockSize);
+	is_same(buf, BlockSize, offset);
 
 	/* Seek beyond eof */
-	offset = SZ_BIG_FILE + SZ_BLOCK;
+	offset = SzBigFile + BlockSize;
 	lseek(fd, offset, SEEK_SET);
-	readSz(fd, buf, SZ_BLOCK, 0);
+	readSz(fd, buf, BlockSize, 0);
 
 	/* Seek bad whence */
 	lseekErr(EINVAL, fd, 0, 4);
@@ -125,10 +126,10 @@ segment_s Hole[] = {
 
 static void write_segment (int fd, segment_s seg)
 {
-	u8	buf[SZ_BLOCK];
+	u8	buf[BlockSize];
 	s64	offset = seg.offset;
 	u64	size;
-	unint	n = SZ_BLOCK;
+	unint	n = BlockSize;
 
 	lseek(fd, offset, SEEK_SET);
 	for (size = seg.length; size; size -= n) {
@@ -141,10 +142,10 @@ static void write_segment (int fd, segment_s seg)
 
 static void check_segment (int fd, segment_s seg)
 {
-	u8	buf[SZ_BLOCK];
+	u8	buf[BlockSize];
 	s64	offset = seg.offset;
 	u64	size;
-	unint	n = SZ_BLOCK;
+	unint	n = BlockSize;
 
 	lseek(fd, offset, SEEK_SET);
 	for (size = seg.length; size; size -= n) {
@@ -169,9 +170,9 @@ static void is_zeros (void *buf, u64 n)
 	
 static void check_hole (int fd, segment_s seg)
 {
-	u8	buf[SZ_BLOCK];
+	u8	buf[BlockSize];
 	u64	size;
-	unint	n = SZ_BLOCK;
+	unint	n = BlockSize;
 
 	lseek(fd, seg.offset, SEEK_SET);
 	for (size = seg.length; size; size -= n) {
@@ -201,6 +202,7 @@ void wtseek (void)
 		check_hole(fd, Hole[i]);
 	}
 	close(fd);
+	free(name);
 }
 
 void rw_test (void)
