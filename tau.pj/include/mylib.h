@@ -34,9 +34,11 @@ size_t strlcat(char *dest, const char *src, size_t count);
 unsigned int murmurhash (const unsigned char *data, int len, unsigned int h);
 
 void seed_random (void);
-long range (long max);
+/* Uniform random integer from 0 to upper-1 */
+unsigned long urand (unsigned long upper);
+unsigned urand_r (unsigned upper, unsigned *seedp);
 int percent (int x);
-long exp_dist (long range);
+long exp_dist (long uppper);
 
 int isPattern (char *string);
 int isMatch (char *pattern, char *string);

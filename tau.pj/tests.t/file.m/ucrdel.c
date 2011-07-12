@@ -58,7 +58,7 @@ void gen_name (char *c)
 					"_0123456789";
 
 	for (i = 0; i < MAX_NAME - 1; i++) {
-		*c++ = file_name_char[range(sizeof(file_name_char)-1)];
+		*c++ = file_name_char[urand(sizeof(file_name_char)-1)];
 	}
 	*c = '\0';
 }
@@ -89,7 +89,7 @@ void loop (unsigned cnt)
 			}
 		} else {
 			if (NextFile == File) continue;
-			f = &File[range(NextFile - File)];
+			f = &File[urand(NextFile - File)];
 			if (f->fd) {
 				TIME(Close, close(f->fd));
 				f->fd = 0;

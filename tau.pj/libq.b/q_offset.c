@@ -567,7 +567,7 @@ bool pick (unint percent)
 	return (random() % 100) < percent;
 }
 
-unint range (unint limit)
+unint urand (unint limit)
 {
 	return random() % limit;
 }
@@ -666,7 +666,7 @@ void testStk (unint numTests)
 		else if (pick(20)) {
 			appendStk( &Bstack, &Astack); ++t.appends;
 		} else if (pick(20)) {
-			unint	i = range(NUM_OBJS);
+			unint	i = urand(NUM_OBJS);
 
 			if (rmvStk( &Astack, &StkObj[i])) {
 				++t.rmvs;
@@ -776,7 +776,7 @@ void testRing (unint numTests)
 		} else if (pick(20)) {
 			appendRing( &Bring, &Aring); ++t.appends;
 		} else if (pick(20)) {
-			unint	i = range(NUM_OBJS);
+			unint	i = urand(NUM_OBJS);
 
 			if (rmvRing( &Aring, &RingObj[i])) {
 				++t.rmvs;
@@ -883,7 +883,7 @@ void testCir (unint numTests)
 		} else if (pick(20)) {
 			appendCir( &Bcir, &Acir); ++t.appends;
 		} else if (pick(20)) {
-			unint	i = range(NUM_OBJS);
+			unint	i = urand(NUM_OBJS);
 
 			if (rmvCir( &Acir, &CirObj[i])) {
 				++t.rmvs;
@@ -994,7 +994,7 @@ void testDq (unint numTests)
 		} else if (pick(20)) {
 			appendDq( &Bdq, &Adq); ++t.appends;
 		} else if (pick(20)) {
-			unint	i = range(NUM_OBJS);
+			unint	i = urand(NUM_OBJS);
 
 			rmvDq( &DqObj[i].link); ++t.rmvs;
 			enqDq( &Adq, &DqObj[i]); ++t.enqs;

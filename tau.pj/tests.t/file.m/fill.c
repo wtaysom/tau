@@ -24,6 +24,7 @@
 u8	Buf[1<<12];
 bool	Done = FALSE;
 unint	Bufs_written;
+bool	Keep = FALSE;
 
 enum {	KiB = 1ULL<<10,
 	MiB = 1ULL<<20,
@@ -69,7 +70,7 @@ void *writer (void *arg)
 
 	fd = open(Option.file, O_WRONLY | O_CREAT | O_TRUNC, 0700);
 	if (fd == -1) fatal("open %s:", Option.file);
-//	unlink(Option.file);
+	if (!Keep) unlink(Option.file);
 	for (;;) {
 		rc = write(fd, Buf, sizeof(Buf));
 		if (rc == -1) {
@@ -103,7 +104,7 @@ void *timer (void *arg)
 
 	for (i = 0; !Done; i++) {
 		old_bufs_written = Bufs_written;
-		nanosleep( &sleep, NULL);
+		nanosleep(&sleep, NULL);
 		delta = Bufs_written - old_bufs_written;
 		printf("%4llu. ", i);
 		pr_human_bytes(delta * sizeof(Buf));
@@ -112,13 +113,33 @@ void *timer (void *arg)
 	return NULL;
 }
 
+void usage (void)
+{
+	pr_usage("-k -f<file> -s<secs to sleep>\n"
+		"\tk - keep file used to fill the store\n"
+		"\tf - full path of file to fill the store\n"
+		"\ts - seconds to sleep after disk is full");
+}
+
+bool myopt (int c)
+{
+	switch (c) {
+	case 'k':
+		Keep = TRUE;
+		break;
+	default:
+		return FALSE;
+	}
+	return TRUE;
+}
+
 int main (int argc, char *argv[])
 {
 	pthread_t	timer_thread;
 	pthread_t	writer_thread;
 	int	rc;
 
-	punyopt(argc, argv, NULL, NULL);
+	punyopt(argc, argv, myopt, "k");
 	rc = pthread_create(&timer_thread, NULL, timer, NULL);
 	if (rc) fatal("timer thread:");
 	rc = pthread_create(&writer_thread, NULL, writer, NULL);

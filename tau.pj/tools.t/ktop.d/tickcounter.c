@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
 
 	init_counter(&counter, 3);
 	for (i = 0; i < 1000000; i++) {
-		tick(&counter, range(21));
+		tick(&counter, urand(21));
 	}
 	dump_counter(&counter);
 	return 0;

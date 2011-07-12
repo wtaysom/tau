@@ -42,7 +42,7 @@ void write_test (char *name, u64 size)
 	u64		rest;
 
 	fd = openq(name, O_RDWR | O_CREAT | O_TRUNC);
-	for (rest = range(size); rest; rest -= written) {
+	for (rest = urand(size); rest; rest -= written) {
 		if (rest > BUF_SIZE) {
 			toWrite = BUF_SIZE;
 		} else {

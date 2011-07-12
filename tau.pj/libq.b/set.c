@@ -82,7 +82,7 @@ bool rand_pick_from_set (set_s *s, addr *x)
 
 	size = s->st_next - s->st_start;
 	if (!size) return FALSE;
-	i = range(size);
+	i = urand(size);
 	*x = s->st_start[i];
 	return TRUE;
 }

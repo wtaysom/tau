@@ -23,9 +23,19 @@ void seed_random (void)
 	srandom(time.tv_usec);
 }
 
-long range (long max)
+/* Uniform random integer from 0 to upper-1 */
+unsigned long urand (unsigned long upper)
 {
-	return max ? (random() % max) : 0;
+	return upper ? (random() % upper) : 0;
+}
+
+/*
+ * Same as above with own seed but a more limited range
+ * because it uses rand_r instead of random.
+ */
+unsigned urand_r (unsigned upper, unsigned *seedp)
+{
+	return upper ? (rand_r(seedp) % upper) : 0;
 }
 
 int percent (int x)
@@ -33,8 +43,8 @@ int percent (int x)
 	return random() % 100 < x;
 }
 
-long exp_dist (long range)
+long exp_dist (long upper)
 {
-	if (!range) return 0;
-	return range / (random()%range + 1);
+	if (!upper) return 0;
+	return upper / (random() % upper + 1);
 }

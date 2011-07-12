@@ -81,9 +81,9 @@ char *gen_name (void)
 	char		*c;
 	unsigned	len;
 
-	len = (range(MAX_NAME) + range(MAX_NAME) + range(MAX_NAME)) / 5 + 1;
+	len = (urand(MAX_NAME) + urand(MAX_NAME) + urand(MAX_NAME)) / 5 + 1;
 	for (c = name; len; c++, len--) {
-		*c = file_name_char[range(sizeof(file_name_char) - 1)];
+		*c = file_name_char[urand(sizeof(file_name_char) - 1)];
 	}
 	*c = '\0';
 	return name;
@@ -416,8 +416,8 @@ int mixp (int argc, char *argv[])
 			x = num_recs();
 			assert(sum == x);
 		} else {
-			x = range(sum);
-			rc = del_ith(x);//range(sum));
+			x = urand(sum);
+			rc = del_ith(x);//urand(sum));
 			if (rc) {
 				return rc;
 			}

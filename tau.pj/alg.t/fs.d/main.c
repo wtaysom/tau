@@ -52,9 +52,9 @@ char *gen_name (void)
 	char		*c;
 	unsigned	len;
 
-	len = (range(MAX_NAME) + range(MAX_NAME) + range(MAX_NAME)) / 5 + 1;
+	len = (urand(MAX_NAME) + urand(MAX_NAME) + urand(MAX_NAME)) / 5 + 1;
 	for (c = name; len; c++, len--) {
-		*c = file_name_char[range(sizeof(file_name_char) - 1)];
+		*c = file_name_char[urand(sizeof(file_name_char) - 1)];
 	}
 	*c = '\0';
 	return name;

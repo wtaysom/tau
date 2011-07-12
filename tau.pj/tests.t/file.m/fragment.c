@@ -35,7 +35,7 @@ static void init_buf (void)
 	int		i;
 
 	for (i = 0; i <  sizeof(Buf); i++) {
-		Buf[i] = rnd_char[range(sizeof(rnd_char)-1)];
+		Buf[i] = rnd_char[urand(sizeof(rnd_char)-1)];
 	}
 }
 

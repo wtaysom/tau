@@ -84,7 +84,7 @@ static void report(char *label, u64 total, size_t n, int iterations)
 
 void usage(void)
 {
-	pr_usage("-f<file> -x<file size> -i<iterations> -r<results_file>");
+	pr_usage("-f<file> -z<file size> -i<iterations> -r<results_file>");
 }
 
 int main(int argc, char *argv[])

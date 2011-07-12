@@ -37,7 +37,7 @@ typedef struct arg_s {
 	unsigned	seed;
 } arg_s;
 
-int a_range (unsigned max, arg_s *arg)
+int urand_r (unsigned max, arg_s *arg)
 {
 	return max ? (rand_r( &arg->seed) % max) : 0;
 }
@@ -72,7 +72,7 @@ void gen_name (char *c, arg_s *arg)
 					"_0123456789";
 
 	for (i = 0; i < MAX_NAME - 1; i++) {
-		*c++ = file_name_char[a_range(sizeof(file_name_char)-1, arg)];
+		*c++ = file_name_char[urand_r(sizeof(file_name_char)-1, arg)];
 	}
 	*c = '\0';
 }
@@ -137,10 +137,10 @@ void fill (Key_t key, arg_s *arg)
 	NINT		written;
 	STATUS		rc;
 
-	n = (a_range(10, arg)+1) *(a_range(10, arg)+1) * (a_range(10, arg)+1);
+	n = (urand_r(10, arg)+1) *(urand_r(10, arg)+1) * (urand_r(10, arg)+1);
 
 	for (i = 0; i <  sizeof(buf); i++) {
-		buf[i] = rnd_char[a_range(sizeof(rnd_char)-1, arg)];
+		buf[i] = rnd_char[urand_r(sizeof(rnd_char)-1, arg)];
 	}
 	for (i = 0, offset = 0; i < n; i++, offset += sizeof(buf)) {
 		rc = zWrite(key, 0, offset, sizeof(buf), buf, &written);

@@ -177,7 +177,7 @@ int main (int argc, char *argv[])
 	da = init_dyna(sizeof(*x));
 	printf("shift=%lu\n", da.shift);
 	for (i = 0; i < 20000; i++) {
-		y = range(20000) + 1;
+		y = urand(20000) + 1;
 		//y = i;
 		x = ith( &da, y);
 		if (*x) {

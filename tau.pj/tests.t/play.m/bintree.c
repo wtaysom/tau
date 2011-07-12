@@ -223,7 +223,7 @@ int main (int argc, char *argv[])
 	int	x;
 
 	for (i = 0; i < 10; i++) {
-		x = range(10);
+		x = urand(10);
 		add_tree( &root, x);
 	}
 	pr_tree(root);

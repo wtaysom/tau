@@ -4,11 +4,7 @@
 #include <crc.h>
 
 #include <style.h>
-
-unint range (unint x)
-{
-	return random() % x;
-}
+#include <mylib.h>
 
 enum {	NODE_SHIFT = 4,
 	NUM_NODES  = 1 << NODE_SHIFT,

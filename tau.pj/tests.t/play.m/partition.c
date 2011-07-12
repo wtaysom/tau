@@ -80,7 +80,7 @@ int main (int argc, char *argv[])
 	seed_random();
 	a = emalloc(n * sizeof(int));
 	for (i = 0; i < n; i++) {
-		a[i] = range(100);
+		a[i] = urand(100);
 	}
 	pr(a, n);
 	printf("\n");

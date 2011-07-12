@@ -15,6 +15,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <mylib.h>
+
 #include "q.h"
 
 /*
@@ -38,11 +40,6 @@ bool Assert (char *s)
 bool pick (unint percent)
 {
 	return (random() % 100) < percent;
-}
-
-unint range (unint limit)
-{
-	return random() % limit;
 }
 
 addr fcount (void *obj, void *pcount)
@@ -141,7 +138,7 @@ void test_stk (unint numTests)
 		else if (pick(20)) {
 			append_stk( &Bstack, &Astack); ++t.appends;
 		} else if (pick(20)) {
-			unint	i = range(NUM_OBJS);
+			unint	i = urand(NUM_OBJS);
 
 			if (rmv_stk( &Astack, &StkObj[i], link)) {
 				++t.rmvs;
@@ -252,7 +249,7 @@ void test_ring (unint numTests)
 		} else if (pick(20)) {
 			append_ring( &Bring, &Aring); ++t.appends;
 		} else if (pick(20)) {
-			unint	i = range(NUM_OBJS);
+			unint	i = urand(NUM_OBJS);
 
 			if (rmv_ring( &Aring, &_ringObj[i])) {
 				++t.rmvs;
@@ -360,7 +357,7 @@ void test_cir (unint numTests)
 		} else if (pick(20)) {
 			append_cir( &Bcir, &Acir); ++t.appends;
 		} else if (pick(20)) {
-			unint	i = range(NUM_OBJS);
+			unint	i = urand(NUM_OBJS);
 
 			if (rmv_cir( &Acir, &CirObj[i], link)) {
 				++t.rmvs;
@@ -473,7 +470,7 @@ void test_dq (unint numTests)
 		} else if (pick(20)) {
 			append_dq( &Bdq, &Adq); ++t.appends;
 		} else if (pick(20)) {
-			unint	i = range(NUM_OBJS);
+			unint	i = urand(NUM_OBJS);
 
 			rmv_dq( &DqObj[i].link); ++t.rmvs;
 			enq_dq( &Adq, &DqObj[i], link); ++t.enqs;

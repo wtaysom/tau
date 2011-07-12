@@ -38,7 +38,7 @@ int main (int argc, char *argv[])
 		n = atoi(argv[1]);
 	}
 	for (i = 0; i < n; i++) {
-		tswap(range(10), range(10));
+		tswap(urand(10), urand(10));
 		tswap(i, i);
 	}
 	return 0;

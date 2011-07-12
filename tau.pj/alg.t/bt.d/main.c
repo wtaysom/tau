@@ -43,7 +43,7 @@ char *rndstring(unint n)
 
 	s = malloc(n);
 	for (j = 0; j < n-1; j++) {
-		s[j] = 'a' + range(26);
+		s[j] = 'a' + urand(26);
 	}
 	s[j] = 0;
 	return s;
@@ -53,7 +53,7 @@ Lump_s rnd_lump(void)
 {
 	unint	n;
 
-	n = range(7) + 5;
+	n = urand(7) + 5;
 	return lumpmk(n, rndstring(n));
 }
 
@@ -199,7 +199,7 @@ static snint r_rand_index (void)
 
 	if (!R) return -1;
 	if (x == 0) return -1;
-	return range(x);
+	return urand(x);
 }
 
 Record_s r_get_rand (void)

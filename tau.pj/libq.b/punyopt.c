@@ -68,9 +68,7 @@ void punyopt (
 	setprogname(argv[0]);
 	setlocale(LC_NUMERIC, "en_US");
 	while ((c = getopt(argc, argv, options)) != -1) {
-		if (myfun) {
-			if (myfun(c)) continue;
-		}
+		if (myfun && myfun(c)) continue;
 		switch (c) {
 		case 'h':
 		case '?':

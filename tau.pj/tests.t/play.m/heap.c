@@ -97,7 +97,7 @@ int main (int argc, char *argv[])
 
 	zero(h);
 	for (i = 0; i < 100; i++) {
-		x = range(9);
+		x = urand(9);
 		insert_heap( &h, x);
 	}
 	pr_heap( &h);

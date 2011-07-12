@@ -49,11 +49,6 @@ typedef struct arg_s {
 
 inst_s Inst;
 
-int a_range (unsigned max, arg_s *arg)
-{
-	return max ? (rand_r( &arg->seed) % max) : 0;
-}
-
 void pr_inst (inst_s *inst)
 {
 	printf("opens   = %10llu\n", inst->num_opens);
@@ -111,7 +106,8 @@ void gen_name (char *c, arg_s *arg)
 					"_0123456789";
 
 	for (i = 0; i < MAX_NAME - 1; i++) {
-		*c++ = file_name_char[a_range(sizeof(file_name_char)-1, arg)];
+		*c++ = file_name_char[urand_r(sizeof(file_name_char)-1,
+					&arg->seed)];
 	}
 	*c = '\0';
 }
@@ -181,10 +177,12 @@ void fill (int fd, arg_s *arg)
 	char		buf[4096];
 	unsigned long	i, n;
 
-	n = (a_range(10, arg)+1) *(a_range(10, arg)+1) * (a_range(10, arg)+1);
+	n = (urand_r(10, &arg->seed)+1)
+	  * (urand_r(10, &arg->seed)+1)
+	  * (urand_r(10, &arg->seed)+1);
 
 	for (i = 0; i <  sizeof(buf); i++) {
-		buf[i] = rnd_char[a_range(sizeof(rnd_char)-1, arg)];
+		buf[i] = rnd_char[urand_r(sizeof(rnd_char)-1, &arg->seed)];
 	}
 	for (i = 0; i < n; i++) {
 		if (write(fd, buf, sizeof(buf)) != sizeof(buf)) {
@@ -460,7 +458,7 @@ void *ztree (void *arg)
 
 void rate (void)
 {
-#define DELTA(x)	delta.x = new.x - old.x
+#define SET_DELTA(x)	delta.x = new.x - old.x
 	static inst_s	old = { 0 };
 	static inst_s	new;
 	static inst_s	delta;
@@ -468,12 +466,12 @@ void rate (void)
 	for (;;) {
 		sleep(1);
 		new = Inst;
-		DELTA(num_opens);
-		DELTA(num_dirs);
-		DELTA(num_files);
-		DELTA(num_deleted);
-		DELTA(num_read);
-		DELTA(num_written);
+		SET_DELTA(num_opens);
+		SET_DELTA(num_dirs);
+		SET_DELTA(num_files);
+		SET_DELTA(num_deleted);
+		SET_DELTA(num_read);
+		SET_DELTA(num_written);
 		pr_delta( &delta);
 		if (delta.num_opens+delta.num_dirs+delta.num_files+
 		    delta.num_deleted+delta.num_read+

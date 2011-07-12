@@ -18,7 +18,7 @@ char *rndstring (unint n) {
 
 	s = malloc(n);
 	for (j = 0; j < n-1; j++) {
-		s[j] = 'a' + range(3);
+		s[j] = 'a' + urand(3);
 	}
 	s[j] = 0;
 	return s;
@@ -27,7 +27,7 @@ char *rndstring (unint n) {
 Lump_s rnd_lump (void) {
 	unint	n;
 
-	n = range(2) + 2;
+	n = urand(2) + 2;
 	return lumpmk(n, rndstring(n));
 }
 

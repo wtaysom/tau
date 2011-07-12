@@ -44,7 +44,7 @@ int main (int argc, char *argv[])
 	for (l = 0; l < Option.loops; l++) {
 		startTimer();
 		for (i = 0; i < n; ++i) {
-			x = range(1000000);
+			x = urand(1000000);
 			rc = usleep(x);
 			if (rc == -1) {
 				perror("usleep");

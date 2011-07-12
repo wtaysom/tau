@@ -11,17 +11,11 @@
  |  GNU General Public License for more details.
  +-------------------------------------------------------------------------*/
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <mylib.h>
 
 #include <puny.h>
-
-long exp_dist (long range)
-{
-	return range / (random()%range + 1);
-}
-
-#include <stdio.h>
 
 int main (int argc, char *argv[])
 {

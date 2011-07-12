@@ -143,8 +143,8 @@ int main (int argc, char *argv[])
 	u8	b[2 * sizeof(a)];
 
 	for (i = 0; i < n; i++) {
-		start = range(sizeof(a));
-		size = range(sizeof(a)) + 1;
+		start = urand(sizeof(a));
+		size = urand(sizeof(a)) + 1;
 		fill_buf(a, size, 'A' + i);
 		background(b, sizeof(b), 'P' + i);
 		to_base64(a, size, out);

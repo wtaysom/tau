@@ -148,7 +148,7 @@ static inline void unlock (char *name, lock_s *lock)
 #endif
 }
 
-static inline int rand_range (unint *seed, unint bound)
+static inline int urand_r (unint *seed, unint bound)
 {
 	*seed = *seed * 1103515245 + 12345;
 	return *seed % bound;
@@ -166,7 +166,7 @@ void *randlock (void *arg)
 	pthread_mutex_unlock( &Start);
 	start = nsecs();
 	for (i = Loops; i; i--) {
-		k = rand_range( &seed, Num_locks);
+		k = urand_r( &seed, Num_locks);
 #if (!DEBUG && !MUTEX && !SPIN && !TSPIN)
 		donothing();
 #endif

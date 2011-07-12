@@ -46,7 +46,7 @@ void corrupt (void *vector, unint size)
 	u8	*v = vector;
 	unint	i;
 
-	i = range(size);
+	i = urand(size);
 	v[i] ^= 1;
 }
 

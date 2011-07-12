@@ -114,9 +114,9 @@ void dumpTimers (void)
 	}
 }
 
-long range (long x)
+unsigned long urand (unsigned long upper)
 {
-	return random() % x;
+	return upper ? (random() % upper) : 0;
 }
 
 int main (int argc, char *argv[])
@@ -127,7 +127,7 @@ int main (int argc, char *argv[])
 	punyopt(argc, argv, NULL, NULL);
 	for (i = 0; i < 10; ++i)
 	{
-		key = (void *)range(200000);
+		key = (void *)urand(200000);
 
 		startTimer(key);
 		usleep((long)key);

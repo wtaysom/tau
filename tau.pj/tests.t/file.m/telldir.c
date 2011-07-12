@@ -19,6 +19,7 @@
 #include <dirent.h>
 
 #include <style.h>
+#include <mylib.h>
 #include <puny.h>
 
 /*
@@ -26,11 +27,6 @@
  */
 
 enum { MAX_NAME = 20 };
-
-static long range (long domain)
-{
-	return random() % domain;
-}
 
 char *gen_name (void)
 {
@@ -43,7 +39,7 @@ char *gen_name (void)
 
 	len = MAX_NAME;
 	for (c = name; len; c++, len--) {
-		*c = file_name_char[range(sizeof(file_name_char) - 1)];
+		*c = file_name_char[urand(sizeof(file_name_char) - 1)];
 	}
 	*c = '\0';
 	return name;

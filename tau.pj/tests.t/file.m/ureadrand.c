@@ -115,7 +115,7 @@ int main (int argc, char *argv[])
 	for (l = 0; l < Option.loops; l++) {
 		startTimer();
 		for (i = 0; i < n; ++i) {
-			offset = range(numbufs) * bufsize;
+			offset = urand(numbufs) * bufsize;
 			rc = pread(fd, buf, bufsize, offset);
 			if (rc != bufsize) {
 				if (rc == -1) fatal("pread:");

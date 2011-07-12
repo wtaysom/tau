@@ -120,7 +120,7 @@ char *gen_name (int len)
 	c = ezalloc(len);
 
 	for (i = 0; i < len - 1; i++) {
-		c[i] = file_name_char[range(sizeof(file_name_char)-1)];
+		c[i] = file_name_char[urand(sizeof(file_name_char)-1)];
 	}
 	c[i] = '\0';
 

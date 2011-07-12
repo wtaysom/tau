@@ -67,7 +67,7 @@ void resetTimer ()
 #include <stdlib.h>
 #include <unistd.h>
 
-int range (int n)
+int urand (int n)
 {
 	return random() % n;
 }
@@ -80,7 +80,7 @@ int main (int argc, char *argv[])
 	timeval_s	diff;
 
 	for (i = 0; i < 300; ++i) {
-		x = range(1000000);
+		x = urand(1000000);
 		startTimer();
 
 		rc = usleep(x);
@@ -88,7 +88,7 @@ int main (int argc, char *argv[])
 		stopTimer();
 		if (rc == -1) perror("usleep");
 
-		if (range(100) < 3) resetTimer();
+		if (urand(100) < 3) resetTimer();
 		printf("%d.%.6d == ", x/1000000, x%1000000);
 
 		prTimer();

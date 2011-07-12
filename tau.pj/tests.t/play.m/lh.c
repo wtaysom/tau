@@ -296,7 +296,7 @@ int main (int argc, char *argv[])
 	}
 	Buckets = init_dyna();
 	for (i = 0; i < n; i++) {
-		//x = range(n);
+		//x = urand(n);
 		x = i;
 		if (find(x)) {
 			//delete(x);
