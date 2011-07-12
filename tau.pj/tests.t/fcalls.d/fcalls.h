@@ -11,6 +11,10 @@
 #include <sys/types.h>
 #endif
 
+#ifndef _DIRENT_H
+#include <dirent.h>
+#endif
+
 #ifndef _SYTLE_H_
 #include <style.h>
 #endif
@@ -34,11 +38,15 @@
 
 #define chdir(_p)			chdirp(HERE_PRM, 0, _p)
 #define close(_fd)			closep(HERE_PRM, 0, _fd)
+#define closedir(_dir)			closep(HERE_PRM, 0, _dir)
 #define creat(_p, _m)			creatp(HERE_PRM, 0, _p, _m)
 #define lseek(_fd, _o, _w)		lseekp(HERE_PRM, 0, _fd, _o, _w, _o)
 #define mkdir(_p, _m)			mkdirp(HERE_PRM, 0, _p, _m)
 #define open(_p, _f, _m)		openp(HERE_PRM, 0, _p, _f, _m)
+#define opendir(_p)			opendirp(HERE_PRM, 0, _p)
 #define read(_fd, _b, _n)		readp(HERE_PRM, 0, _fd, _b, _n, _n)
+#define readdir(_d)			readdirp(HERE_PPM, _d)
+#define rmdir(_p)			rmdirp(HERE_PRM, 0, _p)
 #define write(_fd, _b, _n)		writep(HERE_PRM, 0, _fd, _b, _n, _n)
 
 #define chdirErr(_err, _p)		chdirp(HERE_PRM, _err, _p)
@@ -50,14 +58,19 @@
 #define readSz(_fd, _b, _n, _sz)	readp(HERE_PRM, 0, _fd, _b, _n, _sz)
 #define writeSz(_fd, _b, _n, _sz)	writep(HERE_PRM, 0, _fd, _b, _n, _sz)
 
-int chdirp(HERE_DCL, int expected, const char *path);
 int closep(HERE_DCL, int expected, int fd);
 int creatp(HERE_DCL, int expected, const char *path, int mode);
 s64 lseekp(HERE_DCL, int expected, int fd, off_t offset, int whence, off_t seek);
-int mkdirp(HERE_DCL, int expected, const char *path, mode_t mode);
 int openp(HERE_DCL, int expected, const char *path, int flags, int mode);
 s64 readp(HERE_DCL, int expected, int fd, void *buf, size_t nbyte, size_t size);
 s64 writep(HERE_DCL, int expected, int fd, void *buf, size_t nbyte, size_t size);
+
+int closedirp(HERE_DCL, int expected, DIR *dirp);
+int chdirp(HERE_DCL, int expected, const char *path);
+int mkdirp(HERE_DCL, int expected, const char *path, mode_t mode);
+int opendirp(HERE_DCL, int expected, const char *path);
+int readdirp(HERE_DCL, DIR *dirp);
+int rmdirp(HERE_DCL, int expected, const char *path);
 
 extern unint	BlockSize;	/* Block size and buffer sizes */
 extern s64	SzBigFile;	/* Size of the "Big File" in bytes */

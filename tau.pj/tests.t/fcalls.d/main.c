@@ -97,11 +97,13 @@ void cleanup (void)
 
 void all_tests (char *dir)
 {
+	void dir_test(void);
 	void rw_test(void);
 
 	init_test(dir);
 
 	rw_test();
+	dir_test();
 
 	cleanup();
 }

@@ -207,6 +207,13 @@ int chdirp (HERE_DCL, int err, const char *path)
 	return check(HERE_ARG, rc, err, 0, "chdir %s:", path);
 }
 
+int closedirp (HERE_DCL, int err, const char *path)
+{
+	int rc = chdir(path);
+	verbose(HERE_ARG, "chdir(%s)", path);
+	return check(HERE_ARG, rc, err, 0, "chdir %s:", path);
+}
+
 int creatp (HERE_DCL, int err, const char *path, mode_t mode)
 {
 	int fd = creat(path, mode);
@@ -251,6 +258,13 @@ s64 readp (HERE_DCL, int err, int fd, void *buf, size_t nbyte, size_t size)
 	verbose(HERE_ARG, "read(%d, %p, %zu)", fd, buf, nbyte);
 	return check(HERE_ARG, rc, err, size, "read(%d, %p, %zu):",
 		fd, buf, nbyte);
+}
+
+int rmdirp (HERE_DCL, int err, const char *path)
+{
+	int rc = rmdir(path);
+	verbose(HERE_ARG, "rmdir(%s)", path);
+	return check(HERE_ARG, rc, err, 0, "rmdir(%s):", path);
 }
 
 s64 writep (HERE_DCL, int err, int fd, void *buf, size_t nbyte, size_t size)

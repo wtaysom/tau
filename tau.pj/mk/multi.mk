@@ -21,6 +21,7 @@ else
   TARGET = $(BOARD)
 endif
 
+os	:= $(shell uname)
 makedir := $(dir $(lastword $(MAKEFILE_LIST)))
 target  := $(TARGET)
 objdir  :=.$(target)

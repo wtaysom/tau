@@ -7,4 +7,6 @@
 
 include ../../mk/default.mk
 LIBS += ../../libq.b/$(objdir)/libq
-LIBS += -lrt
+ifeq ($(os),Linux)
+  LprintIBS += -lrt
+endif

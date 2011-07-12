@@ -10,8 +10,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include <fcalls.h>
-#include <util.h>
+#include "fcalls.h"
+#include "util.h"
 
 /*
  * Basic read/write tests
@@ -113,15 +113,21 @@ typedef struct segment_s {
 segment_s Segment[] = {
 	{ 1, 1 },
 	{ 4095, 45 },
+#ifndef __APPLE__
 	{ 1LL<<20, 1<<13 },
 	{ 1LL<<40, 1<<10 },
+	{ 1LL<<50, 1<<12 },
+#endif
 	{ -1, -1 }};
 
 segment_s Hole[] = {
 	{ 0, 1 },
 	{ 2197, 3 },
+#ifndef __APPLE__
 	{ 1LL<<25, 1<<14 },
 	{ 1LL<<35, 1<<16 },
+	{ 1LL<<47, 1<<16 },
+#endif
 	{ -1, -1 }};
 
 static void write_segment (int fd, segment_s seg)

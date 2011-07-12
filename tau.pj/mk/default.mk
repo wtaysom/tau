@@ -21,6 +21,7 @@ else
   TARGET = $(BOARD)
 endif
 
+os	:= $(shell uname)
 name    := $(basename $(notdir $(PWD)))
 target  := $(TARGET)
 objdir  :=.$(target)
