@@ -1,6 +1,6 @@
 /* Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
- * Use of this source code is governed by a BSD-style license that
- * can be found in the LICENSE file.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
  */
 
 /* fcalls wraps the folling functions with verbose printing, error
@@ -40,7 +40,7 @@
  * truncate
  * unlink
  * write
- * 
+ *
  * Directory Library Calls
  * closedir
  * opendir
@@ -49,7 +49,7 @@
  * scandir
  * seekdir
  * telldir
- * 
+ *
  * Asynchronous I/O
  * aio_cancel
  * aio_error
@@ -57,7 +57,7 @@
  * aio_return
  * aio_suspend
  * aio_write
- * 
+ *
  * Extended Attributes
  * fgetxattr
  * flistxattr

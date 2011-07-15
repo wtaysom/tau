@@ -1,6 +1,6 @@
 /* Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
- * Use of this source code is governed by a BSD-style license that
- * can be found in the LICENSE file.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
  */
 /* WHERE defines where in the code you are executing. It returns a
  * structure that has the file, function, and line number.

@@ -1,6 +1,6 @@
 /* Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
- * Use of this source code is governed by a BSD-style license that
- * can be found in the LICENSE file.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
  */
 
 /* Test directory operations
@@ -34,7 +34,7 @@ static dir_s NilDir  = { 0, 0, NULL };
 
 static bool ignore (char *name) {
   return (strcmp(name, ".") == 0) ||
-      (strcmp(name, "..") == 0);	
+      (strcmp(name, "..") == 0);
 }
 
 static void AddFile (dir_s *d, int type, char *name) {
