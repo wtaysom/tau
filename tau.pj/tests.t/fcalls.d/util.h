@@ -1,29 +1,27 @@
-/*
- * Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
+/* Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
  * Use of this source code is governed by a BSD-style license that
  * can be found in the LICENSE file.
  */
 
-/*
- * Header for simple utilities for writing tests.
+/* Header for Simple utilities for writing tests.
  */
 
 #ifndef _UTIL_H_
 #define _UTIL_H_ 1
 
-#ifndef _FCALLS_H_
-#include <fcalls.h>
+#ifndef _WHERE_H_
+#include <where.h>
 #endif
 
-#define error(_fmt, ...) pr_error(HERE_PRM, _fmt, ## __VA_ARGS__)
-#define is_same(_b, _n, _o)	is_samep(HERE_PRM, _b, _n, _o)
+#define PrError(_fmt, ...) PrErrorp(WHERE, _fmt, __VA_ARGS__)
+#define IsSame(_b, _n, _o) IsSamep(WHERE, _b, _n, _o)
 
-void pr_error(HERE_DCL, const char *fmt, ...);
-bool is_samep(HERE_DCL, void *buf, int n, s64 offset);
+void PrErrorp(Where_s w, const char *fmt, ...);
+bool IsSamep(Where_s w, void *buf, int n, s64 offset);
 
-void fill(void *buf, int n, s64 offset);
-char *mkstr(char *s, ...);
-char *rndname(unsigned n);
+void Fill(void *buf, int n, s64 offset);
+char *Mkstr(char *s, ...);
+char *RndName(unsigned n);
 
 
 #endif

@@ -8,5 +8,5 @@
 include ../../mk/default.mk
 LIBS += ../../libq.b/$(objdir)/libq
 ifeq ($(os),Linux)
-  LprintIBS += -lrt
+  LIBS += -lrt
 endif
