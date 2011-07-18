@@ -148,16 +148,10 @@ static inline void unlock (char *name, lock_s *lock)
 #endif
 }
 
-static inline int urand_r (unint *seed, unint bound)
-{
-	*seed = *seed * 1103515245 + 12345;
-	return *seed % bound;
-}
-
 void *randlock (void *arg)
 {
+	unsigned	seed = random();
 	arg_s	*a = arg;
-	unint	seed = random();
 	u64	start, finish;
 	unint	i;
 	unint	k;
@@ -166,7 +160,7 @@ void *randlock (void *arg)
 	pthread_mutex_unlock( &Start);
 	start = nsecs();
 	for (i = Loops; i; i--) {
-		k = urand_r( &seed, Num_locks);
+		k = urand_r(Num_locks, &seed);
 #if (!DEBUG && !MUTEX && !SPIN && !TSPIN)
 		donothing();
 #endif
