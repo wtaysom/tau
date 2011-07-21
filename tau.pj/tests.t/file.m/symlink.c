@@ -106,7 +106,7 @@
 #include <unistd.h>
 
 #include <eprintf.h>
-#include <mylib.h>
+#include <mystdlib.h>
 #include <puny.h>
 
 char *gen_name (int len)

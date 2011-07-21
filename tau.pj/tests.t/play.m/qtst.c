@@ -15,7 +15,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <mylib.h>
+#include <mystdlib.h>
 
 #include "q.h"
 

@@ -85,7 +85,7 @@
 #include <utime.h>
 
 #include <style.h>
-#include <mylib.h>
+#include <mystdlib.h>
 #include <puny.h>
 
 enum {

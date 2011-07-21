@@ -27,7 +27,7 @@
 
 #include <eprintf.h>
 #include <debug.h>
-#include <mylib.h>
+#include <mystdlib.h>
 #include <myio.h>
 #include <timer.h>
 #include <puny.h>

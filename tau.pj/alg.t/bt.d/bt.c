@@ -42,7 +42,7 @@
 
 #include <debug.h>
 #include <eprintf.h>
-#include <mylib.h>
+#include <mystdlib.h>
 #include <style.h>
 
 #include "bt.h"

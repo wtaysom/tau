@@ -21,7 +21,7 @@
 #include <tau/bicho.h>
 #include <tau/tag.h>
 
-#include <mylib.h>
+#include <mystdlib.h>
 #include <q.h>
 #include <debug.h>
 #include <eprintf.h>

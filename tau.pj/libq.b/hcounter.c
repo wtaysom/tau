@@ -15,7 +15,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <style.h>
-#include <mylib.h>
+#include <mystdlib.h>
 #include <eprintf.h>
 
 typedef struct counter_s	counter_s;

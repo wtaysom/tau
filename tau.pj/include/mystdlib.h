@@ -11,8 +11,8 @@
  |  GNU General Public License for more details.
  +-------------------------------------------------------------------------*/
 
-#ifndef _MYLIB_H_
-#define _MYLIB_H_ 1
+#ifndef _MYSTDLIB_H_
+#define _MYSTDLIB_H_ 1
 
 #ifndef _STDDEF_H
 #include <stddef.h>

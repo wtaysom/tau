@@ -3,7 +3,7 @@
  * found in the LICENSE file.
  */
 
-/* Header for Simple utilities for writing tests.
+/* Header for simple utilities for writing tests.
  */
 
 #ifndef _UTIL_H_
@@ -24,4 +24,4 @@ char *Mkstr(char *s, ...);
 char *RndName(unsigned n);
 
 
-#endif
+#endif  /* _UTIL_H_ */

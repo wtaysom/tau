@@ -17,7 +17,7 @@
 #include <unistd.h>
 
 #include <eprintf.h>
-#include <mylib.h>
+#include <mystdlib.h>
 #include <puny.h>
 
 Option_s Option = {

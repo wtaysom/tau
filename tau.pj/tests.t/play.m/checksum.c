@@ -4,7 +4,7 @@
 #include <style.h>
 #include <eprintf.h>
 #include <timer.h>
-#include <mylib.h>
+#include <mystdlib.h>
 #include <crc.h>
 
 /*

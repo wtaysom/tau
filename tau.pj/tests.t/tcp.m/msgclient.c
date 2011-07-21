@@ -13,7 +13,7 @@
 
 #include <style.h>
 #include <eprintf.h>
-#include <mylib.h>
+#include <mystdlib.h>
 #include <q.h>
 #include <debug.h>
 #include <tau/msg.h>

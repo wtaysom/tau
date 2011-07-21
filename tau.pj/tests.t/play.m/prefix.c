@@ -8,7 +8,7 @@
 #include <stdlib.h>
 
 #include <lump.h>
-#include <mylib.h>
+#include <mystdlib.h>
 
 char *rndstring (unint n) {
 	char	*s;

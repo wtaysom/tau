@@ -19,7 +19,7 @@
 
 #include <debug.h>
 #include <style.h>
-#include <mylib.h>
+#include <mystdlib.h>
 #include <eprintf.h>
 
 typedef struct thread_s {

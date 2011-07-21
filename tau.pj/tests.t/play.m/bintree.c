@@ -2,7 +2,7 @@
  * Copyright 2009 - Novell, Inc.
  */
 #include <stdio.h>
-#include <mylib.h>
+#include <mystdlib.h>
 #include <eprintf.h>
 #include <debug.h>
 

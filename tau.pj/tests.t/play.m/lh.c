@@ -33,7 +33,7 @@
 #include <style.h>
 #include <eprintf.h>
 #include <debug.h>
-#include <mylib.h>
+#include <mystdlib.h>
 #include <timer.h>
 #include <crc.h>
 

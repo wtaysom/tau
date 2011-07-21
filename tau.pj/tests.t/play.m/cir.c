@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <mylib.h>
+#include <mystdlib.h>
 #include <style.h>
 
 enum {	Q_SZ = 200,

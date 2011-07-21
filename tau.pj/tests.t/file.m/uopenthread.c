@@ -26,7 +26,7 @@
 
 #include <style.h>
 #include <myio.h>
-#include <mylib.h>
+#include <mystdlib.h>
 #include <eprintf.h>
 #include <puny.h>
 

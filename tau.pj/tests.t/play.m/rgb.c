@@ -85,7 +85,7 @@
 #include <pthread.h>
 
 #include <style.h>
-#include <mylib.h>
+#include <mystdlib.h>
 #include <eprintf.h>
 #include <timer.h>
 

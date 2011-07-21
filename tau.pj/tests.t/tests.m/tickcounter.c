@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <mylib.h>
+#include <mystdlib.h>
 #include <style.h>
 
 enum {	WHEEL_SIZE = 60 };
