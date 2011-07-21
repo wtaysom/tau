@@ -4,7 +4,7 @@
 #include <crc.h>
 
 #include <style.h>
-#include <mylib.h>
+#include <mystdlib.h>
 
 enum {	NODE_SHIFT = 4,
 	NUM_NODES  = 1 << NODE_SHIFT,

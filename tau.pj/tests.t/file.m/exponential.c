@@ -13,7 +13,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <mylib.h>
+#include <mystdlib.h>
 
 #include <puny.h>
 

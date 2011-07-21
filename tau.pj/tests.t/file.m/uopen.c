@@ -24,7 +24,7 @@
 #include <sys/stat.h>
 
 #include <eprintf.h>
-#include <mylib.h>
+#include <mystdlib.h>
 #include <puny.h>
 
 void usage (void)

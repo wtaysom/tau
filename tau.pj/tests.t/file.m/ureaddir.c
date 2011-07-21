@@ -68,7 +68,7 @@
 #include <sys/time.h>
 
 #include <style.h>
-#include <mylib.h>
+#include <mystdlib.h>
 #include <myio.h>
 #include <eprintf.h>
 #include <puny.h>

@@ -14,7 +14,7 @@
 #include <stdio.h>
 #include <sys/time.h>
 
-#include <mylib.h>
+#include <mystdlib.h>
 
 static timeval_s	Start;
 static timeval_s	End;

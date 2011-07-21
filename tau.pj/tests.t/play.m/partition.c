@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include <mylib.h>
+#include <mystdlib.h>
 #include <eprintf.h>
 
 #if 1

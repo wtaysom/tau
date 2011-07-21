@@ -4,7 +4,7 @@
  */
 
 /* fcalls wraps the folling functions with verbose printing, error
- * checking, and location information make it easier to track problems.
+ * checking, and location information to make it easier to track problems.
  *
  * chdir, fchdir
  * chmod
@@ -69,7 +69,10 @@
  * setxattr
  */
 
-/* TODO(taysom): May want to track or print working directory in error */
+/* TODO(taysom):
+ * 1. May want to track or print working directory in error
+ * 2. PrVerbose should go first
+ */
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -82,16 +85,19 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <style.h>
 #include <debug.h>
 #include <eprintf.h>
+#include <style.h>
 #include <where.h>
 
-extern bool Verbose; /* Print each called file system operations */
+#include "wrapper.h"
 
-bool Fatal = TRUE; /* Exit on unexpected errors */
-bool StackTrace = TRUE;
+extern bool Verbose;     /* Print each called file system operations */
 
+bool Fatal = TRUE;       /* Exit on unexpected errors */
+bool StackTrace = TRUE;  /* Print a stack trace on failures */
+
+/* PrVerbose used to optionally print arguments being used */
 static void PrVerbose (Where_s w, const char *fmt, ...) {
   va_list args;
 
@@ -108,12 +114,12 @@ static void PrVerbose (Where_s w, const char *fmt, ...) {
   printf("\n");
 }
 
-static void vPrErrork (
-  Where_s w,
-  const char *fmt1,
-  va_list ap,
-  const char *fmt2,
-  ...) {
+/* vPrErrork prints the errors dectected in these routines.
+ * It takes two formats so it can take args from the xxxxk
+ * routine and from the routines that check for errors.
+ */
+static void vPrErrork (Where_s w, const char *fmt1, va_list ap,
+                       const char *fmt2, ...) {
   int lasterr = errno;
   va_list args;
 
@@ -140,6 +146,9 @@ static void vPrErrork (
   if (Fatal) exit(2); /* conventional value for failed execution */
 }
 
+/* Check checks the return code from system calls.
+ * If expected_err is not zero, verifies that error was set.
+ */
 static s64 Check (Where_s w, s64 rc, int expected_err,
                   s64 rtn, const char *fmt, ...) {
   va_list args;
@@ -166,6 +175,8 @@ static s64 Check (Where_s w, s64 rc, int expected_err,
   return rc;
 }
 
+/* CheckPtr checks error returns for functions returning a pointer.
+ */
 static void *CheckPtr (Where_s w, void *p, bool is_null, const char *fmt, ...) {
   va_list args;
 
@@ -177,80 +188,103 @@ static void *CheckPtr (Where_s w, void *p, bool is_null, const char *fmt, ...) {
   return p;
 }
 
-int chdirk (Where_s w, int err, const char *path) {
+int chdirk (Where_s w, int expected_err, const char *path) {
   int rc = chdir(path);
   PrVerbose(w, "chdir(%s)", path);
-  return Check(w, rc, err, 0, "chdir %s:", path);
+  return Check(w, rc, expected_err, 0, "chdir %s:", path);
 }
 
-int closek (Where_s w, int err, int fd) {
+int closek (Where_s w, int expected_err, int fd) {
   int rc = close(fd);
   PrVerbose(w, "close(%d)", fd);
-  return Check(w, rc, err, 0, "close %d:", fd);
+  return Check(w, rc, expected_err, 0, "close %d:", fd);
 }
 
-int closedirk (Where_s w, int err, DIR *dir) {
+int closedirk (Where_s w, int expected_err, DIR *dir) {
   int rc = closedir(dir);
   PrVerbose(w, "closedir(%p)", dir);
-  return Check(w, rc, err, 0, "closedir(%p):", dir);
+  return Check(w, rc, expected_err, 0, "closedir(%p):", dir);
 }
 
-int creatk (Where_s w, int err, const char *path, mode_t mode) {
+int creatk (Where_s w, int expected_err, const char *path, mode_t mode) {
   int fd = creat(path, mode);
   PrVerbose(w, "creat(%s, 0%o)", path, mode);
-  return Check(w, fd, err, fd, "creat(%s, 0%o):",
-    path, mode);
+  return Check(w, fd, expected_err, fd, "creat(%s, 0%o):",
+               path, mode);
 }
 
-s64 lseekk (Where_s w, int err, int fd, s64 offset, int whence, s64 seek) {
+s64 lseekk (Where_s w, int expected_err, int fd,
+            s64 offset, int whence, s64 seek) {
   s64 rc = lseek(fd, offset, whence);
   PrVerbose(w, "lseek(%d, %zu, %d)", fd, offset, whence);
-  return Check(w, rc, err, seek, "lseek(%d, %zu, %d):",
-    fd, offset, whence);
+  return Check(w, rc, expected_err, seek, "lseek(%d, %zu, %d):",
+               fd, offset, whence);
 }
 
-int mkdirk (Where_s w, int err, const char *path, mode_t mode) {
+int mkdirk (Where_s w, int expected_err, const char *path, mode_t mode) {
   int rc = mkdir(path, mode);
   PrVerbose(w, "mkdir(%s, 0%o)", path, mode);
-  return Check(w, rc, err, 0, "mkdir(%s, 0%o):", path, mode);
+  return Check(w, rc, expected_err, 0, "mkdir(%s, 0%o):", path, mode);
 }
 
-int openk (Where_s w, int err, const char *path, int flags, mode_t mode) {
+int openk (Where_s w, int expected_err,
+           const char *path, int flags, mode_t mode) {
   int fd = open(path, flags, mode);
   PrVerbose(w, "open(%s, 0x%x, 0%o)", path, flags, mode);
-  return Check(w, fd, err, fd, "open(%s, 0x%x, 0%o):",
-    path, flags, mode);
+  return Check(w, fd, expected_err, fd, "open(%s, 0x%x, 0%o):",
+               path, flags, mode);
 }
 
-struct dirent *opendirk (Where_s w, bool is_null, const char *path) {
+DIR *opendirk (Where_s w, bool is_null, const char *path) {
   DIR *dir = opendir(path);
-  PrVerbose(w, "opendir(%p)", path);
-  return CheckPtr(w, dir, is_null, "opendir(%p):", path);
+  PrVerbose(w, "opendir(%s)", path);
+  return CheckPtr(w, dir, is_null, "opendir(%s):", path);
 }
 
-s64 readk (Where_s w, int err, int fd, void *buf, size_t nbyte, size_t size) {
+s64 readk (Where_s w, int expected_err, int fd,
+           void *buf, size_t nbyte, size_t size) {
   s64 rc = read(fd, buf, nbyte);
   PrVerbose(w, "read(%d, %p, %zu)", fd, buf, nbyte);
-  return Check(w, rc, err, size, "read(%d, %p, %zu):",
-    fd, buf, nbyte);
+  return Check(w, rc, expected_err, size, "read(%d, %p, %zu):",
+               fd, buf, nbyte);
 }
 
 struct dirent *readdirk (Where_s w, DIR *dir) {
   struct dirent *ent = readdir(dir);
   PrVerbose(w, "readdir(%p) = %p", dir, ent);
-  /* No Check for errors because NULL indicates EOF */
+  /* No check for errors because NULL indicates EOF */
   return ent;
 }
 
-int rmdirk (Where_s w, int err, const char *path) {
-  int rc = rmdir(path);
-  PrVerbose(w, "rmdir(%s)", path);
-  return Check(w, rc, err, 0, "rmdir(%s):", path);
+int readdir_rk (Where_s w, int expected_err, DIR *dir, struct dirent *entry,
+                           struct dirent **result) {
+  s64 rc = readdir_r(dir, entry, result);
+  PrVerbose(w, "readdir_r(%p, %p, %p)", dir, entry, result);
+  return Check(w, rc, expected_err, 0, "readdir_r(%p, %p, %p):",
+               dir, entry, result);
 }
 
-s64 writek (Where_s w, int err, int fd, void *buf, size_t nbyte, size_t size) {
+int rmdirk (Where_s w, int expected_err, const char *path) {
+  int rc = rmdir(path);
+  PrVerbose(w, "rmdir(%s)", path);
+  return Check(w, rc, expected_err, 0, "rmdir(%s):", path);
+}
+
+void seekdirk (Where_s w, DIR *dir, long offset) {
+  seekdir(dir, offset);
+  PrVerbose(w, "seekdir(%p, %ld)", dir, offset);
+}
+
+long telldirk (Where_s w, int expected_err, DIR *dir) {
+  long offset = telldir(dir);
+  PrVerbose(w, "teldir(%p)", dir);
+  return Check(w, offset, expected_err, offset, "teldir(%p):", dir);
+}
+
+s64 writek (Where_s w, int expected_err, int fd,
+            void *buf, size_t nbyte, size_t size) {
   s64 rc = write(fd, buf, nbyte);
   PrVerbose(w, "write(%d, %p, %zu)", fd, buf, nbyte);
-  return Check(w, rc, err, nbyte, "write(%d, %p, %zu):",
-    fd, buf, nbyte);
+  return Check(w, rc, expected_err, nbyte, "write(%d, %p, %zu):",
+               fd, buf, nbyte);
 }

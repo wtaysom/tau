@@ -12,12 +12,12 @@
 
 #include <crc.h>
 #include <debug.h>
-#include <mylib.h>
-#include <style.h>
 #include <eprintf.h>
+#include <mystdlib.h>
+#include <style.h>
 #include <util.h>
 
-#include <fcalls.h>
+#include "fcalls.h"
 
 /* PrErrorp prints an error message including location */
 void PrErrorp (Where_s w, const char *fmt, ...) {
@@ -66,6 +66,7 @@ char *RndName (unsigned n) {
 /* Mkstr creates a string by concatenating all the string
  * arguments. The last string must be NULL.
  * Caller must free the returned pointer.
+ * O(n^2), so don't pass too many strings.
  */
 char *Mkstr (char *s, ...) {
   char *t;
@@ -90,14 +91,15 @@ char *Mkstr (char *s, ...) {
   for (;;) {
     t = va_arg(args, char *);
     if (!t) break;
-    strcat(u, t); /*TODO(taysom): could be more efficient*/
+    strcat(u, t);
   }
   va_end(args);
   return u;
 }
 
-static inline u8 Hash (s64 offset) {
-  return crc32( &offset, sizeof(offset));
+/* Generate a 8 bit hash of a 64 bit number */
+static inline u8 Hash (s64 x) {
+  return crc32( &x, sizeof(x));
 }
 
 /* Fill a buffer of size n with bytes starting with a seed */

@@ -29,7 +29,7 @@
 #include <tau/disk.h>
 #include <debug.h>
 #include <eprintf.h>
-#include <mylib.h>
+#include <mystdlib.h>
 #include <set.h>
 
 #include "bagio.h"

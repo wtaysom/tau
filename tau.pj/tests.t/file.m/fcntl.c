@@ -473,7 +473,7 @@
 #include <sys/wait.h>
 
 #include <style.h>
-#include <mylib.h>
+#include <mystdlib.h>
 #include <eprintf.h>
 #include <puny.h>
 

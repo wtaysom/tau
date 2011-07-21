@@ -19,7 +19,7 @@
 #include <eprintf.h>
 #include <debug.h>
 #include <q.h>
-#include <mylib.h>
+#include <mystdlib.h>
 #include <set.h>
 
 void check (int nbags, int nreps, int nshards, int a[nreps][nshards])

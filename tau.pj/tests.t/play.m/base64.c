@@ -27,7 +27,7 @@
 
 #include <style.h>
 #include <eprintf.h>
-#include <mylib.h>
+#include <mystdlib.h>
 #include <debug.h>
 
 void fill_buf (void *buf, unint length, int seed)

@@ -2,7 +2,7 @@
  * Use of this source code is governed by a BSD-style license that can be
  * found in the LICENSE file.
  */
-/* fcalls tests the file system call. By providing a list of mount
+/* fcalls tests the file system calls. By providing a list of mount
  * points or directories, several different file systems can be tested.
  */
 
@@ -11,11 +11,11 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include <style.h>
+#include <debug.h>
 #include <eprintf.h>
 #include <puny.h>
+#include <style.h>
 #include <timer.h>
-#include <debug.h>
 
 #include "fcalls.h"
 #include "util.h"
@@ -134,6 +134,11 @@ int main (int argc, char *argv[]) {
   punyopt(argc, argv, myopt, "b:rv");
   SzBigFile = Option.file_size;
 
+  if (SzBigFile < 40000) {
+    PrError("Size of big file, %lld, should be greater than 40K",
+        SzBigFile);
+    return 2;
+  }
   if (SzBigFile < (1LL << 32)) {
     fprintf(stderr, "Size of big file only 0x%llx\n", SzBigFile);
   }

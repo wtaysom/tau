@@ -26,7 +26,7 @@
 #include <debug.h>
 
 #include <style.h>
-#include <mylib.h>
+#include <mystdlib.h>
 #include <timer.h>
 #include <puny.h>
 #include <eprintf.h>

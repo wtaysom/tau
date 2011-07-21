@@ -25,7 +25,7 @@
 #include <errno.h>
 
 #include <style.h>
-#include <mylib.h>
+#include <mystdlib.h>
 #include <qsort.h>
 #include <kernelsymbols.h>
 

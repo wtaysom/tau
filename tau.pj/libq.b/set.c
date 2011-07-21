@@ -16,7 +16,7 @@
 #include <style.h>
 #include <set.h>
 #include <eprintf.h>
-#include <mylib.h>
+#include <mystdlib.h>
 
 enum { INIT_SET_SIZE = 16 };
 

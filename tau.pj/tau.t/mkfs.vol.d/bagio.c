@@ -16,7 +16,7 @@
 
 #include <style.h>
 #include <tau/fsmsg.h>
-#include <mylib.h>
+#include <mystdlib.h>
 #include <eprintf.h>
 #include <debug.h>
 

@@ -13,7 +13,7 @@
 #include <zError.h>
 
 #include <style.h>
-#include <mylib.h>
+#include <mystdlib.h>
 #include <eprintf.h>
 #include <utf.h>
 #include <debug.h>

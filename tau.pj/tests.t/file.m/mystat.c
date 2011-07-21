@@ -236,7 +236,7 @@
 #include <stdio.h>
 
 #include <style.h>
-#include <mylib.h>
+#include <mystdlib.h>
 
 enum {
 	SECS_PER_MIN  = 60,

@@ -22,7 +22,7 @@
 #include <pthread.h>
 
 #include <style.h>
-#include <mylib.h>
+#include <mystdlib.h>
 #include <eprintf.h>
 #include <debug.h>
 #include <timer.h>

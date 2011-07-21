@@ -22,7 +22,7 @@
 #include <style.h>
 #include <crc.h>
 #include <eprintf.h>
-#include <mylib.h>
+#include <mystdlib.h>
 #include <symbol.h>
 
 /*

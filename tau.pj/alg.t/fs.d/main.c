@@ -25,7 +25,7 @@
 #include <style.h>
 #include <fm.h>
 #include <debug.h>
-#include <mylib.h>
+#include <mystdlib.h>
 #include <eprintf.h>
 #include <cmd.h>
 

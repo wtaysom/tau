@@ -25,7 +25,7 @@
 #include <sys/time.h>
 
 #include <style.h>
-#include <mylib.h>
+#include <mystdlib.h>
 #include <myio.h>
 #include <puny.h>
 #include <eprintf.h>

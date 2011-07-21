@@ -15,7 +15,7 @@
 #include <string.h>
 
 #include <eprintf.h>
-#include <mylib.h>
+#include <mystdlib.h>
 
 #include <tau/switchboard.h>
 

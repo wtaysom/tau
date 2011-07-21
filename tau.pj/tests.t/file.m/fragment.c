@@ -20,7 +20,7 @@
 #include <errno.h>
 
 #include <style.h>
-#include <mylib.h>
+#include <mystdlib.h>
 #include <eprintf.h>
 
 struct {

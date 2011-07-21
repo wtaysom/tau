@@ -17,22 +17,26 @@
 
 /* Simple test used to debug testing infrastructure */
 static void Simple (void) {
-  char buf[227];
+  enum { BUF_SIZE = 227,   /* Weird number of bytes for buffer */
+         REMAINDER = 17};  /* Weird remainder of bytes,
+                            * not related to buffer.
+                            */
+  char buf[BUF_SIZE];
   char file[] = "file_a";
   int fd;
 
   fd = open(file, O_CREAT | O_TRUNC | O_RDWR, 0666);
   Fill(buf, sizeof(buf), 0);
   write(fd, buf, sizeof(buf));
-  Fill(buf, 17, sizeof(buf));
-  write(fd, buf, 17);
+  Fill(buf, REMAINDER, sizeof(buf));
+  write(fd, buf, REMAINDER);
 
   lseek(fd, 0, 0);
 
   read(fd, buf, sizeof(buf));
   IsSame(buf, sizeof(buf), 0);
-  readSz(fd, buf, sizeof(buf), 17);
-  IsSame(buf, 17, sizeof(buf));
+  readCheckSize(fd, buf, sizeof(buf), REMAINDER);
+  IsSame(buf, REMAINDER, sizeof(buf));
   close(fd);
 }
 
@@ -55,12 +59,12 @@ static void rdseek (void) {
   }
 
   /* Try reading passed eof */
-  readSz(fd, buf, sizeof(buf), 0);
+  readCheckSize(fd, buf, sizeof(buf), 0);
 
   /* Start read before eof but go beyond eof */
   offset = SzBigFile - 47;
   lseek(fd, offset, SEEK_SET);
-  readSz(fd, buf, BlockSize, 47);
+  readCheckSize(fd, buf, BlockSize, 47);
   IsSame(buf, 47, offset);
 
   /* Seek to middle of file and verify contents */
@@ -71,20 +75,20 @@ static void rdseek (void) {
 
   /* Seek from current position forward 2 blocks */
   offset += 3 * BlockSize;
-  lseekOff(fd, 2 * BlockSize, SEEK_CUR, offset);
+  lseekCheckOffset(fd, 2 * BlockSize, SEEK_CUR, offset);
   read(fd, buf, BlockSize);
   IsSame(buf, BlockSize, offset);
 
   /* Seek from eof back 3 blocks */
   offset = SzBigFile - 3 * BlockSize;
-  lseekOff(fd, -(3 * BlockSize), SEEK_END, offset);
+  lseekCheckOffset(fd, -(3 * BlockSize), SEEK_END, offset);
   read(fd, buf, BlockSize);
   IsSame(buf, BlockSize, offset);
 
   /* Seek beyond eof */
   offset = SzBigFile + BlockSize;
   lseek(fd, offset, SEEK_SET);
-  readSz(fd, buf, BlockSize, 0);
+  readCheckSize(fd, buf, BlockSize, 0);
 
   /* Seek bad whence */
   lseekErr(EINVAL, fd, 0, 4);
@@ -113,9 +117,10 @@ segment_s Segment[] = {
   { 1LL<<20, 1<<13 },
   { 1LL<<40, 1<<10 },
 #if 0
-  { 1LL<<50, 1<<12 }, // TODO: this gives Invalid argument
-        // should create test of this case
-        // and others that I can think of like -1
+  { 1LL<<50, 1<<12 }, /* TODO(taysom): this gives Invalid argument
+                       * should create test of this case
+                       * and others that I can think of like -1
+                       */
 #endif
 #endif
   { -1, -1 }};

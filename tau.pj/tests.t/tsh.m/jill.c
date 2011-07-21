@@ -29,7 +29,7 @@
 #include <tau/msg.h>
 #include <tau/switchboard.h>
 #include <tau/msg_util.h>
-#include <mylib.h>
+#include <mystdlib.h>
 #include <eprintf.h>
 #include <utf.h>
 #include <debug.h>
