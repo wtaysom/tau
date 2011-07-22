@@ -7,13 +7,8 @@
 #ifndef _LUMP_H_
 #define _LUMP_H_ 1
 
-#ifndef _STYLE_H_
-#include <style.h>
-#endif
-
-#ifndef _DEBUG_H_
 #include <debug.h>
-#endif
+#include <style.h>
 
 typedef struct Lump_s {
 	int size;

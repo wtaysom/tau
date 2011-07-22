@@ -14,9 +14,7 @@
 #ifndef _DYNAFILE_H_
 #define _DYNAFILE_H_
 
-#ifndef _STDIO_H_
 #include <stdio.h>
-#endif
 
 typedef enum DynaErrors_t {
 	NO_MEMORY = -2,

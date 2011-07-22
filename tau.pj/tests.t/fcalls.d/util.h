@@ -9,9 +9,7 @@
 #ifndef _UTIL_H_
 #define _UTIL_H_ 1
 
-#ifndef _WHERE_H_
 #include <where.h>
-#endif
 
 #define PrError(_fmt, ...) PrErrorp(WHERE, _fmt, __VA_ARGS__)
 #define IsSame(_b, _n, _o) IsSamep(WHERE, _b, _n, _o)

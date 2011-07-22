@@ -14,9 +14,7 @@
 #ifndef _UTF_H_
 #define _UTF_H_
 
-#ifndef _STYLE_H_
 #include <style.h>
-#endif
 
 #ifndef _UNICODE_T
 #define _UNICODE_T

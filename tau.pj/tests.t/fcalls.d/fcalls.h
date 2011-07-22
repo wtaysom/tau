@@ -6,21 +6,10 @@
 #ifndef _FCALLS_H_
 #define _FCALLS_H_ 1
 
-#ifndef _SYTLE_H_
-#include <style.h>
-#endif
-
-#ifndef _WHERE_H_
-#include <where.h>
-#endif
-
-#ifndef _EPRINTF_H_
 #include <eprintf.h>
-#endif
-
-#ifndef _WRAPPER_H_
+#include <style.h>
+#include <where.h>
 #include <wrapper.h>
-#endif
 
 /* Define macros to make it easier to test file system related system calls.
  * The goal is to wrap each system call so that when an error occurs, it is

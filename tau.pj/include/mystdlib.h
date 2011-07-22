@@ -14,13 +14,9 @@
 #ifndef _MYSTDLIB_H_
 #define _MYSTDLIB_H_ 1
 
-#ifndef _STDDEF_H
 #include <stddef.h>
-#endif
 
-#ifndef _STYLE_H_
 #include <style.h>
-#endif
 
 void *myalloc (unsigned size);
 void *myrealloc (void *p, unsigned size);
@@ -38,7 +34,7 @@ void seed_random (void);
 unsigned long urand (unsigned long upper);
 unsigned urand_r (unsigned upper, unsigned *seedp);
 int percent (int x);
-long exp_dist (long uppper);
+long exp_dist (long upper);
 
 int isPattern (char *string);
 int isMatch (char *pattern, char *string);

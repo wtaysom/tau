@@ -14,9 +14,7 @@
 #ifndef _SET_H_
 #define _SET_H_ 1
 
-#ifndef _STYLE_H_
 #include <style.h>
-#endif
 
 typedef struct set_s {
 	addr	*st_start;

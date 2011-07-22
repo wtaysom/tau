@@ -14,13 +14,8 @@
 #ifndef _MYIO_H_
 #define _MYIO_H_
 
-#ifndef _SYS_TYPES_H_
 #include <sys/types.h>
-#endif
-
-#ifndef _SYS_STAT_H_
 #include <sys/stat.h>
-#endif
 
 void io_error (const char *what, const char *who);
 

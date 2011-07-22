@@ -14,13 +14,8 @@
 #ifndef _HASH_H_
 #define _HASH_H_
 
-#ifndef _STYLE_H_
-#include "style.h"
-#endif
-
-#ifndef _CRC_H_
 #include "crc.h"
-#endif
+#include "style.h"
 
 typedef struct HashRecord_s {
 	struct HashRecord_s	*next;

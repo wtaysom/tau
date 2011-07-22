@@ -42,6 +42,8 @@ static bool ignore (char *name) {
       (strcmp(name, "..") == 0);
 }
 
+static inline bool IsEmpty(dir_s *d) { return d->next == 0; }
+
 static void AddFile (dir_s *d, int type, char *name) {
   if (d->max == d->next) {
     int more = (d->max + 1) * 2;
@@ -94,7 +96,7 @@ static void AddChildren (dir_s *parent, int num_children) {
 
 static void DeleteChildren (dir_s *parent) {
   chdir(parent->name);
-  while (parent->next) {
+  while (!IsEmpty(parent)) {
     rmdir(parent->file[0].name);
     RemoveFile(parent, parent->file[0].name);
   }

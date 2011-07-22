@@ -5,9 +5,7 @@
 extern "C" {
 #endif
 
-#ifndef _STYLE_H_
 #include <style.h>
-#endif
 
 extern u16	Uni_to_lower[];
 extern u16	Uni_to_upper[];

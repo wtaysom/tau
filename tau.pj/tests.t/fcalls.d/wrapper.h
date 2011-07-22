@@ -6,21 +6,11 @@
 #ifndef _WRAPPER_H_
 #define _WRAPPER_H_ 1
 
-#ifndef _SYS_TYPES_H
 #include <sys/types.h>
-#endif
-
-#ifndef _DIRENT_H
 #include <dirent.h>
-#endif
 
-#ifndef _SYTLE_H_
 #include <style.h>
-#endif
-
-#ifndef _WHERE_H_
 #include <where.h>
-#endif
 
 int  chdirk(Where_s where, int expected_err, const char *path);
 int  closek(Where_s w, int expected_err, int fd);

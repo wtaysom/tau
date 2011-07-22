@@ -8,9 +8,7 @@
 #ifndef _WHERE_H_
 #define _WHERE_H_ 1
 
-#ifndef _STYLE_H_
 #include <style.h>  /* Get old definition of WHERE */
-#endif
 
 #undef WHERE
 

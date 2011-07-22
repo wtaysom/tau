@@ -14,9 +14,7 @@
 #ifndef _CRC_T_
 #define _CRC_T_
 
-#ifndef _STYLE_H_
 #include <style.h>
-#endif
 
 #define INITIAL_CRC64 0xffffffffffffffffULL
 #define INITIAL_CRC32 0xffffffffUL

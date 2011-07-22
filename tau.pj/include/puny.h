@@ -12,9 +12,7 @@
 #ifndef _PUNY_H_
 #define _PUNY_H_ 1
 
-#ifndef _STYLE_H_
 #include <style.h>
-#endif
 
 typedef struct Option_s {
 	u64	iterations;	/* -i<num> */

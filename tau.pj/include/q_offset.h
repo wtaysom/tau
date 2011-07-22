@@ -20,9 +20,7 @@
 #ifndef _Q_H_
 #define _Q_H_
 
-#ifndef _STYLE_H_
 #include <style.h>
-#endif
 
 typedef struct qlink_t
 {

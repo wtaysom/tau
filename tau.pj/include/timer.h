@@ -18,9 +18,7 @@
 extern "C" {
 #endif
 
-#ifndef _STYLE_H_
 #include <style.h>
-#endif
 
 typedef unsigned long long	tick_t;
 

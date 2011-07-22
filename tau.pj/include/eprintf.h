@@ -19,9 +19,7 @@
 #ifndef _EPRINTF_H_
 #define _EPRINTF_H_
 
-#ifndef _STDDEF_H
 #include <stddef.h>
-#endif
 
 #ifdef __cplusplus
 extern "C" {

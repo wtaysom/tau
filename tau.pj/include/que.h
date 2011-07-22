@@ -14,12 +14,8 @@
 #ifndef _QUE_H_
 #define _QUE_H_
 
-#ifndef _STDDEF_H_
-#	include <stddef.h>
-#endif
-#ifndef _STYLE_H_
-#	include <style.h>
-#endif
+#include <stddef.h>
+#include <style.h>
 
 #ifdef __cplusplus
 extern "C" {

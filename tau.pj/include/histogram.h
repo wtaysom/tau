@@ -14,9 +14,7 @@
 #ifndef _HISTOGRAM_H_
 #define _HISTOGRAM_H_
 
-#ifndef _STYLE_H_
 #include <style.h>
-#endif
 
 #ifdef __cplusplus
 extern "C" {

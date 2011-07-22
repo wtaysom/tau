@@ -119,9 +119,7 @@
 #define _STYLE_H_ 1
 
 #ifdef __KERNEL__
-	#ifndef LINUX_VERSION_CODE
-		#include <linux/version.h>
-	#endif
+	#include <linux/version.h>
 #endif
 
 #ifdef __cplusplus

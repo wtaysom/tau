@@ -36,9 +36,7 @@
 	#define qassert	assert
 #endif
 
-#ifndef _STYLE_H_
 #include <style.h>
-#endif
 
 typedef struct qlink_t {
 	struct qlink_t	*next;

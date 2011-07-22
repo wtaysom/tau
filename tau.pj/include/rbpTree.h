@@ -93,9 +93,7 @@
 #ifndef _RBPTREE_H_
 #define _RBPTREE_H_
 
-#ifndef _STYLE_H_
 #include <style.h>
-#endif
 
 #define RBP_DEBUG DISABLE
 
