@@ -382,7 +382,8 @@ int lstatk (Where_s w, int expected_err, const char *path, struct stat *buf) {
   return Check(w, rc, expected_err, 0, "lstat(%s, %p)", path, buf);
 }
 
-int statfsk (Where_s w, int expected_err, const char *path, struct statfs *buf) {
+int statfsk (Where_s w, int expected_err, const char *path,
+             struct statfs *buf) {
   int rc = statfs(path, buf);
   return Check(w, rc, expected_err, 0, "statfs(%s, %p)", path, buf);
 }
@@ -392,7 +393,8 @@ int fstatfsk (Where_s w, int expected_err, int fd, struct statfs *buf) {
   return Check(w, rc, expected_err, 0, "fstatfs(%d, %p)", fd, buf);
 }
 
-int statvfsk (Where_s w, int expected_err, const char *path, struct statvfs *buf) {
+int statvfsk (Where_s w, int expected_err, const char *path,
+              struct statvfs *buf) {
   int rc = statvfs(path, buf);
   return Check(w, rc, expected_err, 0, "statvfs(%s, %p)", path, buf);
 }
