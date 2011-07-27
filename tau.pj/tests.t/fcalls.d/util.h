@@ -20,6 +20,7 @@ bool IsSamep(Where_s w, void *buf, int n, s64 offset);
 void Fill(void *buf, int n, s64 offset);
 char *Mkstr(char *s, ...);
 char *RndName(unsigned n);
+void CrFile (char *name, u64 size);
 
 
 #endif  /* _UTIL_H_ */

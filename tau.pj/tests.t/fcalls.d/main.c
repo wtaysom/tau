@@ -30,23 +30,6 @@ bool Verbose = FALSE;
 snint BlockSize = 4096;
 s64 SzBigFile = (1LL << 32) + (1LL << 13) + 137;
 
-/* cr_file creates a file of specified size and Fills it with data. */
-static void cr_file (char *name, u64 size) {
-  u8 buf[BlockSize];
-  int fd;
-  u64 offset;
-
-  fd = creat(name, 0666);
-  for (offset = 0; size; offset += BlockSize) {
-    unint n = BlockSize;
-    if (n > size) n = size;
-    Fill(buf, n, offset);
-    write(fd, buf, n);
-    size -= n;
-  }
-  close(fd);
-}
-
 /* init_test creates a scratch directory in the specified
  * test directory.
  *
@@ -68,9 +51,9 @@ void init_test (char *dir) {
   mkdir(Scratch, 0777);
   chdir(Scratch);
 
-  cr_file(BigFile, SzBigFile);
-  cr_file(EmptyFile, 0);
-  cr_file(OneFile, 1);
+  CrFile(BigFile, SzBigFile);
+  CrFile(EmptyFile, 0);
+  CrFile(OneFile, 1);
 }
 
 /* cleanup deletes the scratch directory eveything under it. */
@@ -89,10 +72,12 @@ void cleanup (void) {
 
 void all_tests (char *dir) {
   void DirTest(void);
+  void OpenTest(void);
   void rw_test(void);
 
   init_test(dir);
 
+  OpenTest();
   rw_test();
   DirTest();
 

@@ -94,6 +94,7 @@
 #define closeErr(err, fd)       closek(WHERE, err, fd)
 #define lseekErr(err, fd, o, w) lseekk(WHERE, err, fd, o, w, o)
 #define mkdirErr(err, p, m)     mkdirk(WHERE, err, p, m)
+#define openErr(err, p, f, m)   openk (WHERE, err, p, f, m)
 
 #define lseekCheckOffset(fd, o, w, s) lseekk(WHERE, 0, fd, o, w, s)
 #define readCheckSize(fd, b, n, sz)   readk (WHERE, 0, fd, b, n, sz)

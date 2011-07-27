@@ -75,9 +75,11 @@ int statk  (Where_s w, int expected_err, const char *path, struct stat *buf);
 int fstatk (Where_s w, int expected_err, int fd, struct stat *buf);
 int lstatk (Where_s w, int expected_err, const char *path, struct stat *buf);
 
-int statfsk  (Where_s w, int expected_err, const char *path, struct statfs *buf);
+int statfsk  (Where_s w, int expected_err, const char *path,
+              struct statfs *buf);
 int fstatfsk (Where_s w, int expected_err, int fd, struct statfs *buf);
-int statvfsk (Where_s w, int expected_err, const char *path, struct statvfs *buf);
+int statvfsk (Where_s w, int expected_err, const char *path,
+              struct statvfs *buf);
 int fstatvfsk(Where_s w, int expected_err, int fd, struct statvfs *buf);
 
 int symlinkk (Where_s w, int expected_err,

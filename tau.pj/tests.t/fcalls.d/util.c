@@ -130,3 +130,20 @@ bool IsSamep (Where_s w, void *buf, int n, s64 offset) {
   }
   return TRUE;
 }
+
+/* CrFile creates a file of specified size and Fills it with data. */
+void CrFile (char *name, u64 size) {
+  u8 buf[BlockSize];
+  int fd;
+  u64 offset;
+
+  fd = creat(name, 0666);
+  for (offset = 0; size; offset += BlockSize) {
+    unint n = BlockSize;
+    if (n > size) n = size;
+    Fill(buf, n, offset);
+    write(fd, buf, n);
+    size -= n;
+  }
+  close(fd);
+}
