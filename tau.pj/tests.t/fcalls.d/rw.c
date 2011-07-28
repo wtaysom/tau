@@ -113,7 +113,7 @@ typedef struct segment_s {
 segment_s Segment[] = {
   { 1, 1 },
   { 4095, 45 },
-#ifndef __APPLE__
+#ifdef __linux__
   { 1LL<<20, 1<<13 },
   { 1LL<<40, 1<<10 },
 #if 0
@@ -128,7 +128,7 @@ segment_s Segment[] = {
 segment_s Hole[] = {
   { 0, 1 },
   { 2197, 3 },
-#ifndef __APPLE__
+#ifdef __linux__
   { 1LL<<25, 1<<14 },
   { 1LL<<35, 1<<16 },
   { 1LL<<47, 1<<16 },

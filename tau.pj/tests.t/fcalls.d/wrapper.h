@@ -6,10 +6,15 @@
 #ifndef _WRAPPER_H_
 #define _WRAPPER_H_ 1
 
-#include <sys/stat.h>
+#ifdef __linux__
 #include <sys/statvfs.h>
-#include <sys/types.h>
 #include <sys/vfs.h>
+#else
+#include <sys/param.h>
+#include <sys/mount.h>
+#endif
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <dirent.h>
 
 #include <style.h>
@@ -78,9 +83,11 @@ int lstatk (Where_s w, int expected_err, const char *path, struct stat *buf);
 int statfsk  (Where_s w, int expected_err, const char *path,
               struct statfs *buf);
 int fstatfsk (Where_s w, int expected_err, int fd, struct statfs *buf);
+#ifdef __linux__
 int statvfsk (Where_s w, int expected_err, const char *path,
               struct statvfs *buf);
 int fstatvfsk(Where_s w, int expected_err, int fd, struct statvfs *buf);
+#endif
 
 int symlinkk (Where_s w, int expected_err,
            const char *oldpath, const char *newpath);

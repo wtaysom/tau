@@ -69,13 +69,18 @@
 
 #define _GNU_SOURCE  /* for dup3 */
 
+#ifdef __linux__
+#include <sys/statvfs.h>
+#include <sys/vfs.h>
+#else
+#include <sys/param.h>
+#include <sys/mount.h>
+#endif
 #include <sys/file.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
-#include <sys/statvfs.h>
 #include <sys/types.h>
-#include <sys/vfs.h>
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -252,11 +257,13 @@ int dup2k (Where_s w, int expected_err, int oldfd, int newfd) {
   return Check(w, rc, expected_err, 0, "dup2(%d, %d)", oldfd, newfd);
 }
 
+#ifdef __linux__
 int dup3k (Where_s w, int expected_err, int oldfd, int newfd, int flags) {
   int rc = dup3(oldfd, newfd, flags);
   return Check(w, rc, expected_err, 0, "dup3(%d, %d, %d)",
                oldfd, newfd, flags);
 }
+#endif
 
 int fcntlk (Where_s w, int expected_err, int fd, int cmd, void *arg) {
   int rc = fcntl(fd, cmd, arg);
@@ -273,10 +280,12 @@ int fsynck (Where_s w, int expected_err, int fd) {
   return Check(w, rc, expected_err, 0, "fsync(%d)", fd);
 }
 
+#ifdef __linux__
 int fdatasynck (Where_s w, int expected_err, int fd) {
   int rc = fdatasync(fd);
   return Check(w, rc, expected_err, 0, "fdatasync(%d)", fd);
 }
+#endif
 
 int ioctlk (Where_s w, int expected_err, int fd, int request, void *arg) {
   int rc = ioctl(fd, request, arg);
@@ -320,12 +329,14 @@ int openk (Where_s w, int expected_err,
                path, flags, mode);
 }
 
+#ifdef __linux__
 int openatk (Where_s w, int expected_err, int dirfd,
            const char *path, int flags, mode_t mode) {
   int fd = openat(dirfd, path, flags, mode);
   return Check(w, fd, expected_err, fd, "openat(%d, %s, 0x%x, 0%o)",
                dirfd, path, flags, mode);
 }
+#endif
 
 s64 preadk (Where_s w, int expected_err, int fd,
             void *buf, size_t nbyte, size_t size, s64 offset) {
@@ -355,12 +366,14 @@ s64 readlinkk (Where_s w, int expected_err, const char *path,
                path, buf, nbyte);
 }
 
+#ifdef __linux__
 s64 readlinkatk (Where_s w, int expected_err, int fd, const char *path,
                void *buf, size_t nbyte, size_t size) {
   s64 rc = readlinkat(fd, path, buf, nbyte);
   return Check(w, rc, expected_err, size, "readlinkat(%d, %s, %p, %zu)",
                fd, path, buf, nbyte);
 }
+#endif
 
 int rmdirk (Where_s w, int expected_err, const char *path) {
   int rc = rmdir(path);
@@ -393,6 +406,7 @@ int fstatfsk (Where_s w, int expected_err, int fd, struct statfs *buf) {
   return Check(w, rc, expected_err, 0, "fstatfs(%d, %p)", fd, buf);
 }
 
+#ifdef __linux__
 int statvfsk (Where_s w, int expected_err, const char *path,
               struct statvfs *buf) {
   int rc = statvfs(path, buf);
@@ -403,6 +417,7 @@ int fstatvfsk (Where_s w, int expected_err, int fd, struct statvfs *buf) {
   int rc = fstatvfs(fd, buf);
   return Check(w, rc, expected_err, 0, "fstatvfs(%d, %p)", fd, buf);
 }
+#endif
 
 int symlinkk (Where_s w, int expected_err,
            const char *oldpath, const char *newpath) {
