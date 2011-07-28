@@ -150,6 +150,7 @@ static s64 Check (Where_s w, s64 rc, int expected_err,
                   s64 rtn, const char *fmt, ...) {
   va_list args;
 
+//printf("rc=%lld expected_err=%d rtn=%lld\n", rc, expected_err, rtn);
   if (Verbose && fmt) {
     va_start(args, fmt);
     PrVerbose(w, fmt, args);
@@ -341,14 +342,14 @@ int openatk (Where_s w, int expected_err, int dirfd,
 s64 preadk (Where_s w, int expected_err, int fd,
             void *buf, size_t nbyte, size_t size, s64 offset) {
   s64 rc = pread(fd, buf, nbyte, offset);
-  return Check(w, rc, expected_err, size, "pread(%d, %p, %zu, %lls)",
+  return Check(w, rc, expected_err, size, "pread(%d, %p, %zu, %lld)",
                fd, buf, nbyte, offset);
 }
 
 s64 pwritek (Where_s w, int expected_err, int fd,
              void *buf, size_t nbyte, size_t size, s64 offset) {
   s64 rc = pwrite(fd, buf, nbyte, offset);
-  return Check(w, rc, expected_err, size, "pwrite(%d, %p, %zu, %lls)",
+  return Check(w, rc, expected_err, size, "pwrite(%d, %p, %zu, %lld)",
                fd, buf, nbyte, offset);
 }
 

@@ -10,3 +10,6 @@ LIBS += ../../libq.b/$(objdir)/libq
 ifeq ($(os),Linux)
   LIBS += -lrt
 endif
+
+run:$(opus)
+	$(opus) -z0x10277

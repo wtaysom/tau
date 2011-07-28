@@ -19,8 +19,8 @@
 
 #include "fcalls.h"
 
-/* PrErrorp prints an error message including location */
-void PrErrorp (Where_s w, const char *fmt, ...) {
+/* PrErrork prints an error message including location */
+void PrErrork (Where_s w, const char *fmt, ...) {
   int lasterr = errno;
   va_list args;
 
@@ -113,14 +113,14 @@ void Fill (void *buf, int n, s64 offset) {
   }
 }
 
-/* IsSamep: does the buffer have the same content that was set by Fill */
-bool IsSamep (Where_s w, void *buf, int n, s64 offset) {
-  u8 *b = buf;
-  u8 *end = &b[n];
+/* IsSamek: does the buffer have the same content that was set by Fill */
+bool IsSamek (Where_s w, const void *buf, int n, s64 offset) {
+  const u8 *b = buf;
+  const u8 *end = &b[n];
 
   for (; b < end; b++) {
     if (*b != Hash(offset)) {
-      PrErrorp(w,
+      PrErrork(w,
         "IsSame at offset %td expected 0x%2x"
         " but is 0x%2x",
         b - (u8 *)buf, Hash(offset), *b);
@@ -131,8 +131,17 @@ bool IsSamep (Where_s w, void *buf, int n, s64 offset) {
   return TRUE;
 }
 
+/* IsEqk: checks if the two buffers are equal */
+bool IsEqk (Where_s w, const void *b1, const void *b2, int n) {
+  if (memcmp(b1, b2, n) != 0) {
+    PrErrork(w, "IsEq");
+    return FALSE;
+  }
+  return TRUE;
+}
+
 /* CrFile creates a file of specified size and Fills it with data. */
-void CrFile (char *name, u64 size) {
+void CrFile (const char *name, u64 size) {
   u8 buf[BlockSize];
   int fd;
   u64 offset;
