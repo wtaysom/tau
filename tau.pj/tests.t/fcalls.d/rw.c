@@ -211,7 +211,7 @@ void wtseek (void) {
   free(name);
 }
 
-void rw_test (void) {
+void RwTest (void) {
   Simple();
   rdseek();
   wtseek();

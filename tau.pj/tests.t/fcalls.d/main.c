@@ -72,13 +72,17 @@ void cleanup (void) {
 
 void all_tests (char *dir) {
   void DirTest(void);
+  void FsTest(void);
   void OpenTest(void);
-  void rw_test(void);
+  void OpenatTest(void);
+  void RwTest(void);
 
   init_test(dir);
 
+  FsTest();
   OpenTest();
-  rw_test();
+  OpenatTest();
+  RwTest();
   DirTest();
 
   cleanup();
@@ -112,6 +116,7 @@ void usage (void) {
 }
 
 int main (int argc, char *argv[]) {
+  extern void DumpRecords(void);
   int i;
 
   Option.file_size = SzBigFile;
@@ -132,5 +137,6 @@ int main (int argc, char *argv[]) {
   } else for (i = optind; i < argc; i++) {
     all_tests(argv[i]);
   }
+  DumpRecords();
   return 0;
 }
