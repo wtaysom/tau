@@ -140,6 +140,12 @@ bool IsEqk (Where_s w, const void *b1, const void *b2, int n) {
   return TRUE;
 }
 
+/* IsFailed: reports failure of expression */
+bool IsFailed (Where_s w, const char *e) {
+  PrErrork(w, " %s", e);
+  return FALSE;
+}
+
 /* CrFile creates a file of specified size and Fills it with data. */
 void CrFile (const char *name, u64 size) {
   u8 buf[BlockSize];

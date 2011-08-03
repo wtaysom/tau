@@ -6,38 +6,38 @@
 /* fcalls wraps the folling functions with verbose printing, error
  * checking, and location information to make it easier to track problems.
  *
- * chdir, fchdir
+ * + chdir, - fchdir
  * chmod
  * chown
- * close
- * creat
- * dup
+ * + close
+ * + creat
+ * + dup, - dup2, - dup3
  * fcntl
  * flock
  * fsync, fdatasync
  * ioctl
  * link
- * lseek
- * mkdir
+ * + lseek
+ * + mkdir
  * mmap, munmap
- * open
- * openat
- * pread, pwrite
- * read, readlink, readlinkat
- * rmdir
+ * + open
+ * + openat
+ * + pread, pwrite
+ * + read, - readlink, - readlinkat
+ * + rmdir
  * stat, fstat, lstat
- * statfs, fstatfs
- * statvfs, fstatvfs
+ * + statfs, fstatfs
+ * + statvfs, fstatvfs
  * symlink
  * sync
- * truncate, ftrancate
- * unlink
- * write
+ * + truncate, ftrancate
+ * + unlink
+ * + write
  *
  * Directory Library Calls
- * closedir
- * opendir
- * readdir
+ * + closedir
+ * + opendir
+ * + readdir
  * rewinddir
  * scandir?
  * seekdir
@@ -144,7 +144,7 @@ static Time_s *find (const char *id) {
 
 /* Record a time interval */
 static void Record (Where_s w, u64 time, const char *id) {
-  printf("%s:%d %lld %s\n", w.file, w.line, time, id);
+//  printf("%s:%d %lld %s\n", w.file, w.line, time, id);
   Time_s *t = find(id);
   t->sum += time;
   ++t->count;
@@ -340,9 +340,9 @@ int dupk (Where_s w, int expected_err, int oldfd) {
 
 int dup2k (Where_s w, int expected_err, int oldfd, int newfd) {
   START;
-  int rc = dup2(oldfd, newfd);
+  int fd = dup2(oldfd, newfd);
   FINISH;
-  return Check(w, rc, expected_err, 0, "dup2(%d, %d)", oldfd, newfd);
+  return Check(w, fd, expected_err, newfd, "dup2(%d, %d)", oldfd, newfd);
 }
 
 #ifdef __linux__

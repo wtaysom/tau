@@ -92,12 +92,14 @@
 
 #define chdirErr(e, p)            chdirk (WHERE, e, p)
 #define closeErr(e, fd)           closek (WHERE, e, fd)
+#define dupErr(e, ofd)            dupk   (WHERE, e, ofd)
 #define lseekErr(e, fd, o, w)     lseekk (WHERE, e, fd, o, w, o)
 #define mkdirErr(e, p, m)         mkdirk (WHERE, e, p, m)
 #define openErr(e, p, f, m)       openk  (WHERE, e, p, f, m)
 #define openatErr(e, fd, p, f, m) openatk(WHERE, e, fd, p, f, m)
 #define readErr(e, fd, b, n)      readk  (WHERE, e, fd, b, n, n)
-#define writeErr(e, fd, b, n)     writek (WHERE, e, fd, b, n, n)
+#define ftruncateErr(e, fd, o)    ftruncatek (WHERE, e, fd, o)
+#define writeErr(e, fd, b, n)     writek     (WHERE, e, fd, b, n, n)
 
 #define lseekCheckOffset(fd, o, w, s) lseekk(WHERE, 0, fd, o, w, s)
 #define readCheckSize(fd, b, n, sz)   readk (WHERE, 0, fd, b, n, sz)
@@ -108,6 +110,8 @@ extern s64 SzBigFile;    /* Size of the "Big File" in bytes */
 
 extern bool Fatal;       /* Exit on unexpected errors */
 extern bool StackTrace;  /* Print a stack trace on error */
+extern bool IsRoot;      /* TRUE if effective uid is root */
+extern bool Flaky;       /* Run flaky tests */
 
 extern char BigFile[];
 extern char EmptyFile[];

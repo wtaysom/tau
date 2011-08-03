@@ -24,9 +24,11 @@ char *Scratch;
 char BigFile[]   = "bigfile";
 char EmptyFile[] = "emptyfile";
 char OneFile[]   = "onefile";
+bool IsRoot;
 
 static bool Randomize = TRUE;
 bool Verbose = FALSE;
+bool Flaky = FALSE;
 snint BlockSize = 4096;
 s64 SzBigFile = (1LL << 32) + (1LL << 13) + 137;
 
@@ -42,6 +44,8 @@ void init_test (char *dir) {
   char *suffix;
 
   if (Randomize) srandom(nsecs());
+  IsRoot = (geteuid() == 0);
+    
   chdir(dir);
   chdirErr(ENOTDIR, "/etc/passwd");
 
@@ -76,9 +80,11 @@ void all_tests (char *dir) {
   void OpenTest(void);
   void OpenatTest(void);
   void RwTest(void);
+  void StatTest(void);
 
   init_test(dir);
 
+  StatTest();
   FsTest();
   OpenTest();
   OpenatTest();
@@ -93,6 +99,9 @@ bool myopt (int c) {
   case 'b':
     BlockSize = strtoll(optarg, NULL, 0);
     break;
+  case 'f':
+    Flaky = TRUE;
+    break;
   case 'r':
     Randomize = FALSE;
     break;
@@ -106,11 +115,13 @@ bool myopt (int c) {
 }
 
 void usage (void) {
-  pr_usage("[-rvh] [<directory>]*\n"
+  pr_usage("[-prvh] [<directory>]*\n"
     "\th - help\n"
     "\tb - Block size [default = %ld]\n"
+    "\tp - Print results\n"
     "\tr - Don't seed random number generator\n"
     "\tv - Verbose - display each file system call\n"
+    "\tf - Flaky - run the flaky tests (may fail)\n"
     "\tz - size of big file [default = 0x%llx]",
     BlockSize, SzBigFile);
 }
@@ -121,7 +132,7 @@ int main (int argc, char *argv[]) {
 
   Option.file_size = SzBigFile;
   Option.dir = ".";
-  punyopt(argc, argv, myopt, "b:rv");
+  punyopt(argc, argv, myopt, "b:frvy");
   SzBigFile = Option.file_size;
 
   if (SzBigFile < 40000) {
@@ -137,6 +148,6 @@ int main (int argc, char *argv[]) {
   } else for (i = optind; i < argc; i++) {
     all_tests(argv[i]);
   }
-  DumpRecords();
+  if (Option.print) DumpRecords();
   return 0;
 }

@@ -5,11 +5,8 @@
 # found in the LICENSE file.
 #
 
-include ../../mk/default.mk
-LIBS += ../../libq.b/$(objdir)/libq
+include ../../mk/multi.mk
+LIBS += ../../libq.b/$(objdir)/libq -lm -lpthread
 ifeq ($(os),Linux)
   LIBS += -lrt
 endif
-
-run:$(opus)
-	$(opus) -pf -z0x10277
