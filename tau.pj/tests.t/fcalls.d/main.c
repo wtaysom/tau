@@ -75,21 +75,17 @@ void cleanup (void) {
 }
 
 void all_tests (char *dir) {
-  void DirTest(void);
-  void FsTest(void);
-  void OpenTest(void);
-  void OpenatTest(void);
-  void RwTest(void);
-  void StatTest(void);
 
   init_test(dir);
 
-  StatTest();
-  FsTest();
-  OpenTest();
-  OpenatTest();
-  RwTest();
-  DirTest();
+  void StatTest(void);   StatTest();
+  void FsTest(void);     FsTest();
+  void OpenTest(void);   OpenTest();
+#if __linux__
+  void OpenatTest(void); OpenatTest();
+#endif
+  void RwTest(void);     RwTest();
+  void DirTest(void);    DirTest();
 
   cleanup();
 }

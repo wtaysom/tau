@@ -20,6 +20,7 @@
 #include "util.h"
 
 void FsTest (void) {
+#ifdef __linux__
   struct statfs s1;
   struct statfs s2;
   struct statvfs v1;
@@ -42,6 +43,7 @@ void FsTest (void) {
     Is(s1.f_namelen == v1.f_namemax);
   }
   close(fd);
+#endif
 }
 
 void StatTest (void) {
@@ -114,8 +116,6 @@ void StatTest (void) {
   fd2 = dupErr(EBADF, fd1);
 
   /* Dup2 - like dup but can pick fd number */
-  char *name2 = RndName(9);
-  CrFile(name2, FILE_SZ);
   fd1 = open(name, O_RDWR | O_TRUNC, 0);
   fd2 = open(name, O_RDONLY, 0);
   fd2 = dup2(fd1, fd2);
@@ -128,8 +128,17 @@ void StatTest (void) {
   close(fd1);
   close(fd2);
 
+  /* Link */
+  char *name2 = RndName(9);
+  link(name, name2);
+  stat(name, &s1);
+  Is(s1.st_nlink == 2);
   unlink(name2);
   free(name2);
+  stat(name, &s1);
+  Is(s1.st_nlink == 1);
+  /* TODO(taysom): need to try 64K links */
+
   unlink(name);
   free(name);
 }

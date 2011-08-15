@@ -27,3 +27,6 @@ LIBS += -lq
 ##	LIBS += -lxyzzy
 ##endif
 #LIBS += -lreadline
+
+run:$(opus)
+	$(opus)

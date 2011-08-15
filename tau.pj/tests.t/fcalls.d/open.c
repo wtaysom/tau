@@ -17,6 +17,8 @@
 #include "util.h"
 
 void OpenTest (void) {
+  int i;
+  void *b;
   char buf[BlockSize];
   char *name = RndName(9);
   CrFile(name, 1377);
@@ -75,10 +77,9 @@ void OpenTest (void) {
   close(fd2);
 
   /* O_DIRECT */
-  int i;
-  void *b;
   int rc = posix_memalign(&b, PAGE_SIZE, PAGE_SIZE);
   if (rc) PrError("posix_memalign:");
+#if __linux__
   fd1 = open(name, O_TRUNC | O_RDWR | O_DIRECT, 0);
   for (i = 0; i < 4; i++) {
     Fill(b, PAGE_SIZE, i * PAGE_SIZE);
@@ -108,6 +109,7 @@ void OpenTest (void) {
     IsSame(b, PAGE_SIZE, i * PAGE_SIZE);
   }
   close(fd1);
+#endif
 
   /* O_SYNC */
   fd1 = open(name, O_TRUNC | O_RDWR | O_SYNC, 0);
@@ -122,13 +124,30 @@ void OpenTest (void) {
   }
   close(fd1);
 
+#if __APPLE__
+  /* O_SHLOCK file locking */
+  fd1 = open(name, O_RDWR | O_SHLOCK, 0);
+  fd2 = open(name, O_RDWR | O_SHLOCK, 0);
+  openErr(EWOULDBLOCK, name, O_RDWR | O_NONBLOCK | O_EXLOCK, 0);
+  close(fd1);
+  close(fd2);
+
+  /* O_EXLOCK */
+  fd1 = open(name, O_RDWR | O_EXLOCK, 0);
+  openErr(EWOULDBLOCK, name, O_RDWR | O_NONBLOCK | O_SHLOCK, 0);
+  close(fd1);
+#endif
+
   free(b);
   unlink(name); 
   free(name);
 }
 
+#if __linux__
 /* OpenatTest does all the same tests as OpenTest but uses openat */
 void OpenatTest (void) {
+  int i;
+  void *b;
   char buf[BlockSize];
   char *dirname = RndName(10);
   char *name = RndName(9);
@@ -192,10 +211,9 @@ void OpenatTest (void) {
   close(fd2);
 
   /* O_DIRECT */
-  int i;
-  void *b;
   int rc = posix_memalign(&b, PAGE_SIZE, PAGE_SIZE);
   if (rc) PrError("posix_memalign:");
+#if __linux__
   fd1 = openat(dirfd, name, O_TRUNC | O_RDWR | O_DIRECT, 0);
   for (i = 0; i < 4; i++) {
     Fill(b, PAGE_SIZE, i * PAGE_SIZE);
@@ -225,6 +243,7 @@ void OpenatTest (void) {
     IsSame(b, PAGE_SIZE, i * PAGE_SIZE);
   }
   close(fd1);
+#endif
 
   /* O_SYNC */
   fd1 = openat(dirfd, name, O_TRUNC | O_RDWR | O_SYNC, 0);
@@ -247,3 +266,4 @@ void OpenatTest (void) {
   free(name);
   free(dirname);
 }
+#endif
