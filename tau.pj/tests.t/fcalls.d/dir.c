@@ -5,6 +5,7 @@
 
 /* Test directory operations
  */
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -130,19 +131,6 @@ static void AuditDir (dir_s *d) {
   for_each_file(d, AuditChild, d);
 }
 
-static void Simple (void) {
-  int num_children = 20;
-  dir_s parent = NilDir;
-
-  parent.name = RndName(10);
-  mkdir(parent.name, 0777);
-  AddChildren(&parent, num_children);
-  AuditDir(&parent);
-  DeleteChildren(&parent);
-  rmdir(parent.name);
-  free(parent.name);
-}
-
 static void SaveTell (DIR *dir, struct dirent *entry, dir_s *parent) {
   file_s *f;
   if (ignore(entry->d_name)) return;
@@ -184,6 +172,126 @@ void SeekTest (void) {
   free(parent.name);
 }
 
+enum { NAME_SIZE = 17 };
+
+typedef struct DirEntry_s DirEntry_s;
+struct DirEntry_s {
+  int type;
+  char *name;
+  DirEntry_s *sibling;
+  DirEntry_s *child;
+};
+
+typedef bool (*walk_f)(DirEntry_s *parent);
+
+static DirEntry_s *CreateDirEntry (int type) {
+  int fd;
+  DirEntry_s *d;
+  d = ezalloc(sizeof(*d));
+  d->name = RndName(NAME_SIZE);
+  d->type = type;
+  switch (type) {
+    case T_FILE:
+      fd = creat(d->name, 0700);
+      close(fd);
+      break;
+    case T_DIR:
+      mkdir(d->name, 0700);
+      break;
+    default:
+      PrError("bad type %d", type);
+      break;
+  }
+  return d;
+}
+
+static void Indent (int indent) {
+  while (indent--) {
+    printf("  ");
+  }
+}
+
+static void PrintTree (DirEntry_s *parent, int indent) {
+  if (!parent) return;
+  Indent(indent);
+  printf("%s %s\n", parent->type == T_DIR ? "D" : "F", parent->name);
+  PrintTree(parent->child, indent + 1);
+  PrintTree(parent->sibling, indent);
+}
+
+static bool WalkTree (DirEntry_s *parent, walk_f f) {
+  bool continue_walking;
+  if (!parent) return TRUE;
+  if (!WalkTree(parent->sibling, f)) return FALSE;
+  if (parent->type == T_DIR) {
+    chdir(parent->name);
+    continue_walking = WalkTree(parent->child, f);
+    chdir("..");
+    if (!continue_walking) return FALSE;
+  }
+  return f(parent);
+}
+
+static bool DeleteDirEntry (DirEntry_s *parent) {
+  switch (parent->type) {
+    case T_FILE:
+      unlink(parent->name);
+      break;
+    case T_DIR:
+      rmdir(parent->name);
+      break;
+    default:
+      PrError("bad type %d", parent->type);
+      break;
+  }
+  return TRUE;
+}
+
+static void DeleteTree (DirEntry_s *parent) {
+  WalkTree(parent, DeleteDirEntry);
+}
+
+static DirEntry_s *CreateTree (int width, int depth, int level) {
+  int i;
+  DirEntry_s *parent;
+  DirEntry_s *child;
+  int type = percent(level * 15) ? T_FILE : T_DIR;
+  parent = CreateDirEntry(type);
+  if ((depth == 0) || (type != T_DIR)) {
+    return parent;
+  }
+  chdir(parent->name);
+  for (i = 0; i < width; i++) {
+    child = CreateTree(width, depth - 1, level + 1);
+    child->sibling = parent->child;
+    parent->child = child;
+  }
+  chdir("..");
+  return parent;
+}
+
+static void TreeTest (void) {
+  DirEntry_s *root;
+  root = CreateTree(4, 9, 0);
+  PrintTree(root, 0);
+  DeleteTree(root);
+}
+
+static void Simple (void) {
+  int num_children = 20;
+  dir_s parent = NilDir;
+
+  parent.name = RndName(10);
+  mkdir(parent.name, 0777);
+  AddChildren(&parent, num_children);
+  AuditDir(&parent);
+  DeleteChildren(&parent);
+  rmdir(parent.name);
+  free(parent.name);
+}
+
 void DirTest (void) {
   Simple();
+  TreeTest();
+//  SeekTest();
 }

@@ -50,6 +50,7 @@ void weprintf  (const char *, ...);
 void *emalloc  (size_t);
 void *ezalloc  (size_t);
 void *erealloc (void *, size_t);
+void *eallocpages (size_t npages, size_t size);
 char *estrdup  (const char *);
 
 void setprogname (const char *);

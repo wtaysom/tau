@@ -3,41 +3,42 @@
  * found in the LICENSE file.
  */
 
-/* fcalls wraps the folling functions with verbose printing, error
- * checking, and location information to make it easier to track problems.
+/* fcalls wraps the folling functions with verbose printing,
+ * error checking, and location information to make it easier
+ * to track problems.
  *
- * + chdir, - fchdir
+ * +chdir -fchdir
  * chmod
- * chown
- * + close
- * + creat
- * + dup, - dup2, - dup3
+ * +chown +fchown
+ * +close
+ * +creat
+ * +dup +dup2 -dup3
  * fcntl
  * flock
- * fsync, fdatasync
+ * fsync fdatasync
  * ioctl
- * link
- * + lseek
- * + mkdir
- * mmap, munmap
- * + open
- * + openat
- * + pread, pwrite
- * + read, - readlink, - readlinkat
- * + rmdir
- * stat, fstat, lstat
- * + statfs, fstatfs
- * + statvfs, fstatvfs
+ * +link
+ * +lseek
+ * +mkdir
+ * mmap munmap
+ * +open
+ * +openat
+ * +pread pwrite
+ * +read -readlink -readlinkat
+ * +rmdir
+ * +stat +fstat lstat
+ * +statfs fstatfs
+ * +statvfs fstatvfs
  * symlink
  * sync
- * + truncate, ftrancate
- * + unlink
- * + write
+ * +truncate ftrancate
+ * +unlink
+ * +write
  *
  * Directory Library Calls
- * + closedir
- * + opendir
- * + readdir
+ * +closedir
+ * +opendir
+ * +readdir
  * rewinddir
  * scandir?
  * seekdir

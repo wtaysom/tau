@@ -190,6 +190,17 @@ void *erealloc (void *vp, size_t n)
 	return p;
 }
 
+/* eallocpages: allocates n pages of specific size */
+void *eallocpages (size_t npages, size_t size) {
+  void *p;
+  int rc = posix_memalign( &p, size, npages * size);
+  if (rc) {
+    eprintf("eallocpages failed %d", rc);
+    return NULL;
+  }
+  return p;
+}
+
 /* estrdup: duplicate a string, report if error */
 char *estrdup (const char *s)
 {

@@ -3,7 +3,7 @@
  * found in the LICENSE file.
  */
 
-/* Measure time to copy memory. I read some where once upon a time that
+/* Measure time to copy memory. Once upon a time, I read some where that
  * memcpy is a good first approximation of kernel performance.
  */
 
@@ -20,8 +20,18 @@
 #include <style.h>
 #include <timer.h>
 
+typedef void *(*memcpy_f)(void *dst, const void *src, size_t count);
+
+struct {
+  bool power10;
+  double scale;
+  char *units;
+  char *legend;
+} Gig = { FALSE, 1000000000.0 / ((double)(1<<30)), "GiB", "Gig = 2**30" };
+
 bool ResourceUsage = FALSE;
-bool UseMemcpy = TRUE;
+bool Bidirectional = TRUE;
+bool Initialize = TRUE;
 
 void PrUsage (struct rusage *r) {
   if (!ResourceUsage) return;
@@ -51,7 +61,42 @@ void PrUsage (struct rusage *r) {
 #endif
 }
 
-void memcpyTest (void) {
+void *memcpyInline (void *dst, const void *src, size_t n) {
+  return memcpy(dst, src, n);
+}
+
+void *memcpySimple (void *dst, const void *src, size_t n) {
+  u8 *d = dst;
+  const u8 *s = src;
+  while (n-- != 0) *d++ = *s++;
+  return dst;
+}
+
+void *memcpy32 (void *dst, const void *src, size_t n) {
+  u32 *d = dst;
+  const u32 *s = src;
+  n /= sizeof(*d);
+  while (n-- != 0) *d++ = *s++;
+  return dst;
+}
+
+void *memcpy64 (void *dst, const void *src, size_t n) {
+  u64 *d = dst;
+  const u64 *s = src;
+  n /= sizeof(*d);
+  while (n-- != 0) *d++ = *s++;
+  return dst;
+}
+
+/* Sets to pseudo random values and insures each page is mapped */
+void initMem (u8 *mem, int n) {
+  u8 a = rand();
+  while (n-- != 0) {
+    *mem++ = a++;
+  }
+}
+
+void memcpyTest (char *test_name, memcpy_f f) {
   struct rusage before;
   struct rusage after;
   u64 start;
@@ -61,61 +106,34 @@ void memcpyTest (void) {
   int n;
   int i;
   int j;
-  printf("memcpy\n");
+  printf("%s (%s)\n", test_name, Gig.legend);
   n = Option.file_size;
   a = emalloc(n);
   b = emalloc(n);
-  for (j = 0; j < Option.loops; j++) {
-    getrusage(RUSAGE_SELF, &before);
-    start = nsecs();
-    for (i = Option.iterations; i > 0; i--) {
-      memcpy(a, b, n);
-    }
-    finish = nsecs();
-    printf("%d. %g GiB/sec\n", j, 1000000000.0 / (double) (1<<30) *
-           (u64)n * (u64)Option.iterations / (double)(finish - start));
-    getrusage(RUSAGE_SELF, &after);
-    PrUsage(&before);
-    PrUsage(&after);
+  if (Initialize) {
+    initMem(a, n);
+    initMem(b, n);
   }
-  free(a);
-  free(b);
-}
-
-void loopTest (void) {
-  struct rusage before;
-  struct rusage after;
-  u64 start;
-  u64 finish;
-  u64 *a;
-  u64 *b;
-  u64 *x;
-  u64 *y;
-  int n;
-  int i;
-  int j;
-  int k;
-  printf("loop (%zdbit words)\n", sizeof(*a) * 8);
-  n = Option.file_size;
-  a = emalloc(n);
-  b = emalloc(n);
   for (j = 0; j < Option.loops; j++) {
     getrusage(RUSAGE_SELF, &before);
     start = nsecs();
     for (i = Option.iterations; i > 0; i--) {
-      x = a;
-      y = b;
-      for (k = n / sizeof(*x); k > 0; k--) {
-        *x++ = *y++;
-      }
+      f(a, b, n);
+      if (Bidirectional) f(b, a, n);
     }
     finish = nsecs();
-    printf("%d. %g GiB/sec\n", j, 1000000000.0 / (double) (1<<30) *
-           (u64)n * Option.iterations / (double)(finish - start));
+    if (Bidirectional) {
+      printf("%d. %g %s/sec\n", j,
+          2.0 * Gig.scale * (n * (u64)Option.iterations) / (double)(finish - start),
+          Gig.units);
+    } else {
+      printf("%d. %g %s/sec\n", j,
+          Gig.scale * (n * (u64)Option.iterations) / (double)(finish - start),
+          Gig.units);
+    }
     getrusage(RUSAGE_SELF, &after);
     PrUsage(&before);
     PrUsage(&after);
-    start = nsecs();
   }
   free(a);
   free(b);
@@ -135,11 +153,11 @@ static void Ready (void) {
 
 void *RunTest (void *arg) {
   Ready();
-  if (UseMemcpy) {
-    memcpyTest();
-  } else {
-    loopTest();
-  }
+  memcpyTest("memcpy", memcpy);
+  memcpyTest("simple", memcpySimple);
+  memcpyTest("inline", memcpyInline);
+  memcpyTest("32bit", memcpy32);
+  memcpyTest("64bit", memcpy32);
   return NULL;
 }
 
@@ -170,8 +188,18 @@ void StartThreads (void)
 
 bool myopt (int c) {
   switch (c) {
-  case 'm':
-    UseMemcpy = FALSE;
+  case 'b':
+    Bidirectional = FALSE;
+    break;
+  case 'g':
+    Gig.power10 = TRUE;
+    Gig.scale   = 1.0;
+    Gig.units   = "GB";
+    Gig.legend  = "Gig = 10**9";
+    break;
+  case 'n':
+    Bidirectional = FALSE;
+    Initialize = FALSE;
     break;
   case 'u':
     ResourceUsage = TRUE;
@@ -183,20 +211,27 @@ bool myopt (int c) {
 }
 
 void usage (void) {
-  pr_usage("-umy -i<iterations> -l<loops> -t<threads> -z<copy size>\n"
+  pr_usage("-bghnu -i<iterations> -l<loops> -t<threads> -z<copy size>\n"
+           "\tb - turn off bi-directional copy\n"
+           "\tg - use Gig == 10**9 [2**30]\n"
            "\th - help\n"
            "\ti - copy buffer i times [%lld]\n"
            "\tl - number of trials to run [%lld]\n"
-           "\tm - use own loop [use memcpy]\n"
+           "\tn - no initialization - for demonstrating shared pages\n"
+           "\t\tAlso sets the -b option\n"
            "\tt - number of threads [%lld]\n"
-           "\tu - resource usage [off]\n"
+           "\tu - print resource usage [off]\n"
            "\tz - size of copy buffer in bytes (can use hex) [0x%llx]",
            Option.iterations, Option.loops,
            Option.numthreads, Option.file_size);
 }
 
 int main (int argc, char *argv[]) {
-  punyopt(argc, argv, myopt, "mu");
+  Option.iterations = 10;
+  Option.loops = 4;
+  Option.file_size = (1<<26);
+  Option.numthreads = 1;
+  punyopt(argc, argv, myopt, "bgnu");
   StartThreads();
   return 0;
 }
