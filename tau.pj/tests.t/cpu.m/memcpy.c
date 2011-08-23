@@ -23,11 +23,10 @@
 typedef void *(*memcpy_f)(void *dst, const void *src, size_t count);
 
 struct {
-  bool power10;
   double scale;
   char *units;
   char *legend;
-} Gig = { FALSE, 1000000000.0 / ((double)(1<<30)), "GiB", "Gig = 2**30" };
+} Gig = { 1000000000.0 / ((double)(1<<30)), "GiB", "Gig = 2**30" };
 
 bool ResourceUsage = FALSE;
 bool Bidirectional = TRUE;
@@ -41,7 +40,7 @@ void PrUsage (struct rusage *r) {
          r->ru_stime.tv_sec,
          r->ru_stime.tv_usec,
          r->ru_minflt);
-#if 0      
+#if 0
                struct timeval ru_utime; /* user time used */
                struct timeval ru_stime; /* system time used */
                long   ru_maxrss;        /* maximum resident set size */
@@ -124,11 +123,13 @@ void memcpyTest (char *test_name, memcpy_f f) {
     finish = nsecs();
     if (Bidirectional) {
       printf("%d. %g %s/sec\n", j,
-          2.0 * Gig.scale * (n * (u64)Option.iterations) / (double)(finish - start),
+          2.0 * Gig.scale * (n * (u64)Option.iterations) /
+              (double)(finish - start),
           Gig.units);
     } else {
       printf("%d. %g %s/sec\n", j,
-          Gig.scale * (n * (u64)Option.iterations) / (double)(finish - start),
+          Gig.scale * (n * (u64)Option.iterations) /
+              (double)(finish - start),
           Gig.units);
     }
     getrusage(RUSAGE_SELF, &after);
@@ -139,8 +140,8 @@ void memcpyTest (char *test_name, memcpy_f f) {
   free(b);
 }
 
-pthread_mutex_t	StartLock = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t	WaitLock = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t StartLock = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t WaitLock = PTHREAD_MUTEX_INITIALIZER;
 int Wait;
 
 static void Ready (void) {
@@ -192,7 +193,6 @@ bool myopt (int c) {
     Bidirectional = FALSE;
     break;
   case 'g':
-    Gig.power10 = TRUE;
     Gig.scale   = 1.0;
     Gig.units   = "GB";
     Gig.legend  = "Gig = 10**9";

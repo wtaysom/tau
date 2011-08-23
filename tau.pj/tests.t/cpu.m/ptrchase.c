@@ -25,10 +25,6 @@ enum { PAGE_SIZE = 1 << 12,
        PAGE_MASK = PAGE_SIZE - 1,
        PRIME = 1610612741 };
 
-typedef struct List_s {
-  qlink_t link;
-} List_s;
-
 struct {
   bool power10;
   double scale;
@@ -40,39 +36,44 @@ u64 NumPages;
 u64 Storage;
 u64 NumPtrs;
 
-static stk_q init_pointers (List_s *p, u64 n) {
-  stk_q head;
-  List_s *atom;
+static void **init_pointers (void **p, u64 n) {
+  void **head;
+  void **atom;
   u64 i, j;
   assert(n % PRIME != 0);
-  init_stk(&head);
+  head = NULL;
   memset(p, 0, n * sizeof(*p));
   for (j = 0, i = 0; j < n; j++, i += PRIME) {
     atom = &p[i % n];
-    assert(!is_qmember(atom->link));
-    push_stk(&head, atom, link);
+    assert(!*atom);
+    *atom = head;
+    head = atom;
   }
   return head;
 }
 
-void chase (stk_q head)
+void chase (void **head)
 {
+  int i;
   u64 start;
   u64 finish;
-  qlink_t *next;
+  void **next;
   start = nsecs();
-  next = head.top;
-  while (next) {
-    next = next->next;
+  for (i = Option.iterations; i > 0; i--) {
+    next = *head;
+    while (next) {
+      next = *next;
+    }
   }
   finish = nsecs();
-  printf("%lld nsecs\n", finish - start);
+  printf("%g nsecs/ptr\n", (double)(finish - start) /
+                           (double)( Option.iterations * NumPtrs));
 }
 
 void chaseTest (void) {
-  stk_q head;
-  List_s *p = eallocpages(NumPages, PAGE_SIZE);
-  head = init_pointers(p, NumPages * PAGE_SIZE / sizeof(List_s));
+  void **head;
+  void **p = eallocpages(NumPages, PAGE_SIZE);
+  head = init_pointers(p, NumPages * PAGE_SIZE / sizeof(void *));
   chase(head);
 }
 
