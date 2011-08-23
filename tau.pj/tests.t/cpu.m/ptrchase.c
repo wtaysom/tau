@@ -16,6 +16,7 @@
 
 #include <debug.h>
 #include <eprintf.h>
+#include <mystdlib.h>
 #include <puny.h>
 #include <q.h>
 #include <style.h>
@@ -25,25 +26,18 @@ enum { PAGE_SIZE = 1 << 12,
        PAGE_MASK = PAGE_SIZE - 1,
        PRIME = 1610612741 };
 
-struct {
-  bool power10;
-  double scale;
-  char *units;
-  char *legend;
-} Gig = { FALSE, 1000000000.0 / ((double)(1<<30)), "GiB", "Gig = 2**30" };
-
 u64 NumPages;
 u64 Storage;
 u64 NumPtrs;
 
-static void **init_pointers (void **p, u64 n) {
+static void **init_pointers (void **p, u64 n, u64 step) {
   void **head;
   void **atom;
   u64 i, j;
   assert(n % PRIME != 0);
   head = NULL;
   memset(p, 0, n * sizeof(*p));
-  for (j = 0, i = 0; j < n; j++, i += PRIME) {
+  for (j = 0, i = 0; j < n; j++, i += step) {
     atom = &p[i % n];
     assert(!*atom);
     *atom = head;
@@ -52,7 +46,47 @@ static void **init_pointers (void **p, u64 n) {
   return head;
 }
 
-void chase (void **head)
+static void **init_rand_pointers (void **p, u64 n) {
+  void **head;
+  void **atom;
+  u32 *avail;
+  u32 k;
+  u64 i, j;
+  assert(n % PRIME != 0);
+  avail = emalloc(n * sizeof(u32));
+  for (i = 0; i < n; i++) {
+    avail[i] = i;
+  }
+  head = NULL;
+  memset(p, 0, n * sizeof(*p));
+  for (j = 0, i = n; j < n; j++) {
+    k = urand(i);
+    atom = &p[avail[k]];
+    avail[k] = avail[--i];
+    assert(!*atom);
+    *atom = head;
+    head = atom;
+  }
+  return head;
+}
+
+static void **init_seq_pointers (void **p, u64 n) {
+  void **head;
+  void **atom;
+  u64 i, j;
+  assert(n % PRIME != 0);
+  head = NULL;
+  memset(p, 0, n * sizeof(*p));
+  for (j = 0, i = n - 1; j < n; j++, i--) {
+    atom = &p[i];
+    assert(!*atom);
+    *atom = head;
+    head = atom;
+  }
+  return head;
+}
+
+void chase (const char *label, void **head)
 {
   int i;
   u64 start;
@@ -66,15 +100,22 @@ void chase (void **head)
     }
   }
   finish = nsecs();
-  printf("%g nsecs/ptr\n", (double)(finish - start) /
-                           (double)( Option.iterations * NumPtrs));
+  printf("%8s %g nsecs/ptr\n", label,
+         (double)(finish - start) /
+             (double)( Option.iterations * NumPtrs));
 }
 
 void chaseTest (void) {
   void **head;
   void **p = eallocpages(NumPages, PAGE_SIZE);
-  head = init_pointers(p, NumPages * PAGE_SIZE / sizeof(void *));
-  chase(head);
+  head = init_seq_pointers(p, NumPtrs);
+  chase("seq", head);
+  head = init_rand_pointers(p, NumPtrs);
+  chase("rand", head);
+  head = init_pointers(p, NumPtrs, PRIME);
+  chase("prime", head);
+  head = init_pointers(p, NumPtrs, 1);
+  chase("back", head);
 }
 
 pthread_mutex_t	StartLock = PTHREAD_MUTEX_INITIALIZER;
@@ -122,12 +163,6 @@ void StartThreads (void)
 
 bool myopt (int c) {
   switch (c) {
-  case 'g':
-    Gig.power10 = TRUE;
-    Gig.scale   = 1.0;
-    Gig.units   = "GB";
-    Gig.legend  = "Gig = 10**9";
-    break;
   default:
     return FALSE;
   }
@@ -136,7 +171,6 @@ bool myopt (int c) {
 
 void usage (void) {
   pr_usage("-gh -i<iterations> -l<loops> -t<threads> -z<copy size>\n"
-           "\tg - use Gig == 10**9 [2**30]\n"
            "\th - help\n"
            "\ti - copy buffer i times [%lld]\n"
            "\tl - number of trials to run [%lld]\n"
@@ -149,7 +183,7 @@ void usage (void) {
 int main (int argc, char *argv[]) {
   Option.iterations = 10;
   Option.loops = 4;
-  Option.file_size = (1<<12);
+  Option.file_size = (1<<12);  /* Using file_size for num pages */
   Option.numthreads = 1;
   punyopt(argc, argv, myopt, "g");
   NumPages = Option.file_size;
