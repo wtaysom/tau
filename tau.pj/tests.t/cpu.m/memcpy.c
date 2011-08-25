@@ -36,9 +36,9 @@ void PrUsage (struct rusage *r) {
   if (!ResourceUsage) return;
   printf("utime = %ld.%06ld stime = %ld.%06ld minflt = %ld\n",
          r->ru_utime.tv_sec,
-         r->ru_utime.tv_usec,
+         (long)r->ru_utime.tv_usec,
          r->ru_stime.tv_sec,
-         r->ru_stime.tv_usec,
+         (long)r->ru_stime.tv_usec,
          r->ru_minflt);
 #if 0
                struct timeval ru_utime; /* user time used */

@@ -58,10 +58,17 @@
  * zero can be used to measure the overhead of the loop.
  */
 
-#define DEBUG	0
-#define SPIN	0
-#define MUTEX	0
-#define TSPIN	1
+#if __APPLE__
+  #define DEBUG	0
+  #define SPIN	0
+  #define MUTEX	1
+  #define TSPIN	0
+#else
+  #define DEBUG	0
+  #define SPIN	0
+  #define MUTEX	0
+  #define TSPIN	1
+#endif
 
 #if SPIN
 	#include <spinlock.h>
@@ -86,7 +93,7 @@
 
 typedef struct arg_s {
 	char	name[128];
-	pthread_t	id;
+	uint	id;
 } arg_s;
 
 typedef struct lock_s {
