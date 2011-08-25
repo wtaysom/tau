@@ -27,8 +27,8 @@ enum { PAGE_SIZE = 1 << 12,
        PRIME = 1610612741 };
 
 u64 NumPages;
-u64 Storage;
 u64 NumPtrs;
+u64 StepSize = 10;
 
 static void **init_pointers (void **p, u64 n, u64 step) {
   void **head;
@@ -86,36 +86,46 @@ static void **init_seq_pointers (void **p, u64 n) {
   return head;
 }
 
-void chase (const char *label, void **head)
+void chase (const char *label, void **head, u64 n, u64 iter)
 {
   int i;
   u64 start;
   u64 finish;
   void **next;
   start = nsecs();
-  for (i = Option.iterations; i > 0; i--) {
+  for (i = iter; i > 0; i--) {
     next = *head;
     while (next) {
       next = *next;
     }
   }
   finish = nsecs();
-  printf("%8s %g nsecs/ptr\n", label,
+  printf("%12lld %8s %#6.4g nsecs/ptr\n", n, label,
          (double)(finish - start) /
-             (double)( Option.iterations * NumPtrs));
+             (double)(iter * n));
 }
 
 void chaseTest (void) {
+  u64 n = 1;
+  u64 iter = NumPtrs * Option.iterations;
   void **head;
   void **p = eallocpages(NumPages, PAGE_SIZE);
-  head = init_seq_pointers(p, NumPtrs);
-  chase("seq", head);
-  head = init_rand_pointers(p, NumPtrs);
-  chase("rand", head);
-  head = init_pointers(p, NumPtrs, PRIME);
-  chase("prime", head);
-  head = init_pointers(p, NumPtrs, 1);
-  chase("back", head);
+  for (n = 1;;) {
+    printf("\n");
+    head = init_seq_pointers(p, n);
+    chase("seq", head, n, iter);
+    head = init_pointers(p, n, 1);
+    chase("back", head, n, iter);
+    head = init_rand_pointers(p, n);
+    chase("rand", head, n, iter);
+    head = init_pointers(p, n, PRIME);
+    chase("prime", head, n, iter);
+    if (n == NumPtrs) break;
+    n *= StepSize;
+    if (n > NumPtrs) n = NumPtrs;
+    iter /= StepSize;
+    if (iter == 0) iter = 1;
+  }
 }
 
 pthread_mutex_t	StartLock = PTHREAD_MUTEX_INITIALIZER;
@@ -170,25 +180,22 @@ bool myopt (int c) {
 }
 
 void usage (void) {
-  pr_usage("-gh -i<iterations> -l<loops> -t<threads> -z<copy size>\n"
+  pr_usage("-gh -i<iterations> -t<threads> -z<copy size>\n"
            "\th - help\n"
            "\ti - copy buffer i times [%lld]\n"
-           "\tl - number of trials to run [%lld]\n"
            "\tt - number of threads [%lld]\n"
-           "\tz - numbers of pages (can use hex) [0x%llx]",
-           Option.iterations, Option.loops,
-           Option.numthreads, Option.file_size);
+           "\tz - number of pointers (can use hex) [%lld]",
+           Option.iterations, Option.numthreads, Option.file_size);
 }
 
 int main (int argc, char *argv[]) {
   Option.iterations = 10;
   Option.loops = 4;
-  Option.file_size = (1<<12);  /* Using file_size for num pages */
+  Option.file_size = 10000000;  /* Number of pointers to use */
   Option.numthreads = 1;
   punyopt(argc, argv, myopt, "g");
-  NumPages = Option.file_size;
-  Storage  = NumPages * PAGE_SIZE;
-  NumPtrs  = Storage / sizeof(void *);
+  NumPtrs = Option.file_size;
+  NumPages = (NumPtrs * sizeof(void *) + PAGE_SIZE - 1) / PAGE_SIZE;
   StartThreads();
   return 0;
 }
