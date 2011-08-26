@@ -368,6 +368,11 @@ if (i >= 596) {
   Option.print = TRUE;
 printf("=========%d======\n", i);
 }
+if (i > 598) {
+  fdebugoff();
+  Option.debug = FALSE;
+  Option.print = FALSE;
+}
     if (should_delete(count, level)) {
       key = r_delete_rand();
 if (Option.print) {

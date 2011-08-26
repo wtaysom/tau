@@ -215,7 +215,10 @@ void usage(void) {
 
 int main(int argc, char *argv[]) {
   uint8_t *p;
-  posix_memalign((void **)&p, 4096, BUFFER_SIZE * 4);
+  int rc = posix_memalign((void **)&p, 4096, BUFFER_SIZE * 4);
+  if (rc) {
+    fatal("posix_memalign %d", rc);
+  }
   testbuffer8_1w = p + 0 * BUFFER_SIZE;
   testbuffer8_1r = p + 1 * BUFFER_SIZE;
   testbuffer8_2w = p + 2 * BUFFER_SIZE;

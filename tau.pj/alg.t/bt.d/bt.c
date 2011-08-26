@@ -1256,6 +1256,78 @@ FN;
   return TRUE;
 }
 
+int lf_rebalance(Op_s *op)
+{
+FN;
+  Head_s *parent  = op->parent->d;
+  Head_s *child   = op->child->d;
+  Head_s *sibling = op->sibling->d;
+  int i;
+
+  lf_compact(child);
+  for (i = 0; ;i++) {
+    //XXX: May want to move more to the left
+    // to compact things. For random, that might
+    // be an interesting experiment.
+    // May need to compact
+    // Compacting first, certainly simplified things
+    // Can I do a quick check for compaction? I think
+    // so. That would simplify a lot of things.
+    // Need to check if we even have room for the
+    // record. They are variable length after all.
+
+    lf_rec_move(child, child->num_recs, sibling, 0);
+    if (child->free <= sibling->free) break;
+  }
+  br_del_rec(parent, op->irec);
+  br_reinsert(op);
+  return 0;
+}
+
+/* br_rebalance - rebalances children that are branches
+ *
+ * Get key from parent and block from child.last and append to child.
+ * Get a record from sibling
+ * If done - store key in parent and last in child
+ *  else - store in child
+ */
+int br_rebalance(Op_s *op)
+{
+FN;
+  Head_s *parent  = op->parent->d;
+  Head_s *child   = op->child->d;
+  Head_s *sibling = op->sibling->d;
+  u64 twigblock;
+  Twig_s twig;
+  int i;
+
+  br_compact(child);
+  twig = get_twig(parent, op->irec);
+  twigblock = twig.block;
+  twig.block = child->last;
+  store_twig(child, twig, child->num_recs);
+  br_del_rec(parent, op->irec);
+  for (;;) {
+    twig = get_twig(sibling, 0);
+    if (child->free <= sibling->free) break;
+    store_twig(child, twig, child->num_recs);
+    br_del_rec(sibling, 0);
+  }
+  child->last = twig.block;
+  twig.block = twigblock;
+  store_twig(parent, twig, op->irec);
+  
+  if (TRUE) return 0;
+  for (i = 0; ;i++) {
+    //XXX: see comments above.
+    br_rec_move(child, child->num_recs, sibling, 0);
+    if (child->free <= sibling->free) break;
+  }
+  br_del_rec(parent, op->irec);
+  br_reinsert(op);
+  return 0;
+}
+
 int rebalance(Op_s *op)
 {
 FN;
@@ -1264,7 +1336,6 @@ FN;
   Head_s *sibling;
   u64 block;
   int y;
-  int i;
 
   if (op->irec == parent->num_recs) {
     /* No right sibling */
@@ -1287,37 +1358,11 @@ FN;
     return 0;
   }
   if (child->kind == LEAF) {
-    lf_compact(child);
-    for (i = 0; ;i++) {
-      //XXX: May want to move more to the left
-      // to compact things. For random, that might
-      // be an interesting experiment.
-      // May need to compact
-      // Compacting first, certainly simplified things
-      // Can I do a quick check for compaction? I think
-      // so. That would simplify a lot of things.
-      // Need to check if we even have room for the
-      // record. They are variable length after all.
-
-      lf_rec_move(child, child->num_recs, sibling, 0);
-      if (child->free <= sibling->free) break;
-    }
+    lf_rebalance(op);
   } else {
-    // Have to manage moving the record the key that represents
-    // the split. The last record adds an extra complication
-    // This is really getting complicated. I'm going to need
-    // a state chart. I'm not sure supporting last is really
-    // that good of an idea. We didn't in NSS.
-    br_compact(child);
-    for (i = 0; ;i++) {
-      //XXX: see comments above.
-      br_rec_move(child, child->num_recs, sibling, 0);
-      if (child->free <= sibling->free) break;
-    }
+    br_rebalance(op);
   }
   buf_put(&op->sibling);
-  br_del_rec(parent, op->irec);
-  br_reinsert(op);
   return 0;
 }
 
