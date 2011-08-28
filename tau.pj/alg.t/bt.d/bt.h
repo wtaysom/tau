@@ -25,7 +25,7 @@ typedef struct Rec_s {
 
 typedef struct Btree_s Btree_s;
 
-typedef int (*Apply_f)(Rec_s rec, void *user);
+typedef int (*Apply_f)(Rec_s rec, Btree_s *t, void *user);
 
 typedef struct Stat_s {
   u64 new_leaves;

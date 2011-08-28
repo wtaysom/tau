@@ -92,6 +92,7 @@ typedef struct Audit_s {
 
 typedef struct Apply_s {
   Apply_f func;
+  Btree_s *tree;
   void *user;
 } Apply_s;
 
@@ -120,11 +121,12 @@ void pr_node(Head_s *head);
 
 bool Dump_buf = FALSE;
 
-static inline Apply_s mk_apply(Apply_f func, void *user)
+static inline Apply_s mk_apply(Apply_f func, Btree_s *t, void *user)
 {
   Apply_s a;
 
   a.func = func;
+  a.tree = t;
   a.user = user;
   return a;
 }
@@ -1316,6 +1318,7 @@ FN;
   child->last = twig.block;
   twig.block = twigblock;
   store_twig(parent, twig, op->irec);
+  br_del_rec(sibling, 0);
   
   if (TRUE) return 0;
   for (i = 0; ;i++) {
@@ -1707,7 +1710,7 @@ static int lf_map(Buf_s *node, Apply_s apply)
 
   for (i = 0; i < head->num_recs; i++) {
     rec = get_rec(head, i);
-    rc = apply.func(rec, apply.user);
+    rc = apply.func(rec, apply.tree, apply.user);
     if (rc) return rc;
   }
   if (head->is_split) {
@@ -1758,20 +1761,21 @@ static int node_map(Btree_s *t, u64 block, Apply_s apply)
 
 int t_map(Btree_s *t, Apply_f func, void *user)
 {
-  Apply_s apply = mk_apply(func, user);
+  Apply_s apply = mk_apply(func, t, user);
   int rc = node_map(t, t->root, apply);
   cache_balanced(t->cache);
   return rc;
 }
 
-static int rec_audit (Rec_s rec, void *user) {
+static int rec_audit (Rec_s rec, Btree_s *t, void *user) {
   Lump_s *old = user;
 
-  if (cmplump(rec.key, *old) < 0) {
+  if (cmplump(rec.key, *old) <= 0) {
     pr_lump(rec.key);
-    printf(" < ");
+    printf(" <= ");
     pr_lump(*old);
     printf("  ");
+t_dump(t);
     fatal("keys out of order");
     return FAILURE;
   }

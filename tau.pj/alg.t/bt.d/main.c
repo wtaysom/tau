@@ -103,7 +103,7 @@ void pr_lump (Lump_s a) {
   }
 }
 
-static int pr_rec (Rec_s rec, void *user) {
+static int pr_rec (Rec_s rec, Btree_s *t, void *user) {
   u64 *recnum = user;
 
   printf("%4lld. ", ++*recnum);
@@ -362,13 +362,13 @@ void test_level(int n, int level)
   if (FALSE) seed_random();
   t = t_new(".tfile", NUM_BUFS);
   for (i = 0; i < n; i++) {
-if (i >= 596) {
+if (i >= 595) {
   fdebugon();
   Option.debug = TRUE;
   Option.print = TRUE;
 printf("=========%d======\n", i);
 }
-if (i > 598) {
+if (i > 596) {
   fdebugoff();
   Option.debug = FALSE;
   Option.print = FALSE;
@@ -397,6 +397,7 @@ if (Option.print) {
           key.d, val.d);
       ++count;
     }
+    t_audit(t);
   }
   t_audit(t);
   pr_stats(t);
