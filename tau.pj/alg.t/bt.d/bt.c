@@ -24,7 +24,7 @@
 // 6. Transactions
 // 7. Dependency graph
 // 8. Global statistics - buffers
-// 9. Join
+// *9. Join
 // *10. Rebalance
 // 11. Prefix optimization
 // 12. Optimistic concurrency control - this is for the read path, if
@@ -93,6 +93,7 @@ typedef struct Audit_s {
 typedef struct Apply_s {
   Apply_f func;
   Btree_s *tree;
+  void *sys;
   void *user;
 } Apply_s;
 
@@ -103,8 +104,6 @@ typedef struct Op_s {
   Buf_s *sibling;
   int irec;  /* Record index */
   Rec_s r;
-  //Lump_s key;
-  //Lump_s val;
   Err_s err;
 } Op_s;
 
@@ -121,12 +120,13 @@ void pr_node(Head_s *head);
 
 bool Dump_buf = FALSE;
 
-static inline Apply_s mk_apply(Apply_f func, Btree_s *t, void *user)
+static inline Apply_s mk_apply(Apply_f func, Btree_s *t, void *sys, void *user)
 {
   Apply_s a;
 
   a.func = func;
   a.tree = t;
+  a.sys  = sys;
   a.user = user;
   return a;
 }
@@ -286,11 +286,6 @@ Lump_s get_key (Head_s *head, unint i)
   unint x;
   u8 *start;
 
-if (i >= head->num_recs) {
-  PRd(i);
-  PRd(head->num_recs);
-  pr_node(head);
-}
   assert(i < head->num_recs);
   x = head->rec[i];
   assert(x < SZ_BUF);
@@ -351,7 +346,6 @@ FN;
   u8 *start;
   unint key_size;
 
-if (head->kind != BRANCH) PRd(head->block);
   assert(head->kind == BRANCH);
   assert(a < head->num_recs);
   x = head->rec[a];
@@ -800,7 +794,7 @@ FN;
   lf_del_rec(src, j);
 }
 
-void br_del_rec(Head_s *head, unint i)
+void br_twig_del(Head_s *head, unint i)
 {
 FN;
   Lump_s key;
@@ -818,7 +812,7 @@ FN;
   BR_AUDIT(head);
 }
 
-void br_rec_copy(Head_s *dst, int i, Head_s *src, int j)
+void br_twig_copy(Head_s *dst, int i, Head_s *src, int j)
 {
 FN;
   Twig_s twig;
@@ -828,12 +822,11 @@ FN;
   store_twig(dst, twig, i);
 }
 
-void br_rec_move(Head_s *dst, int i, Head_s *src, int j)
+void br_twig_move(Head_s *dst, int i, Head_s *src, int j)
 {
 FN;
-  Twig_s twig = get_twig(src, j);
-  store_twig(dst, twig, i);
-  br_del_rec(src, j);
+  br_twig_copy(dst, i, src, j);
+  br_twig_del(src, j);
 }
 
 Buf_s *node_new(Btree_s *t, u8 kind)
@@ -861,11 +854,11 @@ FN;
 Buf_s *lf_split(Buf_s *bchild)
 {
 FN;
-  Head_s *child    = bchild->d;
-  Btree_s *t        = bchild->user;
+  Head_s *child   = bchild->d;
+  Btree_s *t      = bchild->user;
   Buf_s *bsibling = lf_new(t);
-  Head_s *sibling  = bsibling->d;
-  int middle    = (child->num_recs + 1) / 2;
+  Head_s *sibling = bsibling->d;
+  int middle      = (child->num_recs + 1) / 2;
   int i;
 
   LF_AUDIT(child);
@@ -885,7 +878,7 @@ int lf_insert(Op_s *op)
 FN;
   Buf_s *right;
   Head_s *leaf = op->child->d;
-  int size  = op->r.key.size + op->r.val.size + SZ_LEAF_OVERHEAD;
+  int size     = op->r.key.size + op->r.val.size + SZ_LEAF_OVERHEAD;
   int i;
 
   LF_AUDIT(leaf);
@@ -928,7 +921,7 @@ FN;
     child->last = 0;
   } else {
     child->last = get_block(child, child->num_recs - 1);
-    br_del_rec(child, child->num_recs - 1);
+    br_twig_del(child, child->num_recs - 1);
   }
   child->is_split = FALSE;
   op->tree->root = parent->block;
@@ -950,7 +943,7 @@ FN;
   sibling = op->sibling->d;
   BR_AUDIT(parent);
   for (i = 0; middle < parent->num_recs; i++) {
-    br_rec_move(sibling, i, parent, middle);
+    br_twig_move(sibling, i, parent, middle);
   }
   sibling->last = parent->last;
   parent->num_recs = middle;
@@ -1036,7 +1029,7 @@ FN;
   store_twig(parent, twig, op->irec);
   if (child->kind == BRANCH) {
     child->last = get_block(child, child->num_recs - 1);
-    br_del_rec(child, child->num_recs - 1);
+    br_twig_del(child, child->num_recs - 1);
   } else {
     child->last = 0;
   }
@@ -1198,7 +1191,6 @@ int lf_delete(Op_s *op)
 FN;
     i = find_eq(child, op->r.key);
     if (i == -1) {
-PRlp(op->r.key);
       return ERR(BT_ERR_NOT_FOUND);
     }
     if (i == child->num_recs) {
@@ -1245,12 +1237,12 @@ FN;
     }
     br_compact(sibling);
     for (i = 0; child->num_recs; i++) {
-      br_rec_move(sibling, i, child, 0);
+      br_twig_move(sibling, i, child, 0);
     }
     twig.block = child->last;
     store_twig(sibling, twig, i);
   }
-  br_del_rec(parent, op->irec);
+  br_twig_del(parent, op->irec);
   buf_free(&op->child);
   op->child = op->sibling;
   op->sibling = NULL;
@@ -1268,20 +1260,10 @@ FN;
 
   lf_compact(child);
   for (i = 0; ;i++) {
-    //XXX: May want to move more to the left
-    // to compact things. For random, that might
-    // be an interesting experiment.
-    // May need to compact
-    // Compacting first, certainly simplified things
-    // Can I do a quick check for compaction? I think
-    // so. That would simplify a lot of things.
-    // Need to check if we even have room for the
-    // record. They are variable length after all.
-
     lf_rec_move(child, child->num_recs, sibling, 0);
     if (child->free <= sibling->free) break;
   }
-  br_del_rec(parent, op->irec);
+  br_twig_del(parent, op->irec);
   br_reinsert(op);
   return 0;
 }
@@ -1301,33 +1283,23 @@ FN;
   Head_s *sibling = op->sibling->d;
   u64 twigblock;
   Twig_s twig;
-  int i;
 
   br_compact(child);
   twig = get_twig(parent, op->irec);
   twigblock = twig.block;
   twig.block = child->last;
   store_twig(child, twig, child->num_recs);
-  br_del_rec(parent, op->irec);
+  br_twig_del(parent, op->irec);
   for (;;) {
     twig = get_twig(sibling, 0);
     if (child->free <= sibling->free) break;
     store_twig(child, twig, child->num_recs);
-    br_del_rec(sibling, 0);
+    br_twig_del(sibling, 0);
   }
   child->last = twig.block;
   twig.block = twigblock;
   store_twig(parent, twig, op->irec);
-  br_del_rec(sibling, 0);
-  
-  if (TRUE) return 0;
-  for (i = 0; ;i++) {
-    //XXX: see comments above.
-    br_rec_move(child, child->num_recs, sibling, 0);
-    if (child->free <= sibling->free) break;
-  }
-  br_del_rec(parent, op->irec);
-  br_reinsert(op);
+  br_twig_del(sibling, 0);
   return 0;
 }
 
@@ -1353,13 +1325,9 @@ FN;
   op->sibling = buf_get(op->tree->cache, block);
   sibling = op->sibling->d;
 
-  if (TRUE && join(op)) return 0;
+  if (join(op)) return 0;
 
-  if (sibling->num_recs == 0) {
-    //XXX: should delete it
-    buf_put(&op->sibling);
-    return 0;
-  }
+  assert(sibling->num_recs > 0);
   if (child->kind == LEAF) {
     lf_rebalance(op);
   } else {
@@ -1594,7 +1562,7 @@ bool pr_twig (Head_s *head, unint i)
   size |= (*start++) << 8;
   if (x + size >= SZ_BUF) {
     printf("key size at %ld offset %ld is too big %ld\n",
-      i, x, size);
+           i, x, size);
     return FALSE;
   }
   printf(" %4ld, %4ld:", x, size);
@@ -1759,9 +1727,9 @@ static int node_map(Btree_s *t, u64 block, Apply_s apply)
   return rc;
 }
 
-int t_map(Btree_s *t, Apply_f func, void *user)
+int t_map(Btree_s *t, Apply_f func, void *sys, void *user)
 {
-  Apply_s apply = mk_apply(func, t, user);
+  Apply_s apply = mk_apply(func, t, sys, user);
   int rc = node_map(t, t->root, apply);
   cache_balanced(t->cache);
   return rc;
@@ -1854,7 +1822,7 @@ static int node_audit(Btree_s *t, u64 block, Audit_s *audit)
 int t_audit (Btree_s *t) {
   Audit_s audit = { 0 };
   Lump_s old = Nil;
-  int rc = t_map(t, rec_audit, &old);
+  int rc = t_map(t, rec_audit, NULL, &old);
 
   if (rc) {
     printf("AUDIT FAILED %d\n", rc);

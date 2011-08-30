@@ -44,7 +44,7 @@ int      t_insert(Btree_s *t, Lump_s key, Lump_s val);
 int      t_find(Btree_s *t, Lump_s key, Lump_s *val);
 int      t_delete(Btree_s *t, Lump_s key);
 void     pr_all_records(Btree_s *t);
-int      t_map(Btree_s *t, Apply_f func, void *user);
+int      t_map(Btree_s *t, Apply_f func, void *sys, void *user);
 int      t_audit(Btree_s *t);
 Stat_s   t_get_stats(Btree_s *t);
 

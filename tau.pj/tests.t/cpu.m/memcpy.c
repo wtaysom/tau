@@ -26,14 +26,14 @@ struct {
   double scale;
   char *units;
   char *legend;
-} Gig = { 1000000000.0 / ((double)(1<<30)), "GiB", "Gig = 2**30" };
+} gig = { 1000000000.0 / ((double)(1<<30)), "GiB", "Gig = 2**30" };
 
-bool ResourceUsage = FALSE;
-bool Bidirectional = TRUE;
-bool Initialize = TRUE;
+u8 resource_usage = FALSE;
+u8 bidirectional = TRUE;
+u8 init_buffers = TRUE;
 
 void PrUsage (struct rusage *r) {
-  if (!ResourceUsage) return;
+  if (!resource_usage) return;
   printf("utime = %ld.%06ld stime = %ld.%06ld minflt = %ld\n",
          r->ru_utime.tv_sec,
          (long)r->ru_utime.tv_usec,
@@ -60,7 +60,7 @@ void PrUsage (struct rusage *r) {
 #endif
 }
 
-void *memcpyInline (void *dst, const void *src, size_t n) {
+void *memcpyGlibc (void *dst, const void *src, size_t n) {
   return memcpy(dst, src, n);
 }
 
@@ -105,11 +105,11 @@ void memcpyTest (char *test_name, memcpy_f f) {
   int n;
   int i;
   int j;
-  printf("%s (%s)\n", test_name, Gig.legend);
+  printf("%s (%s)\n", test_name, gig.legend);
   n = Option.file_size;
   a = emalloc(n);
   b = emalloc(n);
-  if (Initialize) {
+  if (init_buffers) {
     initMem(a, n);
     initMem(b, n);
   }
@@ -118,19 +118,19 @@ void memcpyTest (char *test_name, memcpy_f f) {
     start = nsecs();
     for (i = Option.iterations; i > 0; i--) {
       f(a, b, n);
-      if (Bidirectional) f(b, a, n);
+      if (bidirectional) f(b, a, n);
     }
     finish = nsecs();
-    if (Bidirectional) {
+    if (bidirectional) {
       printf("%d. %g %s/sec\n", j,
-          2.0 * Gig.scale * (n * (u64)Option.iterations) /
+          2.0 * gig.scale * (n * (u64)Option.iterations) /
               (double)(finish - start),
-          Gig.units);
+          gig.units);
     } else {
       printf("%d. %g %s/sec\n", j,
-          Gig.scale * (n * (u64)Option.iterations) /
+          gig.scale * (n * (u64)Option.iterations) /
               (double)(finish - start),
-          Gig.units);
+          gig.units);
     }
     getrusage(RUSAGE_SELF, &after);
     PrUsage(&before);
@@ -156,9 +156,9 @@ void *RunTest (void *arg) {
   Ready();
   memcpyTest("memcpy", memcpy);
   memcpyTest("simple", memcpySimple);
-  memcpyTest("inline", memcpyInline);
+  memcpyTest("glibc", memcpyGlibc);
   memcpyTest("32bit", memcpy32);
-  memcpyTest("64bit", memcpy32);
+  memcpyTest("64bit", memcpy64);
   return NULL;
 }
 
@@ -190,19 +190,19 @@ void StartThreads (void)
 bool myopt (int c) {
   switch (c) {
   case 'b':
-    Bidirectional = FALSE;
+    bidirectional = FALSE;
     break;
   case 'g':
-    Gig.scale   = 1.0;
-    Gig.units   = "GB";
-    Gig.legend  = "Gig = 10**9";
+    gig.scale   = 1.0;
+    gig.units   = "GB";
+    gig.legend  = "Gig = 10**9";
     break;
   case 'n':
-    Bidirectional = FALSE;
-    Initialize = FALSE;
+    bidirectional = FALSE;
+    init_buffers = FALSE;
     break;
   case 'u':
-    ResourceUsage = TRUE;
+    resource_usage = TRUE;
     break;
   default:
     return FALSE;

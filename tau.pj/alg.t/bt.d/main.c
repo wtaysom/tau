@@ -118,15 +118,15 @@ void pr_tree (Btree_s *t) {
   u64 recnum = 0;
 
   printf("******************************\n");
-  t_map(t, pr_rec, &recnum);
+  t_map(t, pr_rec, NULL, &recnum);
 }
 
 void pr_stats (Btree_s *t) {
   Stat_s stat = t_get_stats(t);
   u64 records = stat.insert - stat.delete;
 
-  printf("Num leaves       = %8lld\n", stat.new_leaves);
-  printf("Num branches     = %8lld\n", stat.new_branches);
+  printf("Num new leaves   = %8lld\n", stat.new_leaves);
+  printf("Num new branches = %8lld\n", stat.new_branches);
   printf("Num split leaf   = %8lld\n", stat.split_leaf);
   printf("Num split branch = %8lld\n", stat.split_branch);
   printf("Num insert       = %8lld\n", stat.insert);
@@ -350,6 +350,25 @@ int should_delete(s64 count, s64 level)
   return (random() & MASK) * count / level / RANGE;
 }
 
+#if 0
+if (i >= 595) {
+  fdebugon();
+  Option.debug = TRUE;
+  Option.print = TRUE;
+printf("=========%d======\n", i);
+}
+if (i > 596) {
+  fdebugoff();
+  Option.debug = FALSE;
+  Option.print = FALSE;
+}
+if (Option.print) {
+  printf("delete\n");
+  PRlp(key);
+  t_print(t);
+}
+#endif
+
 void test_level(int n, int level)
 {
   Btree_s *t;
@@ -362,34 +381,13 @@ void test_level(int n, int level)
   if (FALSE) seed_random();
   t = t_new(".tfile", NUM_BUFS);
   for (i = 0; i < n; i++) {
-if (i >= 595) {
-  fdebugon();
-  Option.debug = TRUE;
-  Option.print = TRUE;
-printf("=========%d======\n", i);
-}
-if (i > 596) {
-  fdebugoff();
-  Option.debug = FALSE;
-  Option.print = FALSE;
-}
     if (should_delete(count, level)) {
       key = r_delete_rand();
-if (Option.print) {
-  printf("delete\n");
-  PRlp(key);
-  t_print(t);
-}
       rc = t_delete(t, key);
       if (rc) fatal("delete key=%s", key.d);
       --count;
     } else {
       key = fixed_lump(7);
-if (Option.print) {
-  printf("insert\n");
-  PRlp(key);
-  t_print(t);
-}
       val = rnd_lump();
       r_add(key, val);
       rc = t_insert(t, key, val);
@@ -400,8 +398,8 @@ if (Option.print) {
     t_audit(t);
   }
   t_audit(t);
+  t_print(t);
   pr_stats(t);
-// t_print(t);
 }
 
 void usage(void)
@@ -454,7 +452,11 @@ void myoptions(int argc, char *argv[])
 int main(int argc, char *argv[])
 {
   myoptions(argc, argv);
-// test_delete(Option.iterations);
   test_level(Option.iterations, Option.level);
   return 0;
 }
+
+#if 0
+ test_delete(Option.iterations);
+  test_level(Option.iterations, Option.level);
+#endif

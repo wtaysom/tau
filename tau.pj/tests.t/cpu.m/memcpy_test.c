@@ -34,9 +34,9 @@ struct {
   double scale;
   char *units;
   char *legend;
-} Meg = { 1024.0 * 1024.0, "MiB", "2**20 or 1,048,576 bytes" };
+} meg = { 1024.0 * 1024.0, "MiB", "2**20 or 1,048,576 bytes" };
 
-bool RunCorrectness = TRUE;
+uint8_t run_correctness = TRUE;
 
 void *memcpy_trivial(void *d, const void *s, size_t count) {
   uint8_t *dst = d;
@@ -71,7 +71,7 @@ int run_correctness_test(void) {
     memcpy(testbuffer8_2w + offs1, testbuffer8_2r + offs2, size);
     if (memcmp(testbuffer8_1w, testbuffer8_2w,
                CORRECTNESS_TEST_BUFFER_SIZE) != 0) {
-      printf("memcpy_neon: test failed, i=%d, offs1=%d offs2=%d, size=%d\n",
+      printf("memcpy_trivial: test failed, i=%d, offs1=%d offs2=%d, size=%d\n",
              i, offs1, offs2, size);
       exit(1);
     }
@@ -134,11 +134,11 @@ void run_bench(const char *msg,
 
   printf("%s (%d bytes copy) = %6.1f %s/s / %6.1f %s/s\n", msg, size,
        (double)size * OFFS1 * OFFS2 * 1000000. * kmax * 2 /
-           (double)(after1 - before1) / Meg.scale,
-        Meg.units,
+           (double)(after1 - before1) / meg.scale,
+        meg.units,
        (double)size * OFFS1 * OFFS2 * 1000000. * kmax * 2 /
-           (double)(after2 - before2) / Meg.scale,
-       Meg.units);
+           (double)(after2 - before2) / meg.scale,
+       meg.units);
 }
 
 void run_bench_for_for_size(int size) {
@@ -183,7 +183,7 @@ void run_performance_tests(void) {
   run_bench_for_for_size(2 * 1024 * 1024);
   run_bench_for_for_size(3 * 1024 * 1024);
 
-  printf("\n(*) 1 %s = %s\n", Meg.units, Meg.legend);
+  printf("\n(*) 1 %s = %s\n", meg.units, meg.legend);
 #if 0
   printf("(*) 'memcpy_arm' - an implementation for"
          " older ARM cores from glibc-ports\n");
@@ -193,12 +193,12 @@ void run_performance_tests(void) {
 bool myopt (int c) {
   switch (c) {
   case 'b':
-    RunCorrectness = FALSE;
+    run_correctness = FALSE;
     break;
   case 'm':
-    Meg.scale  = 1000. * 1000.;
-    Meg.legend = "1,000,000 bytes";
-    Meg.units  = "MB";
+    meg.scale  = 1000. * 1000.;
+    meg.legend = "1,000,000 bytes";
+    meg.units  = "MB";
     break;
   default:
     return FALSE;
@@ -225,7 +225,7 @@ int main(int argc, char *argv[]) {
   testbuffer8_2r = p + 3 * BUFFER_SIZE;
 
   punyopt(argc, argv, myopt, "bm");
-  if (RunCorrectness)
+  if (run_correctness)
     run_correctness_test();
   run_performance_tests();
 
