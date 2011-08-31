@@ -38,6 +38,13 @@ typedef struct Stat_s {
   u64 join;
 } Stat_s;
 
+typedef struct Audit_s {
+  u64 leaves;
+  u64 branches;
+  u64 records;
+  u64 splits;
+} Audit_s;
+
 Btree_s *t_new(char *file, int num_bufs);
 void     t_dump(Btree_s *t);
 int      t_insert(Btree_s *t, Lump_s key, Lump_s val);
@@ -45,7 +52,7 @@ int      t_find(Btree_s *t, Lump_s key, Lump_s *val);
 int      t_delete(Btree_s *t, Lump_s key);
 void     pr_all_records(Btree_s *t);
 int      t_map(Btree_s *t, Apply_f func, void *sys, void *user);
-int      t_audit(Btree_s *t);
+int      t_audit(Btree_s *t, Audit_s *audit);
 Stat_s   t_get_stats(Btree_s *t);
 
 #endif

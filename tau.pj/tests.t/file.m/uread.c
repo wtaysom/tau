@@ -132,5 +132,6 @@ int main (int argc, char *argv[])
 		printf("\n");
 	}
 	close(fd);
+	unlink(Option.file);
 	return 0;
 }

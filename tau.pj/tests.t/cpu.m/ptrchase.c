@@ -18,7 +18,6 @@
 #include <eprintf.h>
 #include <mystdlib.h>
 #include <puny.h>
-#include <q.h>
 #include <style.h>
 #include <timer.h>
 
@@ -128,8 +127,8 @@ void chaseTest (void) {
   }
 }
 
-pthread_mutex_t	StartLock = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t	WaitLock = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t StartLock = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t WaitLock = PTHREAD_MUTEX_INITIALIZER;
 int Wait;
 
 static void Ready (void) {

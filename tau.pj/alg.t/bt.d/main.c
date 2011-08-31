@@ -87,6 +87,12 @@ Lump_s seq_lump(void)
   return lumpmk(MAX_KEY, s);
 }
 
+int audit (Btree_s *t) {
+  Audit_s a;
+  int rc = t_audit(t, &a);
+  return rc;
+}
+
 void pr_lump (Lump_s a) {
   enum { MAX_PRINT = 32 };
   int i;
@@ -274,7 +280,7 @@ void test_rnd(int n)
 // t_print(t);
 // pr_all_records(t);
 // pr_tree(t);
-  t_audit(t);
+  audit(t);
   pr_stats(t);
 }
 
@@ -310,7 +316,7 @@ void test_find(int n)
     t_insert(t, key, val);
   }
   r_for_each(find_find, t);
-  t_audit(t);
+  audit(t);
   pr_stats(t);
 }
 
@@ -340,7 +346,7 @@ void test_delete(int n)
     t_insert(t, key, val);
   }
   r_for_each(delete, t);
-  t_audit(t);
+  audit(t);
   pr_stats(t);
 }
 
@@ -395,11 +401,16 @@ void test_level(int n, int level)
           key.d, val.d);
       ++count;
     }
-    t_audit(t);
+    audit(t);
   }
-  t_audit(t);
+  audit(t);
   t_print(t);
   pr_stats(t);
+  {
+    Audit_s a;
+    t_audit(t, &a);
+    pr_audit(&a);
+  }
 }
 
 void usage(void)

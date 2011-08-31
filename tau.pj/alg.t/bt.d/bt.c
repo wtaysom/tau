@@ -83,13 +83,6 @@ typedef struct Twig_s {
   u64 block;
 } Twig_s;
 
-typedef struct Audit_s {
-  u64 leaves;
-  u64 branches;
-  u64 records;
-  u64 splits;
-} Audit_s;
-
 typedef struct Apply_s {
   Apply_f func;
   Btree_s *tree;
@@ -1735,15 +1728,15 @@ int t_map(Btree_s *t, Apply_f func, void *sys, void *user)
   return rc;
 }
 
-static int rec_audit (Rec_s rec, Btree_s *t, void *user) {
+static int map_rec_audit (Rec_s rec, Btree_s *t, void *user) {
   Lump_s *old = user;
 
   if (cmplump(rec.key, *old) <= 0) {
+    t_dump(t);
     pr_lump(rec.key);
     printf(" <= ");
     pr_lump(*old);
     printf("  ");
-t_dump(t);
     fatal("keys out of order");
     return FAILURE;
   }
@@ -1819,15 +1812,16 @@ static int node_audit(Btree_s *t, u64 block, Audit_s *audit)
 }
 
 
-int t_audit (Btree_s *t) {
-  Audit_s audit = { 0 };
+int t_audit (Btree_s *t, Audit_s *audit) {
   Lump_s old = Nil;
-  int rc = t_map(t, rec_audit, NULL, &old);
+  int rc;
 
+  zero(*audit); 
+  rc = t_map(t, map_rec_audit, NULL, &old);
   if (rc) {
     printf("AUDIT FAILED %d\n", rc);
     return rc;
   }
-  rc = node_audit(t, t->root, &audit);
+  rc = node_audit(t, t->root, audit);
   return rc;
 }
