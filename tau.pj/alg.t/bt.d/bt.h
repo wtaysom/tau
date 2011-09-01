@@ -14,6 +14,10 @@
 #include <lump.h>
 #endif
 
+#ifndef _BUF_H_
+#include <buf.h>
+#endif
+
 enum { BT_ERR_NOT_FOUND = 2000, /* Key not found */
   BT_ERR_BAD_NODE,  /* Internal error: bad node */
   FAILURE = -1 };
@@ -46,13 +50,13 @@ typedef struct Audit_s {
 } Audit_s;
 
 Btree_s *t_new(char *file, int num_bufs);
-void     t_dump(Btree_s *t);
-int      t_insert(Btree_s *t, Lump_s key, Lump_s val);
-int      t_find(Btree_s *t, Lump_s key, Lump_s *val);
-int      t_delete(Btree_s *t, Lump_s key);
-void     pr_all_records(Btree_s *t);
-int      t_map(Btree_s *t, Apply_f func, void *sys, void *user);
-int      t_audit(Btree_s *t, Audit_s *audit);
-Stat_s   t_get_stats(Btree_s *t);
-
+void t_dump(Btree_s *t);
+int  t_insert(Btree_s *t, Lump_s key, Lump_s val);
+int  t_find(Btree_s *t, Lump_s key, Lump_s *val);
+int  t_delete(Btree_s *t, Lump_s key);
+void pr_all_records(Btree_s *t);
+int  t_map(Btree_s *t, Apply_f func, void *sys, void *user);
+int  t_audit(Btree_s *t, Audit_s *audit);
+Stat_s  t_get_stats(Btree_s *t);
+CacheStat_s t_cache_stats(Btree_s *t);
 #endif

@@ -15,6 +15,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <crc.h>
 #include <debug.h>
 #include <eprintf.h>
 #include <style.h>
@@ -32,11 +33,11 @@ typedef struct Dev_s {
 struct Cache_s {
   Dev_s *dev;
   int clock;
-  int numbufs;
   Buf_s *buf;
-  s64 gets;
-  s64 puts;
+  CacheStat_s stat;
 };
+
+CacheStat_s cache_stats (Cache_s *cache) { return cache->stat; }
 
 Dev_s *dev_open(char *name, u64 block_size)
 {
@@ -83,6 +84,7 @@ FN;
   if (rc == -1) {
     fatal("pread of %s at %lld:", dev->name, b->block);
   }
+  b->crc = crc64(b->d, dev->block_size);
 }
 
 Cache_s *cache_new(char *filename, u64 numbufs, u64 block_size)
@@ -102,7 +104,7 @@ FN;
   cache = ezalloc(sizeof(*cache));
   cache->dev = dev;
   cache->buf = b;
-  cache->numbufs = numbufs;
+  cache->stat.numbufs = numbufs;
   for (i = 0; i < numbufs; i++) {
     b[i].cache = cache;
     b[i].d = &data[i * block_size];
@@ -116,13 +118,15 @@ Buf_s *lookup(Cache_s *cache, u64 block)
 FN;
   int i;
 
-  for (i = 0; i < cache->numbufs; i++) {
+  for (i = 0; i < cache->stat.numbufs; i++) {
     if (cache->buf[i].block == block) {
-      ++cache->gets;
       ++cache->buf[i].inuse;
+      ++cache->stat.gets;
+      ++cache->stat.hits;
       return &cache->buf[i];
     }
   }
+  ++cache->stat.miss;
   return NULL;
 }
 
@@ -133,7 +137,7 @@ FN;
 
   for (;;) {
     ++cache->clock;
-    if (cache->clock >= cache->numbufs) {
+    if (cache->clock >= cache->stat.numbufs) {
       cache->clock = 0;
     }
     if (cache->buf[cache->clock].clock) {
@@ -144,10 +148,9 @@ FN;
     if (!b->inuse) {
       memset(b->d, 0, cache->dev->block_size);
       ++b->inuse;
-      ++cache->gets;
+      ++cache->stat.gets;
       return b;
     }
-    // This is not a clock alg yet
   }
 }
 
@@ -159,6 +162,7 @@ FN;
   b = victim(cache);
   dev_block(cache->dev, b);
   b->dirty = TRUE;
+  b->crc = 0;
   return b;
 }
 
@@ -171,13 +175,14 @@ FN;
   b = lookup(cache, block);
   if (!b) {
     b = victim(cache);
-    b->clock = TRUE;
     b->block = block;
     dev_fill(b);
   }
-b->dirty = TRUE;
+  b->clock = TRUE;
+//b->dirty = TRUE;
   assert(block == b->block);
   assert(b->block == ((Head_s *)b->d)->block);
+PRp(b);
   return b;
 }
 
@@ -197,23 +202,41 @@ FN;
   Buf_s *b = *bp;
   Cache_s *cache = b->cache;
 
+PRp(b);
+  *bp = NULL;
   assert(b->block == ((Head_s *)b->d)->block);
   assert(b->inuse > 0);
-  ++cache->puts;
-  if (b->dirty) {
-    dev_flush(b);
-  }
+  ++cache->stat.puts;
   --b->inuse;
-  *bp = NULL;
+  if (!b->inuse) {
+    u64 crc = crc64(b->d, b->cache->dev->block_size);
+    if (b->dirty) {
+      if (crc == b->crc) printf("Didn't change %lld\n", b->block);
+      b->crc = crc;
+      dev_flush(b);
+      b->dirty = FALSE;
+    } else {
+      assert(crc == b->crc);
+    }
+  }
 }
 
-void buf_toss(Buf_s *b)
+void buf_put_dirty(Buf_s **bp)
 {
 FN;
+  buf_dirty(*bp);
+  buf_put(bp);
+}
+
+void buf_toss(Buf_s **bp)
+{
+FN;
+  Buf_s *b = *bp;
   Cache_s *cache = b->cache;
 
+  *bp = NULL;
   assert(b->inuse > 0);
-  ++cache->puts;
+  ++cache->stat.puts;
   --b->inuse;
 }
 
@@ -223,27 +246,39 @@ FN;
   Buf_s *b = *bp;
   Cache_s *cache = b->cache;
 
+  *bp = NULL;
   assert(b->block == ((Head_s *)b->d)->block);
   assert(b->inuse > 0);
-  ++cache->puts;
+  ++cache->stat.puts;
   --b->inuse;
   if (!b->inuse) {
     b->block = 0;
   }
-  *bp = NULL;
   //XXX: Don't know what to do yet with freed block
+}
+
+void cache_invalidate (Cache_s *cache)
+{
+FN;
+  int i;
+
+  for (i = 0; i < cache->stat.numbufs; i++) {
+    cache->buf[i].block = 0;
+  }
 }
 
 bool cache_balanced(Cache_s *cache)
 {
 FN;
-  if (cache->gets != cache->puts) {
-    fatal("gets %lld != %lld puts %d", cache->gets, cache->puts,
-      cache->gets - cache->puts);
+  if (cache->stat.gets != cache->stat.puts) {
+    fatal("gets %lld != %lld puts %d",
+           cache->stat.gets, cache->stat.puts,
+           cache->stat.gets - cache->stat.puts);
     return FALSE;
   }
-// printf("balanced gets=%lld puts=%lld\n", cache->gets, cache->puts);
+// printf("balanced gets=%lld puts=%lld\n",
+//        cache->stat.gets, cache->stat.puts);
 // stacktrace();
+  cache_invalidate(cache);
   return TRUE;
 }
-

@@ -21,7 +21,7 @@
 
 #include "bt.h"
 
-enum { NUM_BUFS = 20 };
+enum { NUM_BUFS = 5 };
 
 struct {
   int iterations;
@@ -85,6 +85,33 @@ Lump_s seq_lump(void)
     s[i] = ' ';
   }
   return lumpmk(MAX_KEY, s);
+}
+
+void pr_cach_stats (Btree_s *t) {
+  CacheStat_s cs;
+  cs = t_cache_stats(t);
+  printf("cache stats:\n"
+         "  num bufs =%8d\n"
+         "  gets     =%8lld\n"
+         "  puts     =%8lld\n"
+         "  hits     =%8lld\n"
+         "  miss     =%8lld\n"
+         "hit ratio  =%8g%%\n",
+         cs.numbufs,
+         cs.gets, cs.puts, cs.hits, cs.miss,
+         (double)(cs.hits) / (cs.hits + cs.miss) * 100.);
+}
+
+void pr_audit (Audit_s *a) {
+  printf("Audit:\n"
+         "  branches:  %8lld\n"
+         "  splits:    %8lld\n"
+         "  leaves:    %8lld\n"
+         "  records:   %8lld\n"
+         "  recs/leaf: %8g\n",
+         a->branches, a->splits,
+         a->leaves, a->records,
+         (double)a->records / a->leaves);
 }
 
 int audit (Btree_s *t) {
@@ -384,9 +411,12 @@ void test_level(int n, int level)
   int i;
   int rc;
 
+fdebugon();
+Option.debug = TRUE;
   if (FALSE) seed_random();
   t = t_new(".tfile", NUM_BUFS);
   for (i = 0; i < n; i++) {
+printf("%d\n", i);
     if (should_delete(count, level)) {
       key = r_delete_rand();
       rc = t_delete(t, key);
@@ -401,7 +431,7 @@ void test_level(int n, int level)
           key.d, val.d);
       ++count;
     }
-    audit(t);
+//    audit(t);
   }
   audit(t);
   t_print(t);
@@ -411,6 +441,7 @@ void test_level(int n, int level)
     t_audit(t, &a);
     pr_audit(&a);
   }
+  pr_cach_stats(t);
 }
 
 void usage(void)

@@ -40,6 +40,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <crc.h>
 #include <debug.h>
 #include <eprintf.h>
 #include <mystdlib.h>
@@ -101,7 +102,7 @@ typedef struct Op_s {
 } Op_s;
 
 #define PRop(_op) pr_op(FN_ARG, # _op, _op)
-#define ERR(_err) bt_err(FN_ARG, # _err, op, _err)
+#define ERR(_err) t_err(FN_ARG, # _err, op, _err)
 
 void lump_dump(Lump_s a);
 void lf_dump(Buf_s *node, int indent);
@@ -124,7 +125,22 @@ static inline Apply_s mk_apply(Apply_f func, Btree_s *t, void *sys, void *user)
   return a;
 }
 
-int bt_err(
+void cache_err (Btree_s *t)
+{
+  CacheStat_s cs = cache_stats(t->cache);
+  printf("cache stats:\n"
+         "  num bufs =%8d\n"
+         "  gets     =%8lld\n"
+         "  puts     =%8lld\n"
+         "  hits     =%8lld\n"
+         "  miss     =%8lld\n"
+         "hit ratio  =%8g%%\n",
+         cs.numbufs,
+         cs.gets, cs.puts, cs.hits, cs.miss,
+         (double)(cs.hits) / (cs.hits + cs.miss) * 100.);
+}
+
+int t_err(
   const char *fn,
   unsigned line,
   const char *label,
@@ -138,11 +154,19 @@ int bt_err(
   printf("ERROR: %s<%d> %s: %d\n",
     fn, line, label, err);
 
-  printf("bt_err\n");
+  printf("t_err\n");
   t_dump(op->tree);
+  cache_err(op->tree);
 exit(1);
   return err;
-} 
+}
+
+Buf_s *t_get (Btree_s *t, u64 block)
+{
+  Buf_s *buf = buf_get(t->cache, block);
+  buf->user = t;
+  return buf;
+}
 
 bool pr_op(const char *fn, unsigned line, const char *label, Op_s *op)
 {
@@ -154,6 +178,7 @@ bool pr_op(const char *fn, unsigned line, const char *label, Op_s *op)
 }
 
 Stat_s t_get_stats (Btree_s *t) { return t->stat; }
+CacheStat_s t_cache_stats (Btree_s *t) { return cache_stats(t->cache); }
 
 int usable(Head_s *head)
 {
@@ -264,13 +289,6 @@ FN;
   head->end      = SZ_BUF;
   head->block    = block;
   head->last     = 0;
-}
-
-void init_node(Buf_s *node, Btree_s *t, u8 kind)
-{
-FN;
-  node->user = t;
-  init_head(node->d, kind, node->block);
 }
 
 Lump_s get_key (Head_s *head, unint i)
@@ -448,7 +466,7 @@ void node_dump(Btree_s *t, u64 block, int indent)
   Head_s *head;
 
   if (!block) return;
-  node = buf_get(t->cache, block);
+  node = t_get(t, block);
   head = node->d;
   switch (head->kind) {
   case LEAF:
@@ -826,7 +844,8 @@ Buf_s *node_new(Btree_s *t, u8 kind)
 {
 FN;
   Buf_s *node = buf_new(t->cache);
-  init_node(node, t, kind);
+  node->user = t;
+  init_head(node->d, kind, node->block);
   return node;
 }
 
@@ -878,9 +897,9 @@ FN;
   while (size > leaf->free) {
     right = lf_split(op->child);
     if (isLE(right->d, op->r.key, 0)) {
-      buf_put(&right);
+      buf_put_dirty(&right);
     } else {
-      buf_put(&op->child);
+      buf_put_dirty(&op->child);
       op->child = right;
       leaf = op->child->d;
     }
@@ -891,7 +910,7 @@ FN;
   i = find_le(leaf, op->r.key);
   store_rec(leaf, op->r, i);
   LF_AUDIT(leaf);
-  buf_put(&op->child);
+  buf_put_dirty(&op->child);
   return 0;
 }
 
@@ -918,7 +937,7 @@ FN;
   }
   child->is_split = FALSE;
   op->tree->root = parent->block;
-  buf_put(&op->child);
+  buf_put_dirty(&op->child);
   op->child = op->parent;
   op->parent = NULL;
   return 0;
@@ -963,9 +982,9 @@ FN;
     br_split(op);
 
     if (isLE(parent, twig.key, parent->num_recs - 1)) {
-      buf_put(&op->sibling);
+      buf_put_dirty(&op->sibling);
     } else {
-      buf_put(&op->parent);
+      buf_put_dirty(&op->parent);
       op->parent = op->sibling;
       parent  = op->parent->d;
     }
@@ -1000,9 +1019,9 @@ FN;
     br_split(op);
 
     if (isLE(parent, twig.key, parent->num_recs - 1)) {
-      buf_put(&op->sibling);
+      buf_put_dirty(&op->sibling);
     } else {
-      buf_put(&op->parent);
+      buf_put_dirty(&op->parent);
       op->parent  = op->sibling;
       op->sibling = NULL;
       parent      = op->parent->d;
@@ -1027,7 +1046,7 @@ FN;
     child->last = 0;
   }
   child->is_split = FALSE;
-  buf_put(&op->child);
+  buf_put_dirty(&op->child);
   return 0;
 }
 
@@ -1048,10 +1067,11 @@ FN;
     } else {
       block = get_block(parent, op->irec);
     }
-    op->child = buf_get(op->tree->cache, block);
+    op->child = t_get(op->tree, block);
     child = op->child->d;
     if (child->is_split) {
       if (br_store(op)) return FAILURE;
+buf_dirty(op->parent);
       continue;
     }
     buf_put(&op->parent);
@@ -1072,7 +1092,7 @@ FN;
   int rc;
 
   if (t->root) {
-    op.child = buf_get(t->cache, t->root);
+    op.child = t_get(t, t->root);
   } else {
     op.child = lf_new(t);
     t->root = op.child->block;
@@ -1080,6 +1100,7 @@ FN;
   child = op.child->d;
   if (child->is_split) {
     if (grow(&op)) return op.err.err;
+buf_dirty(op.child);
     child = op.child->d;
   }
   if (child->kind == LEAF) {
@@ -1107,7 +1128,7 @@ FN;
     }
     if (i == head->num_recs) {
       if (head->is_split) {
-        right = buf_get(bleaf->cache, head->last);
+        right = t_get(bleaf->user, head->last);
         buf_put(&bleaf);
         bleaf = right;
         head = bleaf->d;
@@ -1139,14 +1160,14 @@ FN;
     } else {
       block = get_block(parent, x);
     }
-    bchild = buf_get(bparent->cache, block);
+    bchild = t_get(bparent->user, block);
     child = bchild->d;
     if (child->kind == LEAF) {
-      buf_put(&bparent);
+      buf_put_dirty(&bparent);
       lf_find(bchild, key, val);
       return 0;
     }
-    buf_put(&bparent);
+    buf_put_dirty(&bparent);
     bparent = bchild;
     parent = bparent->d;
   }
@@ -1162,7 +1183,7 @@ FN;
   if (!t->root) {
     return BT_ERR_NOT_FOUND;
   }
-  node = buf_get(t->cache, t->root);
+  node = t_get(t, t->root);
   head = node->d;
   if (head->kind == LEAF) {
     rc = lf_find(node, key, val);
@@ -1188,8 +1209,8 @@ FN;
     }
     if (i == child->num_recs) {
       if (child->is_split) {
-        right = buf_get(op->tree->cache, child->last);
-        buf_put(&op->child);
+        right = t_get(op->tree, child->last);
+        buf_put_dirty(&op->child);
         op->child = right;
         child = op->child->d;
       } else {
@@ -1197,7 +1218,7 @@ FN;
       }
     } else {
       delete_rec(child, i);
-      buf_put(&op->child);
+      buf_put_dirty(&op->child);
       return 0;
     }
   }
@@ -1315,7 +1336,7 @@ FN;
   } else {
     block = get_block(parent, y);
   }
-  op->sibling = buf_get(op->tree->cache, block);
+  op->sibling = t_get(op->tree, block);
   sibling = op->sibling->d;
 
   if (join(op)) return 0;
@@ -1326,7 +1347,7 @@ FN;
   } else {
     br_rebalance(op);
   }
-  buf_put(&op->sibling);
+  buf_put_dirty(&op->sibling);
   return 0;
 }
 
@@ -1335,29 +1356,39 @@ int br_delete(Op_s *op)
   Head_s *parent;
   Head_s *child;
   u64 block;
+  bool a, b;
 
   op->parent = op->child;
   op->child = NULL;
   for(;;) {
 FN;
+a = FALSE;
+b = FALSE;
     parent = op->parent->d;
+PRp(op->parent);
+printf("crc: %llx == %llx\n", op->parent->crc, crc64(parent, SZ_BUF));
     op->irec = find_le(parent, op->r.key);
     if (op->irec == parent->num_recs) {
       block = parent->last;
     } else {
       block = get_block(parent, op->irec);
     }
-    op->child = buf_get(op->tree->cache, block);
+    op->child = t_get(op->tree, block);
     child = op->child->d;
     if (child->is_split) {
       if (br_store(op)) return FAILURE;
+buf_dirty(op->parent);
       continue;
     }
     if (child->free > REBALANCE) {
       if (rebalance(op)) return FAILURE;
+buf_dirty(op->parent);
       child = op->child->d;
+b = TRUE;
     }
-    buf_put(&op->parent);
+//if (!b) buf_dirty(op->parent);
+PRp(op->parent);
+    buf_put(&op->parent); //XXX
     if (child->kind == LEAF) {
       lf_delete(op);
       return 0;
@@ -1377,7 +1408,7 @@ FN;
   if (!t->root) {
     return BT_ERR_NOT_FOUND;
   }
-  op.child = buf_get(t->cache, t->root);
+  op.child = t_get(t, t->root);
   child = op.child->d;
   if (child->kind == LEAF) {
     rc = lf_delete(&op);
@@ -1636,7 +1667,7 @@ static void pr_all_nodes(Btree_s *t, u64 block)
   Head_s *head;
 
   if (!block) return;
-  node = buf_get(t->cache, block);
+  node = t_get(t, block);
   head = node->d;
   switch (head->kind) {
   case LEAF:
@@ -1702,7 +1733,7 @@ static int node_map(Btree_s *t, u64 block, Apply_s apply)
   int rc = 0;
 
   if (!block) return rc;
-  node = buf_get(t->cache, block);
+  node = t_get(t, block);
   head = node->d;
   switch (head->kind) {
   case LEAF:
@@ -1792,7 +1823,7 @@ static int node_audit(Btree_s *t, u64 block, Audit_s *audit)
   int rc = 0;
 
   if (!block) return rc;
-  node = buf_get(t->cache, block);
+  node = t_get(t, block);
   head = node->d;
   if (head->is_split) ++audit->splits;
   switch (head->kind) {

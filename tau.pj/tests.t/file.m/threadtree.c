@@ -523,8 +523,8 @@ struct {
 	char		*from;
 	char		*to;
 } Myopt = {
-	.width = 2,
-	.depth = 3,
+	.width = 3,
+	.depth = 4,
 	.from  = "ztree",
 	.to    = "copy" };
 
@@ -559,6 +559,7 @@ int main (int argc, char *argv[])
 	unsigned	depth;
 	unsigned	i;
 
+	Option.iterations = 4;
 	punyopt(argc, argv, myopt, "k:w:r:o:");
 	threads = Option.numthreads;
 	start   = Option.dir;
