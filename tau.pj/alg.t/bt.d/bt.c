@@ -1383,6 +1383,7 @@ buf_dirty(op->parent);
     if (child->free > REBALANCE) {
       if (rebalance(op)) return FAILURE;
 buf_dirty(op->parent);
+buf_dirty(op->child);
       child = op->child->d;
 b = TRUE;
     }
