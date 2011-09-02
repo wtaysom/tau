@@ -182,7 +182,6 @@ FN;
 //b->dirty = TRUE;
   assert(block == b->block);
   assert(b->block == ((Head_s *)b->d)->block);
-PRp(b);
   return b;
 }
 
@@ -202,7 +201,6 @@ FN;
   Buf_s *b = *bp;
   Cache_s *cache = b->cache;
 
-PRp(b);
   *bp = NULL;
   assert(b->block == ((Head_s *)b->d)->block);
   assert(b->inuse > 0);
@@ -212,6 +210,7 @@ PRp(b);
     u64 crc = crc64(b->d, b->cache->dev->block_size);
     if (b->dirty) {
       if (crc == b->crc) printf("Didn't change %lld\n", b->block);
+      assert(crc != b->crc);
       b->crc = crc;
       dev_flush(b);
       b->dirty = FALSE;
@@ -279,6 +278,6 @@ FN;
 // printf("balanced gets=%lld puts=%lld\n",
 //        cache->stat.gets, cache->stat.puts);
 // stacktrace();
-  cache_invalidate(cache);
+//  cache_invalidate(cache);
   return TRUE;
 }

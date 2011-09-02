@@ -1260,6 +1260,8 @@ FN;
   buf_free(&op->child);
   op->child = op->sibling;
   op->sibling = NULL;
+  buf_dirty(op->parent);
+  buf_dirty(op->child);
   ++op->tree->stat.join;
   return TRUE;
 }
@@ -1347,6 +1349,8 @@ FN;
   } else {
     br_rebalance(op);
   }
+  buf_dirty(op->parent);
+  buf_dirty(op->child);
   buf_put_dirty(&op->sibling);
   return 0;
 }
@@ -1356,17 +1360,12 @@ int br_delete(Op_s *op)
   Head_s *parent;
   Head_s *child;
   u64 block;
-  bool a, b;
 
   op->parent = op->child;
   op->child = NULL;
   for(;;) {
 FN;
-a = FALSE;
-b = FALSE;
     parent = op->parent->d;
-PRp(op->parent);
-printf("crc: %llx == %llx\n", op->parent->crc, crc64(parent, SZ_BUF));
     op->irec = find_le(parent, op->r.key);
     if (op->irec == parent->num_recs) {
       block = parent->last;
@@ -1377,18 +1376,13 @@ printf("crc: %llx == %llx\n", op->parent->crc, crc64(parent, SZ_BUF));
     child = op->child->d;
     if (child->is_split) {
       if (br_store(op)) return FAILURE;
-buf_dirty(op->parent);
+      buf_dirty(op->parent);
       continue;
     }
     if (child->free > REBALANCE) {
       if (rebalance(op)) return FAILURE;
-buf_dirty(op->parent);
-buf_dirty(op->child);
       child = op->child->d;
-b = TRUE;
     }
-//if (!b) buf_dirty(op->parent);
-PRp(op->parent);
     buf_put(&op->parent); //XXX
     if (child->kind == LEAF) {
       lf_delete(op);

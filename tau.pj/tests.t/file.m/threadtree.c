@@ -560,6 +560,7 @@ int main (int argc, char *argv[])
 	unsigned	i;
 
 	Option.iterations = 4;
+	Option.threads = 2;
 	punyopt(argc, argv, myopt, "k:w:r:o:");
 	threads = Option.numthreads;
 	start   = Option.dir;
