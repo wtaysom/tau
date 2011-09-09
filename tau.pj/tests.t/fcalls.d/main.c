@@ -29,6 +29,7 @@ bool IsRoot;
 static bool Randomize = TRUE;
 bool Verbose = FALSE;
 bool Flaky = FALSE;
+bool Test_sparse = FALSE;
 snint BlockSize = 4096;
 s64 SzBigFile = (1LL << 32) + (1LL << 13) + 137;
 
@@ -101,6 +102,9 @@ bool myopt (int c) {
   case 'r':
     Randomize = FALSE;
     break;
+  case 's':
+    Test_sparse = TRUE;
+    break;
   case 'v':
     Verbose = TRUE;
     break;
@@ -111,13 +115,14 @@ bool myopt (int c) {
 }
 
 void usage (void) {
-  pr_usage("[-prvh] [<directory>]*\n"
+  pr_usage("[-prsvh] [<directory>]*\n"
     "\th - help\n"
     "\tb - Block size [default = %ld]\n"
+    "\tf - Flaky - run the flaky tests (may fail)\n"
     "\tp - Print results\n"
     "\tr - Don't seed random number generator\n"
+    "\ts - run tests that require sparse file support\n"
     "\tv - Verbose - display each file system call\n"
-    "\tf - Flaky - run the flaky tests (may fail)\n"
     "\tz - size of big file [default = 0x%llx]",
     BlockSize, SzBigFile);
 }
@@ -128,7 +133,7 @@ int main (int argc, char *argv[]) {
 
   Option.file_size = SzBigFile;
   Option.dir = ".";
-  punyopt(argc, argv, myopt, "b:frvy");
+  punyopt(argc, argv, myopt, "b:frsvy");
   SzBigFile = Option.file_size;
 
   if (SzBigFile < 40000) {

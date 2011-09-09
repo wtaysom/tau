@@ -12,6 +12,7 @@
 #include <debug.h>
 #include <eprintf.h>
 #include <mystdlib.h>
+#include <puny.h>
 
 #include "fcalls.h"
 #include "util.h"
@@ -213,8 +214,10 @@ static void Indent (int indent) {
 
 static void PrintTree (DirEntry_s *parent, int indent) {
   if (!parent) return;
-  Indent(indent);
-  printf("%s %s\n", parent->type == T_DIR ? "D" : "F", parent->name);
+  if (Option.print) {
+    Indent(indent);
+    printf("%s %s\n", parent->type == T_DIR ? "D" : "F", parent->name);
+  }
   PrintTree(parent->child, indent + 1);
   PrintTree(parent->sibling, indent);
 }

@@ -106,34 +106,32 @@ static void rdseek (void) {
 }
 
 typedef struct segment_s {
+  bool sparse;
   s64 offset;
   s64 length;
 } segment_s;
 
 segment_s Segment[] = {
-  { 1, 1 },
-  { 4095, 45 },
-#ifdef __linux__
-  { 1LL<<20, 1<<13 },
-  { 1LL<<40, 1<<10 },
-#if 0
-  { 1LL<<50, 1<<12 }, /* TODO(taysom): this gives Invalid argument
-                       * should create test of this case
-                       * and others that I can think of like -1
-                       */
-#endif
-#endif
-  { -1, -1 }};
+  { FALSE, 1, 1 },
+  { FALSE, 4095, 45 },
+  { TRUE, 1LL<<20, 1<<13 },
+  { TRUE, 1LL<<40, 1<<10 },
+  { FALSE, -1, -1 }};
 
 segment_s Hole[] = {
-  { 0, 1 },
-  { 2197, 3 },
-#ifdef __linux__
-  { 1LL<<25, 1<<14 },
-  { 1LL<<35, 1<<16 },
-  { 1LL<<47, 1<<16 },
-#endif
-  { -1, -1 }};
+  { FALSE, 0, 1 },
+  { FALSE, 2197, 3 },
+  { TRUE, 1LL<<25, 1<<14 },
+  { TRUE, 1LL<<35, 1<<16 },
+  { TRUE, 1LL<<47, 1<<16 },
+  { FALSE, -1, -1 }};
+
+segment_s Invalid[] = {
+  { FALSE, 1LL<<50, 1<<12 }, /* TODO(taysom): this gives Invalid argument
+                              * should create test of this case
+                              * and others that I can think of like -1
+                              */
+  { FALSE, 0, 0 }};
 
 static void write_segment (int fd, segment_s seg) {
   u8 buf[BlockSize];
@@ -197,14 +195,17 @@ void wtseek (void) {
   name = RndName(8);
   fd = creat(name, 0666);
   for (i = 0; Segment[i].offset >= 0; i++) {
+    if (Segment[i].sparse && !Test_sparse) continue;
     write_segment(fd, Segment[i]);
   }
   close(fd);
   fd = open(name, O_RDONLY, 0);
   for (i = 0; Segment[i].offset >= 0; i++) {
+    if (Segment[i].sparse && !Test_sparse) continue;
     check_segment(fd, Segment[i]);
   }
-  for (i = 0; Segment[i].offset >= 0; i++) {
+  for (i = 0; Hole[i].offset >= 0; i++) {
+    if (Hole[i].sparse && !Test_sparse) continue;
     check_hole(fd, Hole[i]);
   }
   close(fd);
