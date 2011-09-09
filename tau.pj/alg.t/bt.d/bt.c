@@ -949,9 +949,9 @@ FN;
 int br_split(Op_s *op)
 {
 FN;
-  Head_s *parent   = op->parent->d;
+  Head_s *parent = op->parent->d;
   Head_s *sibling;
-  int middle    = (parent->num_recs + 1) / 2;
+  int middle = (parent->num_recs + 1) / 2;
   int i;
 
   op->sibling = br_new(op->tree);
