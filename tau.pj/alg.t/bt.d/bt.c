@@ -334,6 +334,9 @@ Rec_s get_rec (Head_s *head, unint i)
   unint x;
   u8 *start;
 
+if (head->kind != LEAF) {
+  pr_head(head, 0);
+}
   assert(head->kind == LEAF);
   assert(i < head->num_recs);
   x = head->rec[i];

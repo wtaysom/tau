@@ -26,7 +26,7 @@ struct {
   double scale;
   char *units;
   char *legend;
-} gig = { 1000000000.0 / ((double)(1<<30)), "GiB", "Gig = 2**30" };
+} meg = { 1e9 / ((double)(1<<20)), "MiB", "Meg = 2**20" };
 
 u8 resource_usage = FALSE;
 u8 bidirectional = TRUE;
@@ -105,7 +105,7 @@ void memcpyTest (char *test_name, memcpy_f f) {
   int n;
   int i;
   int j;
-  printf("%s (%s)\n", test_name, gig.legend);
+  printf("%s (%s)\n", test_name, meg.legend);
   n = Option.file_size;
   a = emalloc(n);
   b = emalloc(n);
@@ -123,14 +123,14 @@ void memcpyTest (char *test_name, memcpy_f f) {
     finish = nsecs();
     if (bidirectional) {
       printf("%d. %g %s/sec\n", j,
-          2.0 * gig.scale * (n * (u64)Option.iterations) /
+          2.0 * meg.scale * (n * (u64)Option.iterations) /
               (double)(finish - start),
-          gig.units);
+          meg.units);
     } else {
       printf("%d. %g %s/sec\n", j,
-          gig.scale * (n * (u64)Option.iterations) /
+          meg.scale * (n * (u64)Option.iterations) /
               (double)(finish - start),
-          gig.units);
+          meg.units);
     }
     getrusage(RUSAGE_SELF, &after);
     PrUsage(&before);
@@ -192,10 +192,10 @@ bool myopt (int c) {
   case 'b':
     bidirectional = FALSE;
     break;
-  case 'g':
-    gig.scale   = 1.0;
-    gig.units   = "GB";
-    gig.legend  = "Gig = 10**9";
+  case 'm':
+    meg.scale   = 1000.0;
+    meg.units   = "MB";
+    meg.legend  = "Meg = 10**6";
     break;
   case 'n':
     bidirectional = FALSE;
@@ -211,12 +211,12 @@ bool myopt (int c) {
 }
 
 void usage (void) {
-  pr_usage("-bghnu -i<iterations> -l<loops> -t<threads> -z<copy size>\n"
+  pr_usage("-bhmnu -i<iterations> -l<loops> -t<threads> -z<copy size>\n"
            "\tb - turn off bi-directional copy\n"
-           "\tg - use Gig == 10**9 [2**30]\n"
            "\th - help\n"
            "\ti - copy buffer i times [%lld]\n"
            "\tl - number of trials to run [%lld]\n"
+           "\tm - use Meg == 10**6 [2**20]\n"
            "\tn - no initialization - for demonstrating shared pages\n"
            "\t\tAlso sets the -b option\n"
            "\tt - number of threads [%lld]\n"
@@ -231,7 +231,7 @@ int main (int argc, char *argv[]) {
   Option.loops = 4;
   Option.file_size = (1<<26);
   Option.numthreads = 1;
-  punyopt(argc, argv, myopt, "bgnu");
+  punyopt(argc, argv, myopt, "bmnu");
   StartThreads();
   return 0;
 }

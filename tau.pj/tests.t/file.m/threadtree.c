@@ -47,6 +47,19 @@ typedef struct arg_s {
 	unsigned	seed;
 } arg_s;
 
+struct {
+	bool		rate;
+	unsigned	width;
+	unsigned	depth;
+	char		*from;
+	char		*to;
+} Myopt = {
+	.rate  = FALSE,
+	.width = 3,
+	.depth = 5,
+	.from  = "ztree",
+	.to    = "copy" };
+
 inst_s Inst;
 
 void pr_inst (inst_s *inst)
@@ -135,9 +148,18 @@ void cd (char *dir)
 	}
 }
 
-void init (char *working_directory)
+void init (char *dir)
 {
-	cd(working_directory);
+	int rc = mkdir(dir, 0700);
+	if (rc) fatal("mkdir %s:", dir);
+	cd(dir);
+}
+
+void cleanup (char *dir)
+{
+	cd("..");
+	int rc = rmdir(dir);
+	if (rc) fatal("rmdir %s:", dir);
 }
 
 int open_file (char *name)
@@ -505,7 +527,7 @@ void start_threads (unsigned threads, unsigned width, unsigned depth, char *from
 			break;
 		}
 	}
-	rate();
+	if (Myopt.rate) rate();
 	while (i--) {
 		pthread_join(thread[i], NULL);
 	}
@@ -513,31 +535,23 @@ void start_threads (unsigned threads, unsigned width, unsigned depth, char *from
 
 void usage (void)
 {
-	pr_usage("-i<iterations> -t<threads> -w<width> -k<depth>"
-		" -d<start> -r<from> -o<to>");
+	pr_usage("-r -i<iterations> -t<threads> -w<width> -k<depth>"
+		" -d<start> -f<from> -o<to>");
 }
-
-struct {
-	unsigned	width;
-	unsigned	depth;
-	char		*from;
-	char		*to;
-} Myopt = {
-	.width = 3,
-	.depth = 4,
-	.from  = "ztree",
-	.to    = "copy" };
 
 bool myopt (int c)
 {
 	switch (c) {
+        case 'r':
+		Myopt.rate = TRUE;
+		break;
 	case 'k':
 		Myopt.depth = strtoll(optarg, NULL, 0);
 		break;
 	case 'w':
 		Myopt.width = strtoll(optarg, NULL, 0);
 		break;
-	case 'r':
+	case 'f':
 		Myopt.from = optarg;
 		break;
 	case 'o':
@@ -551,7 +565,7 @@ bool myopt (int c)
 
 int main (int argc, char *argv[])
 {
-	char		*start;
+	char		*dir;
 	char		*from;
 	char		*to;
 	unsigned	threads;
@@ -560,16 +574,16 @@ int main (int argc, char *argv[])
 	unsigned	i;
 
 	Option.iterations = 4;
-	Option.threads = 2;
-	punyopt(argc, argv, myopt, "k:w:r:o:");
+	Option.numthreads = 2;
+	punyopt(argc, argv, myopt, "rk:w:f:o:");
 	threads = Option.numthreads;
-	start   = Option.dir;
+	dir     = Option.dir;
 	width   = Myopt.width;
 	depth   = Myopt.depth;
 	from    = Myopt.from;
 	to      = Myopt.to;
 
-	init(start);
+	init(dir);
 
 	for (i = 0; i < Option.iterations; i++) {
 		srandom(137);
@@ -586,5 +600,6 @@ int main (int argc, char *argv[])
 
 		clear_inst();
 	}
+	cleanup(dir);
 	return 0;
 }

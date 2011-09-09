@@ -14,7 +14,7 @@
 /* rgb, red-green-blue, is a simple benchmark for locks.
  * Expanded test from 2 threads and 3 locks to n locks and
  * k threads where k < n
- * Time measurements are done nsecs.
+ * Time measurements are in nanoseconds.
  *
  * Two threads contend for the three locks, red, green, and blue, in
  * the following order;
@@ -60,19 +60,19 @@
  */
 
 #if __APPLE__
-  #define DEBUG 0
-  #define SPIN 0
-  #define MUTEX 1
-  #define TSPIN 0
+#  define DEBUG 0
+#  define SPIN 0
+#  define MUTEX 1
+#  define TSPIN 0
 #else
-  #define DEBUG 0
-  #define SPIN 0
-  #define MUTEX 0
-  #define TSPIN 1
+#  define DEBUG 0
+#  define SPIN 0
+#  define MUTEX 0
+#  define TSPIN 1
 #endif
 
 #if SPIN
-  #include <spinlock.h>
+#  include <spinlock.h>
 #endif
 
 #include <sys/types.h>
@@ -226,14 +226,14 @@ void *rgb (void *arg) {
 void start_threads (unsigned threads) {
   pthread_t *thread;
   unsigned i;
-  int  rc;
-  arg_s  *arg;
-  arg_s  *a;
+  int rc;
+  arg_s *arg;
+  arg_s *a;
 
   Count = threads;
   rgb_lock("start", &StartLock);
   thread = ezalloc(threads * sizeof(pthread_t));
-  arg    = ezalloc(threads * sizeof(arg_s));
+  arg = ezalloc(threads * sizeof(arg_s));
   for (i = 0, a = arg; i < threads; i++, a++) {
     sprintf(a->name, "rgb%d", i);
     a->id = i;
@@ -272,14 +272,14 @@ int main (int argc, char *argv[]) {
 
   Option.numthreads = threads;
   punyopt(argc, argv, myopt, "k:");
-  Loops   = Option.iterations;
+  Loops = Option.iterations;
   threads = Option.numthreads;
   if (!threads) {
     fatal("Must have at least one thread");
   }
   if (threads >= Num_locks) {
     fatal("Must have at least one more locks(%ld) than threads(%d)",
-      Num_locks, threads);
+          Num_locks, threads);
   }
   init_locks(Num_locks);
 
