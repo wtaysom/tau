@@ -18,6 +18,7 @@
 #include <util.h>
 
 #include "fcalls.h"
+#include "main.h"
 
 /* PrErrork prints an error message including location */
 void PrErrork (Where_s w, const char *fmt, ...) {
@@ -41,8 +42,8 @@ void PrErrork (Where_s w, const char *fmt, ...) {
   }
   va_end(args);
   fprintf(stderr, "\n");
-  if (StackTrace) stacktrace_err();
-  if (Fatal) exit(2); /* conventional value for failed execution */
+  if (My_option.stack_trace) stacktrace_err();
+  if (My_option.exit_on_error) exit(2);
 }
 
 /* RndName generates a random name. The caller must free the returned name */
@@ -148,13 +149,13 @@ bool IsFailed (Where_s w, const char *e) {
 
 /* CrFile creates a file of specified size and Fills it with data. */
 void CrFile (const char *name, u64 size) {
-  u8 buf[BlockSize];
+  u8 buf[My_option.block_size];
   int fd;
   u64 offset;
 
   fd = creat(name, 0666);
-  for (offset = 0; size; offset += BlockSize) {
-    unint n = BlockSize;
+  for (offset = 0; size; offset += My_option.block_size) {
+    unint n = My_option.block_size;
     if (n > size) n = size;
     Fill(buf, n, offset);
     write(fd, buf, n);

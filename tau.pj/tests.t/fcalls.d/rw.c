@@ -10,6 +10,7 @@
 #include <unistd.h>
 
 #include "fcalls.h"
+#include "main.h"
 #include "util.h"
 
 /* Basic read/write tests
@@ -42,16 +43,16 @@ static void Simple (void) {
 
 /* Normal read/lseek tests */
 static void rdseek (void) {
-  u8 buf[BlockSize];
+  u8 buf[My_option.block_size];
   int fd;
   s64 offset;
   u64 size;
 
   /* Read BigFile and verify contents */
   fd = open(BigFile, O_RDWR, 0);
-  size = SzBigFile;
-  for (offset = 0; size; offset += BlockSize) {
-    unint n = BlockSize;
+  size = My_option.size_big_file;
+  for (offset = 0; size; offset += My_option.block_size) {
+    unint n = My_option.block_size;
     if (n > size) n = size;
     read(fd, buf, n);
     IsSame(buf, n, offset);
@@ -62,33 +63,33 @@ static void rdseek (void) {
   readCheckSize(fd, buf, sizeof(buf), 0);
 
   /* Start read before eof but go beyond eof */
-  offset = SzBigFile - 47;
+  offset = My_option.size_big_file - 47;
   lseek(fd, offset, SEEK_SET);
-  readCheckSize(fd, buf, BlockSize, 47);
+  readCheckSize(fd, buf, My_option.block_size, 47);
   IsSame(buf, 47, offset);
 
   /* Seek to middle of file and verify contents */
-  offset = SzBigFile / 2;
+  offset = My_option.size_big_file / 2;
   lseek(fd, offset, SEEK_SET);
-  read(fd, buf, BlockSize);
-  IsSame(buf, BlockSize, offset);
+  read(fd, buf, My_option.block_size);
+  IsSame(buf, My_option.block_size, offset);
 
   /* Seek from current position forward 2 blocks */
-  offset += 3 * BlockSize;
-  lseekCheckOffset(fd, 2 * BlockSize, SEEK_CUR, offset);
-  read(fd, buf, BlockSize);
-  IsSame(buf, BlockSize, offset);
+  offset += 3 * My_option.block_size;
+  lseekCheckOffset(fd, 2 * My_option.block_size, SEEK_CUR, offset);
+  read(fd, buf, My_option.block_size);
+  IsSame(buf, My_option.block_size, offset);
 
   /* Seek from eof back 3 blocks */
-  offset = SzBigFile - 3 * BlockSize;
-  lseekCheckOffset(fd, -(3 * BlockSize), SEEK_END, offset);
-  read(fd, buf, BlockSize);
-  IsSame(buf, BlockSize, offset);
+  offset = My_option.size_big_file - 3 * My_option.block_size;
+  lseekCheckOffset(fd, -(3 * My_option.block_size), SEEK_END, offset);
+  read(fd, buf, My_option.block_size);
+  IsSame(buf, My_option.block_size, offset);
 
   /* Seek beyond eof */
-  offset = SzBigFile + BlockSize;
+  offset = My_option.size_big_file + My_option.block_size;
   lseek(fd, offset, SEEK_SET);
-  readCheckSize(fd, buf, BlockSize, 0);
+  readCheckSize(fd, buf, My_option.block_size, 0);
 
   /* Seek bad whence */
   lseekErr(EINVAL, fd, 0, 4);
@@ -123,7 +124,6 @@ segment_s Hole[] = {
   { FALSE, 2197, 3 },
   { TRUE, 1LL<<25, 1<<14 },
   { TRUE, 1LL<<35, 1<<16 },
-  { TRUE, 1LL<<47, 1<<16 },
   { FALSE, -1, -1 }};
 
 segment_s Invalid[] = {
@@ -131,13 +131,14 @@ segment_s Invalid[] = {
                               * should create test of this case
                               * and others that I can think of like -1
                               */
+  { TRUE, 1LL<<47, 1<<16 },
   { FALSE, 0, 0 }};
 
 static void write_segment (int fd, segment_s seg) {
-  u8 buf[BlockSize];
+  u8 buf[My_option.block_size];
   s64 offset = seg.offset;
   u64 size;
-  unint n = BlockSize;
+  unint n = My_option.block_size;
 
   lseek(fd, offset, SEEK_SET);
   for (size = seg.length; size; size -= n) {
@@ -149,10 +150,10 @@ static void write_segment (int fd, segment_s seg) {
 }
 
 static void check_segment (int fd, segment_s seg) {
-  u8 buf[BlockSize];
+  u8 buf[My_option.block_size];
   s64 offset = seg.offset;
   u64 size;
-  unint n = BlockSize;
+  unint n = My_option.block_size;
 
   lseek(fd, offset, SEEK_SET);
   for (size = seg.length; size; size -= n) {
@@ -175,9 +176,9 @@ static void is_zeros (void *buf, u64 n) {
 }
 
 static void check_hole (int fd, segment_s seg) {
-  u8 buf[BlockSize];
+  u8 buf[My_option.block_size];
   u64 size;
-  unint n = BlockSize;
+  unint n = My_option.block_size;
 
   lseek(fd, seg.offset, SEEK_SET);
   for (size = seg.length; size; size -= n) {
@@ -195,17 +196,17 @@ void wtseek (void) {
   name = RndName(8);
   fd = creat(name, 0666);
   for (i = 0; Segment[i].offset >= 0; i++) {
-    if (Segment[i].sparse && !Test_sparse) continue;
+    if (Segment[i].sparse && !My_option.test_sparse) continue;
     write_segment(fd, Segment[i]);
   }
   close(fd);
   fd = open(name, O_RDONLY, 0);
   for (i = 0; Segment[i].offset >= 0; i++) {
-    if (Segment[i].sparse && !Test_sparse) continue;
+    if (Segment[i].sparse && !My_option.test_sparse) continue;
     check_segment(fd, Segment[i]);
   }
   for (i = 0; Hole[i].offset >= 0; i++) {
-    if (Hole[i].sparse && !Test_sparse) continue;
+    if (Hole[i].sparse && !My_option.test_sparse) continue;
     check_hole(fd, Hole[i]);
   }
   close(fd);

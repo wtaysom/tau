@@ -18,6 +18,7 @@
 #include <timer.h>
 
 #include "fcalls.h"
+#include "main.h"
 #include "util.h"
 
 char *Scratch;
@@ -26,12 +27,17 @@ char EmptyFile[] = "emptyfile";
 char OneFile[]   = "onefile";
 bool IsRoot;
 
-static bool Randomize = TRUE;
-bool Verbose = FALSE;
-bool Flaky = FALSE;
-bool Test_sparse = FALSE;
-snint BlockSize = 4096;
-s64 SzBigFile = (1LL << 32) + (1LL << 13) + 137;
+MyOption_s My_option = {
+  .size_big_file = (1LL << 32) + (1LL << 13) + 137,
+  .block_size    = 4096,
+  .exit_on_error = TRUE,
+  .stack_trace   = TRUE,
+  .is_root       = FALSE,
+  .flaky         = FALSE,
+  .verbose       = FALSE,
+  .seed_rand     = FALSE,
+  .test_sparse   = FALSE,
+  .test_direct   = FALSE };
 
 /* init_test creates a scratch directory in the specified
  * test directory.
@@ -44,7 +50,7 @@ s64 SzBigFile = (1LL << 32) + (1LL << 13) + 137;
 void init_test (char *dir) {
   char *suffix;
 
-  if (Randomize) srandom(nsecs());
+  if (My_option.seed_rand) srandom(nsecs());
   IsRoot = (geteuid() == 0);
     
   chdir(dir);
@@ -56,7 +62,7 @@ void init_test (char *dir) {
   mkdir(Scratch, 0777);
   chdir(Scratch);
 
-  CrFile(BigFile, SzBigFile);
+  CrFile(BigFile, My_option.size_big_file);
   CrFile(EmptyFile, 0);
   CrFile(OneFile, 1);
 }
@@ -94,19 +100,22 @@ void all_tests (char *dir) {
 bool myopt (int c) {
   switch (c) {
   case 'b':
-    BlockSize = strtoll(optarg, NULL, 0);
+    My_option.block_size = strtoll(optarg, NULL, 0);
     break;
   case 'f':
-    Flaky = TRUE;
+    My_option.flaky = TRUE;
+    break;
+  case 'o':
+    My_option.test_direct = TRUE;
     break;
   case 'r':
-    Randomize = FALSE;
+    My_option.seed_rand = TRUE;
     break;
   case 's':
-    Test_sparse = TRUE;
+    My_option.test_sparse = TRUE;
     break;
   case 'v':
-    Verbose = TRUE;
+    My_option.verbose = TRUE;
     break;
   default:
     return FALSE;
@@ -115,34 +124,36 @@ bool myopt (int c) {
 }
 
 void usage (void) {
-  pr_usage("[-prsvh] [<directory>]*\n"
+  pr_usage("[-foprsvh] [<directory>]*\n"
     "\th - help\n"
     "\tb - Block size [default = %ld]\n"
-    "\tf - Flaky - run the flaky tests (may fail)\n"
+    "\tf - My_option.flaky - run the flaky tests (may fail)\n"
+    "\to - Test O_DIRECT\n"
     "\tp - Print results\n"
     "\tr - Don't seed random number generator\n"
-    "\ts - run tests that require sparse file support\n"
+    "\ts - Sparse file tests\n"
     "\tv - Verbose - display each file system call\n"
-    "\tz - size of big file [default = 0x%llx]",
-    BlockSize, SzBigFile);
+    "\tz - Size of big file [default = 0x%llx]",
+    My_option.block_size, My_option.size_big_file);
 }
 
 int main (int argc, char *argv[]) {
   extern void DumpRecords(void);
   int i;
 
-  Option.file_size = SzBigFile;
+  Option.file_size = My_option.size_big_file;
   Option.dir = ".";
-  punyopt(argc, argv, myopt, "b:frsvy");
-  SzBigFile = Option.file_size;
+  punyopt(argc, argv, myopt, "b:forsv");
+  My_option.size_big_file = Option.file_size;
 
-  if (SzBigFile < 40000) {
+  if (My_option.size_big_file < 40000) {
     PrError("Size of big file, %lld, should be greater than 40K",
-        SzBigFile);
+            My_option.size_big_file);
     return 2;
   }
-  if (SzBigFile < (1LL << 32)) {
-    fprintf(stderr, "Size of big file only 0x%llx\n", SzBigFile);
+  if (My_option.size_big_file < (1LL << 32)) {
+    fprintf(stderr, "Size of big file only 0x%llx\n",
+            My_option.size_big_file);
   }
   if (argc == optind) {
     all_tests(Option.dir);

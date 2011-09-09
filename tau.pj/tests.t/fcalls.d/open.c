@@ -14,12 +14,13 @@
 #include <debug.h>
 
 #include "fcalls.h"
+#include "main.h"
 #include "util.h"
 
 void OpenTest (void) {
   int i;
   void *b;
-  char buf[BlockSize];
+  char buf[My_option.block_size];
   char *name = RndName(9);
   CrFile(name, 1377);
 
@@ -80,35 +81,37 @@ void OpenTest (void) {
   int rc = posix_memalign(&b, PAGE_SIZE, PAGE_SIZE);
   if (rc) PrError("posix_memalign:");
 #if __linux__
-  fd1 = open(name, O_TRUNC | O_RDWR | O_DIRECT, 0);
-  for (i = 0; i < 4; i++) {
-    Fill(b, PAGE_SIZE, i * PAGE_SIZE);
-    write(fd1, b, PAGE_SIZE);
-  }
-  lseek(fd1, 0, SEEK_SET);
-  for (i = 0; i < 4; i++) {
-    read(fd1, b, PAGE_SIZE);
-    IsSame(b, PAGE_SIZE, i * PAGE_SIZE);
-  }
-  lseek(fd1, 0, SEEK_SET);
-  writeErr(EINVAL, fd1, ((char *)b + 1), PAGE_SIZE);
-  writeErr(EINVAL, fd1, b, PAGE_SIZE - 1);
-  readErr(EINVAL, fd1, ((char *)b + 1), PAGE_SIZE);
-  readErr(EINVAL, fd1, b, PAGE_SIZE - 1);
-  close(fd1);
+  if (My_option.test_direct) {
+    fd1 = open(name, O_TRUNC | O_RDWR | O_DIRECT, 0);
+    for (i = 0; i < 4; i++) {
+      Fill(b, PAGE_SIZE, i * PAGE_SIZE);
+      write(fd1, b, PAGE_SIZE);
+    }
+    lseek(fd1, 0, SEEK_SET);
+    for (i = 0; i < 4; i++) {
+      read(fd1, b, PAGE_SIZE);
+      IsSame(b, PAGE_SIZE, i * PAGE_SIZE);
+    }
+    lseek(fd1, 0, SEEK_SET);
+    writeErr(EINVAL, fd1, ((char *)b + 1), PAGE_SIZE);
+    writeErr(EINVAL, fd1, b, PAGE_SIZE - 1);
+    readErr(EINVAL, fd1, ((char *)b + 1), PAGE_SIZE);
+    readErr(EINVAL, fd1, b, PAGE_SIZE - 1);
+    close(fd1);
 
-  /* O_DIRECT, backward seeks */
-  fd1 = open(name, O_TRUNC | O_RDWR | O_DIRECT, 0);
-  for (i = 3; i >= 0; i--) {
-    Fill(b, PAGE_SIZE, i * PAGE_SIZE);
-    pwrite(fd1, b, PAGE_SIZE, i * PAGE_SIZE);
+    /* O_DIRECT, backward seeks */
+    fd1 = open(name, O_TRUNC | O_RDWR | O_DIRECT, 0);
+    for (i = 3; i >= 0; i--) {
+      Fill(b, PAGE_SIZE, i * PAGE_SIZE);
+      pwrite(fd1, b, PAGE_SIZE, i * PAGE_SIZE);
+    }
+    lseek(fd1, 0, SEEK_SET);
+    for (i = 3; i >= 0; i--) {
+      pread(fd1, b, PAGE_SIZE, i * PAGE_SIZE);
+      IsSame(b, PAGE_SIZE, i * PAGE_SIZE);
+    }
+    close(fd1);
   }
-  lseek(fd1, 0, SEEK_SET);
-  for (i = 3; i >= 0; i--) {
-    pread(fd1, b, PAGE_SIZE, i * PAGE_SIZE);
-    IsSame(b, PAGE_SIZE, i * PAGE_SIZE);
-  }
-  close(fd1);
 #endif
 
   /* O_SYNC */
@@ -148,7 +151,7 @@ void OpenTest (void) {
 void OpenatTest (void) {
   int i;
   void *b;
-  char buf[BlockSize];
+  char buf[My_option.block_size];
   char *dirname = RndName(10);
   char *name = RndName(9);
   mkdir(dirname, 0700);

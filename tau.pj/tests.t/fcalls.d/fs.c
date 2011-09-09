@@ -17,6 +17,7 @@
 #include <debug.h>
 
 #include "fcalls.h"
+#include "main.h"
 #include "util.h"
 
 void FsTest (void) {
@@ -30,7 +31,7 @@ void FsTest (void) {
   fstatfs(fd, &s2);
   statvfs(".", &v1);
   fstatvfs(fd, &v2);
-  if (Flaky) {
+  if (My_option.flaky) {
     /* Can't be sure file system values wont change between calls */
     IsEq(&s1, &s2, sizeof(s1));
     IsEq(&v1, &v2, sizeof(v1));
@@ -65,7 +66,7 @@ void StatTest (void) {
   Is(s1.st_size == FILE_SZ);
   close(fd);
 
-  if (IsRoot) {
+  if (My_option.is_root) {
     chown(name, USER_A, GROUP_A);
     stat(name, &s1);
     Is(s1.st_uid == USER_A);

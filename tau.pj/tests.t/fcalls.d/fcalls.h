@@ -105,18 +105,4 @@
 #define readCheckSize(fd, b, n, sz)   readk (WHERE, 0, fd, b, n, sz)
 #define writeCheckSize(fd, b, n, sz)  writek(WHERE, 0, fd, b, n, sz)
 
-extern snint BlockSize;   /* Block size and buffer size */
-extern s64 SzBigFile;     /* Size of the "Big File" in bytes */
-
-extern bool Fatal;        /* Exit on unexpected errors */
-extern bool StackTrace;   /* Print a stack trace on error */
-extern bool IsRoot;       /* TRUE if effective uid is root */
-extern bool Flaky;        /* Run flaky tests */
-extern bool Test_sparse;  /* Run tests requiring sparse files */
-
-extern char BigFile[];
-extern char EmptyFile[];
-extern char OneFile[];
-
-
 #endif  /* _FCALLS_H_ */

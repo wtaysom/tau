@@ -97,15 +97,11 @@
 #include <timer.h>
 #include <where.h>
 
+#include "main.h"
 #include "wrapper.h"
 
 enum { NUM_BUCKETS = 107,
        HASH_MULT   = 37 };
-
-extern bool Verbose;     /* Print each called file system operations */
-
-bool Fatal = TRUE;       /* Exit on unexpected errors */
-bool StackTrace = TRUE;  /* Print a stack trace on failures */
 
 #define START  u64 start = nsecs()
 #define FINISH u64 finish = nsecs(); Record(w, finish - start, __FUNCTION__)
@@ -170,7 +166,7 @@ void DumpRecords (void) {
 
 /* PrVerbose used to optionally print arguments being used */
 static void PrVerbose (Where_s w, const char *fmt, va_list ap) {
-  if (!Verbose) return;
+  if (!My_option.verbose) return;
   if (getprogname() != NULL) {
     printf("%s ", getprogname());
   }
@@ -205,8 +201,8 @@ static void vPrErrork (Where_s w, const char *fmt1, va_list ap,
     vfprintf(stderr, fmt1, ap);
   }
   fprintf(stderr, ": %s<%d>\n", strerror(lasterr), lasterr);
-  if (StackTrace) stacktrace_err();
-  if (Fatal) exit(2); /* conventional value for failed execution */
+  if (My_option.stack_trace) stacktrace_err();
+  if (My_option.exit_on_error) exit(2);
 }
 
 /* Check checks the return code from system calls.
@@ -217,7 +213,7 @@ static s64 Check (Where_s w, s64 rc, int expected_err,
   va_list args;
 
 //printf("rc=%lld expected_err=%d rtn=%lld\n", rc, expected_err, rtn);
-  if (Verbose && fmt) {
+  if (My_option.verbose && fmt) {
     va_start(args, fmt);
     PrVerbose(w, fmt, args);
     va_end(args);
@@ -249,7 +245,7 @@ static s64 Check (Where_s w, s64 rc, int expected_err,
 static void *CheckPtr (Where_s w, void *p, bool is_null, const char *fmt, ...) {
   va_list args;
 
-  if (Verbose && fmt) {
+  if (My_option.verbose && fmt) {
     va_start(args, fmt);
     PrVerbose(w, fmt, args);
     va_end(args);
