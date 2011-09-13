@@ -1386,7 +1386,7 @@ FN;
       if (rebalance(op)) return FAILURE;
       child = op->child->d;
     }
-    buf_put(&op->parent); //XXX
+    buf_put(&op->parent);
     if (child->kind == LEAF) {
       lf_delete(op);
       return 0;
