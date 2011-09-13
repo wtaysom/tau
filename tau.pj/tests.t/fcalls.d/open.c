@@ -17,6 +17,13 @@
 #include "main.h"
 #include "util.h"
 
+/* ARM does not define PAGE_SIZE */
+#ifndef PAGE_SHIFT
+#undef PAGE_SIZE
+#define PAGE_SHIFT 12
+#define PAGE_SIZE (1UL << PAGE_SHIFT)
+#endif
+
 void OpenTest (void) {
   int i;
   void *b;
@@ -142,7 +149,7 @@ void OpenTest (void) {
 #endif
 
   free(b);
-  unlink(name); 
+  unlink(name);
   free(name);
 }
 
@@ -263,7 +270,7 @@ void OpenatTest (void) {
 
   free(b);
   chdir(dirname);
-  unlink(name); 
+  unlink(name);
   chdir("..");
   rmdir(dirname);
   free(name);

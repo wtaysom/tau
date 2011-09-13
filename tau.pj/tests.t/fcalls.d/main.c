@@ -52,7 +52,7 @@ void init_test (char *dir) {
 
   if (My_option.seed_rand) srandom(nsecs());
   IsRoot = (geteuid() == 0);
-    
+
   chdir(dir);
   chdirErr(ENOTDIR, "/etc/passwd");
 
