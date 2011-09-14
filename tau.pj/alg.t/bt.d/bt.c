@@ -1774,9 +1774,9 @@ static int map_rec_audit (Rec_s rec, Btree_s *t, void *user) {
   return 0;
 }
 
-static int node_audit(Btree_s *t, u64 block, Audit_s *audit);
+static int node_audit(Btree_s *t, u64 block, Audit_s *audit, int depth);
 
-static int leaf_audit(Buf_s *node, Audit_s *audit)
+static int leaf_audit(Buf_s *node, Audit_s *audit, int depth)
 {
   Head_s *head = node->d;
 
@@ -1793,12 +1793,21 @@ static int leaf_audit(Buf_s *node, Audit_s *audit)
 #endif
   audit->records += head->num_recs;
   if (head->is_split) {
-    return node_audit(node->user, head->last, audit);
+    return node_audit(node->user, head->last, audit, depth-1);
+  }
+  if (audit->max_depth) {
+    if (depth != audit->max_depth) {
+      t_dump(node->user);
+      fatal("Depth is wrong at block %lld %d != %d\n",
+            node->block, depth, audit->max_depth);
+    }
+  } else {
+    audit->max_depth = depth;
   }
   return 0;
 }
 
-static int branch_audit(Buf_s *node, Audit_s *audit)
+static int branch_audit(Buf_s *node, Audit_s *audit, int depth)
 {
   Head_s *head = node->d;
   u64 block;
@@ -1808,13 +1817,14 @@ static int branch_audit(Buf_s *node, Audit_s *audit)
   ++audit->branches;
   for (i = 0; i < head->num_recs; i++) {
     block = get_block(head, i);
-    rc = node_audit(node->user, block, audit);
+    rc = node_audit(node->user, block, audit, depth);
     if (rc) return rc;
   }
-  return node_audit(node->user, head->last, audit);
+  return node_audit(node->user, head->last, audit,
+                    head->is_split ? depth-1 : depth);
 }
 
-static int node_audit(Btree_s *t, u64 block, Audit_s *audit)
+static int node_audit(Btree_s *t, u64 block, Audit_s *audit, int depth)
 {
   Buf_s *node;
   Head_s *head;
@@ -1826,10 +1836,10 @@ static int node_audit(Btree_s *t, u64 block, Audit_s *audit)
   if (head->is_split) ++audit->splits;
   switch (head->kind) {
   case LEAF:
-    rc = leaf_audit(node, audit);
+    rc = leaf_audit(node, audit, depth+1);
     break;
   case BRANCH:
-    rc = branch_audit(node, audit);
+    rc = branch_audit(node, audit, depth+1);
     break;
   default:
     warn("unknown kind %d", head->kind);
@@ -1851,6 +1861,6 @@ int t_audit (Btree_s *t, Audit_s *audit) {
     printf("AUDIT FAILED %d\n", rc);
     return rc;
   }
-  rc = node_audit(t, t->root, audit);
+  rc = node_audit(t, t->root, audit, 0);
   return rc;
 }

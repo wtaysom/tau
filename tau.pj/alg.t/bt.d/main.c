@@ -415,7 +415,7 @@ void test_level(int n, int level)
   t = t_new(".tfile", NUM_BUFS);
   for (i = 0; i < n; i++) {
 if (i % 1000 == 0) fprintf(stderr, ".");
-if (i >= 298048) {
+if (i >= 297677) {
   fdebugon();
   Option.debug = TRUE;
   Option.print = TRUE;

@@ -5,6 +5,8 @@
 # found in the LICENSE file.
 #
 
+CFLAGS += -static
+
 include ../../mk/multi.mk
 LIBS += ../../libq.b/$(objdir)/libq -lm -lpthread
 ifeq ($(os),Linux)

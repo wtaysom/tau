@@ -4,3 +4,4 @@
 #
 
 # Do nothing for x86_64
+# CFLAGS += -static

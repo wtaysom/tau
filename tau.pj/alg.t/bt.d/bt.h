@@ -47,6 +47,7 @@ typedef struct Audit_s {
   u64 branches;
   u64 records;
   u64 splits;
+  int max_depth;
 } Audit_s;
 
 Btree_s *t_new(char *file, int num_bufs);

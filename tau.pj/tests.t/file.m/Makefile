@@ -12,6 +12,8 @@
 #  GNU General Public License for more details.
 ############################################################################
 
-CFLAGS+=-Werror
+# So we can run it on ChromeOS
+CFLAGS += -static
+
 include ../../mk/multi.mk
 LIBS += ../../libq.b/$(objdir)/libq -lrt -lm -lpthread
