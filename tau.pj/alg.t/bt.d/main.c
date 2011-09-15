@@ -400,6 +400,14 @@ if (Option.print) {
   PRlp(key);
   t_print(t);
 }
+if (i >= 95266) {
+  fdebugon();
+  Option.debug = TRUE;
+  Option.print = TRUE;
+  printf("=========%d======\n", i);
+  t_print(t);
+}
+printf("%d\n", i);
 #endif
 
 void test_level(int n, int level)
@@ -411,17 +419,11 @@ void test_level(int n, int level)
   int i;
   int rc;
 
+  Option.debug = TRUE;
   if (FALSE) seed_random();
   t = t_new(".tfile", NUM_BUFS);
   for (i = 0; i < n; i++) {
 if (i % 1000 == 0) fprintf(stderr, ".");
-if (i >= 297677) {
-  fdebugon();
-  Option.debug = TRUE;
-  Option.print = TRUE;
-  printf("=========%d======\n", i);
-  t_print(t);
-}
     if (should_delete(count, level)) {
       key = r_delete_rand();
       rc = t_delete(t, key);

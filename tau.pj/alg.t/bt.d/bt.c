@@ -545,7 +545,7 @@ FN;
   PACK(start, block);
 }
 
-void update_block(Head_s *head, u64 block, unint a)
+void update_block(Head_s *head, u64 block, unint irec)
 {
 FN;
   unint x;
@@ -553,8 +553,13 @@ FN;
   unint key_size;
 
   assert(head->kind == BRANCH);
-  assert(a < head->num_recs);
-  x = head->rec[a];
+if (irec >= head->num_recs) {
+  PRd(irec);
+  PRd(head->num_recs);
+  PRd(head->block);
+}
+  assert(irec < head->num_recs);
+  x = head->rec[irec];
   assert(x < SZ_BUF);
   start = &((u8 *)head)[x];
   key_size = *start++;
@@ -1011,7 +1016,11 @@ FN;
 
   if (child->num_recs == 0) {
     /* We have a degenerate case */
-    update_block(parent, child->last, op->irec);
+    if (op->irec == parent->num_recs) {
+      parent->last = child->last;
+    } else {
+      update_block(parent, child->last, op->irec);
+    }
     buf_free(&op->child);
     return 0;
   }
@@ -1235,6 +1244,14 @@ FN;
   Head_s *sibling = op->sibling->d;
   int i;
 
+  if (sibling->is_split) {
+    /* TODO(taysom): Need to think about what it means
+     * join a sibling that is split. May want to schedule
+     * it or something else. Could lead to problems (but should
+     * be rare).
+     */
+    return FALSE;
+  }
   if (child->kind == LEAF) {
     if (inuse(child) > sibling->free) {
       return FALSE;
@@ -1346,6 +1363,11 @@ FN;
 
   if (join(op)) return 0;
 
+  if (sibling->num_recs == 0 && sibling->is_split) {
+    // TODO(taysom) may want to do some thing with sibling?
+    buf_put(&op->sibling);
+    return 0;
+  }
   assert(sibling->num_recs > 0);
   if (child->kind == LEAF) {
     lf_rebalance(op);
