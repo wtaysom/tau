@@ -14,13 +14,11 @@
 #ifndef _RANDRW_H_
 #define _RANDRW_H_
 
-#ifndef _CRC_H_
-#include <crc.h>
+#ifndef _STYLE_H_
+#include <style.h>
 #endif
 
 enum { NUM_LONGS = 3157, NUM_BUFS = (1<<17) };
-
-//typedef enum { FALSE = 0, TRUE } BOOL;
 
 typedef struct Buf_s {
 	long	seed;

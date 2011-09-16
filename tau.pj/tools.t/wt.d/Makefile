@@ -12,6 +12,6 @@
 #  GNU General Public License for more details.
 ############################################################################
 
-CFLAGS+=-Werror
+CFLAGS+=-static
 include ../../mk/default.mk
 LIBS += ../../libq.b/$(objdir)/libq -lrt -lm -lpthread -lncurses

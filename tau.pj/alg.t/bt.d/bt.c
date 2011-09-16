@@ -1454,7 +1454,7 @@ void t_dump(Btree_s *t)
 {
   int is_on = fdebug_is_on();
 
-  printf("**************************************************\n");
+  printf("\n************************t_dump**************************\n");
   if (is_on) fdebugoff();
   node_dump(t, t->root, 0);
   if (is_on) fdebugon();
@@ -1782,7 +1782,7 @@ int t_map(Btree_s *t, Apply_f func, void *sys, void *user)
 static int map_rec_audit (Rec_s rec, Btree_s *t, void *user) {
   Lump_s *old = user;
 
-  if (cmplump(rec.key, *old) <= 0) {
+  if (cmplump(rec.key, *old) < 0) {
     t_dump(t);
     pr_lump(rec.key);
     printf(" <= ");

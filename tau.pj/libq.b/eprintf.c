@@ -193,7 +193,9 @@ void *erealloc (void *vp, size_t n)
 /* eallocpages: allocates n pages of specific size */
 void *eallocpages (size_t npages, size_t size) {
   void *p;
-  int rc = posix_memalign( &p, size, npages * size);
+  int rc;
+
+  rc = posix_memalign( &p, size, npages * size);
   if (rc) {
     eprintf("eallocpages failed %d", rc);
     return NULL;

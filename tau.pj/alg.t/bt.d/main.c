@@ -150,7 +150,7 @@ static int pr_rec (Rec_s rec, Btree_s *t, void *user) {
 void pr_tree (Btree_s *t) {
   u64 recnum = 0;
 
-  printf("******************************\n");
+  printf("\n**************pr_tree****************\n");
   t_map(t, pr_rec, NULL, &recnum);
 }
 
@@ -440,6 +440,7 @@ if (i % 1000 == 0) fprintf(stderr, ".");
     }
     audit(t);
   }
+printf("\n");
   audit(t);
   t_print(t);
   pr_stats(t);
