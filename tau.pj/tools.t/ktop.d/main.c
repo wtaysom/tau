@@ -29,6 +29,7 @@ pid_t gettid(void) { return syscall(__NR_gettid); }
 
 u8 Ignore_pid[(MAX_PID + 4) / 8];
 pthread_mutex_t Ignore_pid_lock = PTHREAD_MUTEX_INITIALIZER;
+u64 MyPidCount;
 
 void ignore_pid(int pid)
 {
@@ -45,7 +46,12 @@ bool do_ignore_pid(int pid)
 		warn("pid out of range %d", pid);
 		return TRUE;
 	}
-	return Ignore_pid[pid / 8] & (1 << (pid & 0x7));
+	if (Ignore_pid[pid / 8] & (1 << (pid & 0x7))) {
+		++MyPidCount;
+		return TRUE;
+	} else {
+		return FALSE;
+	}
 }
 
 

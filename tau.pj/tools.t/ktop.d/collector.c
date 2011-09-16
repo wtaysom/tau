@@ -34,7 +34,6 @@ pthread_mutex_t Count_lock = PTHREAD_MUTEX_INITIALIZER;
  * Count_lock protects these global variables
  */
 u64 Syscall_count[NUM_SYS_CALLS];
-u64 MyPidCount;
 u64 Slept;
 int Pid[MAX_PID];
 
@@ -294,20 +293,11 @@ static void parse_event(void *buf, u64 time)
 	 * assosiated with itself. The -s option, lets ktop
 	 * monitor itself and ignore everything else.
 	 */
-	if (Trace_self) {
-		if (!do_ignore_pid(event->pid)) {
-			return;
-		}
-		++MyPidCount;
-	} else {
-		if (do_ignore_pid(event->pid)) {
-			++MyPidCount;
-			return;
-		}
-	}
 	if (event->type == Sys_exit) {
+		if (do_ignore_pid(event->pid) && !Trace_self) return;
 		parse_sys_exit(event, time);
 	} else if (event->type == Sys_enter) {
+		if (do_ignore_pid(event->pid) && !Trace_self) return;
 		parse_sys_enter(event, time);
 	} else {
 		//printf(" no processing\n");
