@@ -14,6 +14,6 @@
 
 #bin=$(DESTDIR)$(sbindir)
 
-CFLAGS+=-Werror
 include ../../mk/default.mk
+CFLAGS += -static
 LIBS += ../../libq.b/$(objdir)/libq -lrt -lm -lpthread -lncurses

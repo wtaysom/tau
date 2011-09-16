@@ -65,16 +65,12 @@ void dump_event(void *buf)
 	event_s *event = buf;
 
 	pr_event(event);
-	switch (event->type) {
-	case SYS_EXIT:
+	if (event->type == Sys_exit) {
 		pr_sys_exit(event);
-		break;
-	case SYS_ENTER:
+	} else if (event->type == Sys_enter) {
 		pr_sys_enter(event);
-		break;
-	default:
+	} else {
 		printf(" no processing\n");
-		break;
 	}
 }
 

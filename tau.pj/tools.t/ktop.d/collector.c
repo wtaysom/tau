@@ -21,6 +21,7 @@
 #include "collector.h"
 #include "ktop.h"
 #include "syscall.h"
+#include "util.h"
 
 #define _STR(x) #x
 #define STR(x) _STR(x)
@@ -50,7 +51,23 @@ u64 No_start;
 
 Pidcall_s *Pidcall_bucket[PIDCALL_BUCKETS];
 
-static const char Event_path[] = EVENT_PATH;
+int Sys_exit;
+int Sys_enter;
+
+static char *Event_path;
+
+static void init_release(void)
+{
+	if (uname_release() < release("2.6.38")) {
+		Event_path = "events/syscalls/%s/enable";
+		Sys_exit = 21;
+		Sys_enter = 22;
+	} else {
+		Event_path = "events/raw_syscalls/%s/enable";
+		Sys_exit = 15;
+		Sys_enter = 16;
+	}
+}
 
 static const char *find_debugfs(void)
 {
@@ -288,16 +305,12 @@ static void parse_event(void *buf, u64 time)
 			return;
 		}
 	}
-	switch (event->type) {
-	case SYS_EXIT:
+	if (event->type == Sys_exit) {
 		parse_sys_exit(event, time);
-		break;
-	case SYS_ENTER:
+	} else if (event->type == Sys_enter) {
 		parse_sys_enter(event, time);
-		break;
-	default:
+	} else {
 		//printf(" no processing\n");
-		break;
 	}
 }
 
@@ -407,6 +420,7 @@ void start_collector(void)
 	int i;
 	int rc;
 
+	init_release();
 	enable_sys_enter();
 	if (Trace_exit) {
 		enable_sys_exit();

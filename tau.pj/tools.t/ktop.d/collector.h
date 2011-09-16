@@ -19,12 +19,6 @@ enum {	BUF_SIZE = 1 << 12,
 	SMALL_READ = BUF_SIZE >> 2 };
 
 /*
- * Right now, the /usr/include/linux header files do not match
- * the version of the kernel, so I'm commenting out this code
- * until we decide the best course to solve this problem.
- */
-
-/*
  * The id and format for syscall events are defined in
  * /sys/kernel/debug/tracing/events/raw_syscalls/sys_enter/format
  * /sys/kernel/debug/tracing/events/raw_syscalls/sys_exit/format
@@ -36,21 +30,6 @@ enum {	BUF_SIZE = 1 << 12,
  * you should consult the current kernel documentation in
  * Documentation/trace/ftrace.txt
  */
-
-//#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,38))
-#if 0
-
-	#define EVENT_PATH	"events/syscalls/%s/enable"
-
-	enum {	SYS_EXIT  = 21,
-		SYS_ENTER = 22};
-#else
-
-	#define EVENT_PATH	"events/raw_syscalls/%s/enable"
-
-	enum {	SYS_EXIT  = 15,
-		SYS_ENTER = 16};
-#endif
 
 typedef struct ring_header_s {
 	u64	time_stamp;
@@ -93,5 +72,8 @@ unint parse_buf(u8 *buf);
 void *dump_collector(void *args);
 void dump_event(void *buf);
 void pr_ring_header(ring_header_s *rh);
+
+extern int Sys_exit;
+extern int Sys_enter;
 
 #endif
