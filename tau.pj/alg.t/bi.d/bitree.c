@@ -90,7 +90,8 @@ static void rot_right (BiNode_s **np) {
   y->left = tmp;
   *np = x;
 }
-  
+
+#if 0
 static void rot_left (BiNode_s **np) {
   BiNode_s *x;
   BiNode_s *y;
@@ -104,12 +105,12 @@ static void rot_left (BiNode_s **np) {
   x->right = tmp;
   *np = y;
 }
-
+#endif
 
 static void insert (BiNode_s **np, Rec_s r) {
   BiNode_s *parent = *np;
   if (*np) {
-    if (cmplump(parent->rec.key, r.key) < 0) {
+    if (cmplump(r.key, parent->rec.key) < 0) {
       insert(&parent->left, r);
     } else {
       insert(&parent->right, r);
@@ -124,24 +125,33 @@ int bi_insert (BiTree_s *t, Rec_s r) {
   return 0;
 }
 
-void delete (BiNode_s **np, Lump_s key) {
-  BiNode_s *parent = *np;
-  if (!parent) fatal("Key not found");
-  int r = cmplump(parent->rec.key, key);
-  if (r < 0) delete(&parent->left, key);
-  if (r > 0) delete(&parent->right, key);
-  if (!parent->right) {
-    *np = parent->left;
-    free(parent);
+static void delete_node (BiNode_s **np) {
+  BiNode_s *node = *np;
+  if (!node->right) {
+    *np = node->left;
+    free(node);
     return;
   }
-  if (!parent->left) {
-    *np = parent->right;
-    free(parent);
+  if (!node->left) {
+    *np = node->right;
+    free(node);
     return;
   }
   rot_right(np);
-  
+  delete_node(&((*np)->right));
+}
+
+static void delete (BiNode_s **np, Lump_s key) {
+  BiNode_s *parent = *np;
+  if (!parent) fatal("Key not found");
+  int r = cmplump(key, parent->rec.key);
+  if (r < 0) {
+    delete(&parent->left, key);
+  } else if (r > 0) {
+    delete(&parent->right, key);
+  } else {
+    delete_node(np);
+  }
 }
 
 int bi_delete (BiTree_s *t, Lump_s key) {
