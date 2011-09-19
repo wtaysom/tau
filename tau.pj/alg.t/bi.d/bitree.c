@@ -5,6 +5,7 @@
 
 #include <ctype.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include <eprintf.h>
 #include <style.h>
@@ -129,6 +130,18 @@ void delete (BiNode_s **np, Lump_s key) {
   int r = cmplump(parent->rec.key, key);
   if (r < 0) delete(&parent->left, key);
   if (r > 0) delete(&parent->right, key);
+  if (!parent->right) {
+    *np = parent->left;
+    free(parent);
+    return;
+  }
+  if (!parent->left) {
+    *np = parent->right;
+    free(parent);
+    return;
+  }
+  rot_right(np);
+  
 }
 
 int bi_delete (BiTree_s *t, Lump_s key) {

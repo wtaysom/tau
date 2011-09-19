@@ -100,17 +100,18 @@ static void self(void)
 	mvprintw(SELF_ROW+4, SELF_COL, "Found:       %12lld", Found);
 	mvprintw(SELF_ROW+5, SELF_COL, "Out_of_order:%12lld", Out_of_order);
 	mvprintw(SELF_ROW+6, SELF_COL, "No_start:    %12lld", No_start);
+	mvprintw(SELF_ROW+7, SELF_COL, "Bad type:    %12lld", Bad_type);
 	if (1) {
-		mvprintw(SELF_ROW+7, SELF_COL, "Ticks:       %12lld", Pidcall_tick);
+		mvprintw(SELF_ROW+10, SELF_COL, "Ticks:       %12lld", Pidcall_tick);
 		if (PidcallRecord == 0) return;
 		avg = (double)PidcallIterations / (double)PidcallRecord;
 		PidcallIterations = PidcallRecord = 0;
 		if (avg > max) max =avg;
-		mvprintw(SELF_ROW+8, SELF_COL, "Avg:              %g", avg);
-		mvprintw(SELF_ROW+9, SELF_COL, "Max:              %g", max);
+		mvprintw(SELF_ROW+11, SELF_COL, "Avg:              %g", avg);
+		mvprintw(SELF_ROW+12, SELF_COL, "Max:              %g", max);
 	}
-	mvprintw(SELF_ROW+12, SELF_COL, "COLS:       %12d", COLS);
-	mvprintw(SELF_ROW+13, SELF_COL, "LINES:      %12d", LINES);
+	mvprintw(SELF_ROW+14, SELF_COL, "COLS:       %12d", COLS);
+	mvprintw(SELF_ROW+15, SELF_COL, "LINES:      %12d", LINES);
 
 }
 

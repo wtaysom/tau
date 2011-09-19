@@ -47,6 +47,7 @@ u64 No_enter;
 u64 Found;
 u64 Out_of_order;
 u64 No_start;
+u64 Bad_type;
 
 Pidcall_s *Pidcall_bucket[PIDCALL_BUCKETS];
 
@@ -300,7 +301,8 @@ static void parse_event(void *buf, u64 time)
 		if (do_ignore_pid(event->pid) && !Trace_self) return;
 		parse_sys_enter(event, time);
 	} else {
-		//printf(" no processing\n");
+		//printf("%d no processing\n", event->type);
+		++Bad_type;
 	}
 }
 

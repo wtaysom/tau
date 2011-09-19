@@ -79,6 +79,7 @@ extern u64 No_enter;
 extern u64 Found;
 extern u64 Out_of_order;
 extern u64 No_start;
+extern u64 Bad_type;
 
 extern u64 MyPidCount;
 extern u64 Slept;
