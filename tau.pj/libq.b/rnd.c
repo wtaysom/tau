@@ -38,7 +38,7 @@ unsigned urand_r (unsigned upper, unsigned *seedp)
 	return upper ? (rand_r(seedp) % upper) : 0;
 }
 
-int percent (int x)
+int random_percent (int x)
 {
 	return random() % 100 < x;
 }

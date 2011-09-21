@@ -258,7 +258,7 @@ static DirEntry_s *CreateTree (int width, int depth, int level) {
   int i;
   DirEntry_s *parent;
   DirEntry_s *child;
-  int type = percent(level * 15) ? T_FILE : T_DIR;
+  int type = random_percent(level * 15) ? T_FILE : T_DIR;
   parent = CreateDirEntry(type);
   if ((depth == 0) || (type != T_DIR)) {
     return parent;

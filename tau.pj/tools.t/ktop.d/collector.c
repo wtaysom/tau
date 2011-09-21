@@ -56,6 +56,27 @@ int Sys_enter;
 
 static char *Event_path;
 
+static int get_id(char *name)
+{
+	char file_name[MAX_PATH];
+	const char *trace_file;
+	FILE *file;
+	int rc;
+
+	snprintf(file_name, MAX_PATH, Event_path, name);
+	trace_file = tracing_file(file_name);
+	file = fopen(trace_file, "r");
+	if (!file) {
+		fatal("fopen %s:", trace_file);
+	}
+	rc = fprintf(file, "%s\n", update);
+	if (rc < 0) {
+		fatal("fprintf %s:", trace_file);
+	}
+	fclose(file);
+
+}
+
 static void init_release(void)
 {
 	if (uname_release() < release("2.6.38")) {
@@ -291,7 +312,7 @@ static void parse_event(void *buf, u64 time)
 
 	/*
 	 * Normally, ktop ignores any events relating to threads
-	 * assosiated with itself. The -s option, lets ktop
+	 * associated with itself. The -s option lets ktop
 	 * monitor itself and ignore everything else.
 	 */
 	if (event->type == Sys_exit) {
@@ -301,7 +322,7 @@ static void parse_event(void *buf, u64 time)
 		if (do_ignore_pid(event->pid) && !Trace_self) return;
 		parse_sys_enter(event, time);
 	} else {
-		//printf("%d no processing\n", event->type);
+		printf("%d no processing\n", event->type);
 		++Bad_type;
 	}
 }

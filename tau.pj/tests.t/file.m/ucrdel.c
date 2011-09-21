@@ -77,7 +77,7 @@ void loop (unsigned cnt)
 			printf(".");
 			fflush(stdout);
 		}
-		if (percent(45)) {
+		if (random_percent(45)) {
 			if (NextFile == &File[MAX_FILES]) continue;
 			f = NextFile++;
 			gen_name(f->name);

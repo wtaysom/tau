@@ -21,15 +21,23 @@ struct BiNode_s {
   Rec_s rec;
 };
 
-typedef struct BiTree_s {
-  BiNode_s *root;
-} BiTree_s;
+typedef struct BiStat_s {
+  u64 num_nodes;
+  u64 max_depth;
+  u64 total_depth;
+  u64 num_left;
+  u64 num_right;
+  Lump_s deepest;
+} BiStat_s;
 
-int bi_audit  (BiTree_s t);
-int bi_print  (BiTree_s t);
-int bi_stats  (BiTree_s t);
-int bi_find   (BiTree_s t, Lump_s key, Lump_s *val);
-int bi_insert (BiTree_s *t, Rec_s rec);
-int bi_delete (BiTree_s *t, Lump_s key);
+BiStat_s bi_stats(BiNode_s *root);
+
+int bi_audit (BiNode_s *root);
+int bi_print (BiNode_s *root);
+int bi_find  (BiNode_s *root, Lump_s key, Lump_s *val);
+int bi_insert(BiNode_s **root, Rec_s rec);
+int bi_delete(BiNode_s **root, Lump_s key);
+
+void bi_pr_path(BiNode_s *root, Lump_s key);
 
 #endif

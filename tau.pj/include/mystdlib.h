@@ -33,7 +33,7 @@ void seed_random (void);
 /* Uniform random integer from 0 to upper-1 */
 unsigned long urand (unsigned long upper);
 unsigned urand_r (unsigned upper, unsigned *seedp);
-int percent (int x);
+int random_percent (int x);
 long exp_dist (long upper);
 
 int isPattern (char *string);

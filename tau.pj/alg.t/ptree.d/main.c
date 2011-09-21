@@ -342,7 +342,7 @@ int mixp (int argc, char *argv[])
 	sum = num_recs();
 
 	for (i = 0; i < n; i++) {
-		if (!sum || percent(51)) {
+		if (!sum || random_percent(51)) {
 			do {
 				name = gen_name();
 			} while (find_string(name) != qERR_NOT_FOUND);
@@ -389,7 +389,7 @@ int rmv_percent (char *name, void *p)
 {
 	int	x = *(int *)p;
 
-	if (percent(x)) {
+	if (random_percent(x)) {
 		return delete_string(name);
 	}
 	return 0;
@@ -416,7 +416,7 @@ int t1p (int argc, char *argv[])
 	}
 	rc = fill(100);
 	for (i = 0; !rc && (i < n); i++) {
-		if (percent(75)) {
+		if (random_percent(75)) {
 			rc = fill(100);
 		} else {
 			rc = empty(p);
