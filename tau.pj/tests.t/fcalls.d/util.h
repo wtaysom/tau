@@ -11,19 +11,21 @@
 
 #include <where.h>
 
+enum { NAME_LEN = 10 };  /* Length of generated names counting nul */
+
 #define PrError(...) PrErrork(WHERE, __VA_ARGS__)
-#define IsSame(b, n, o) IsSamek(WHERE, b, n, o)
-#define IsEq(b1, b2, n) IsEqk(WHERE, b1, b2, n)
-#define Is(e) ((void)((e) || IsFailed(WHERE, # e)))
+#define CheckFill(b, n, o) CheckFillk(WHERE, b, n, o)
+#define CheckEq(b1, b2, n) CheckEqk(WHERE, b1, b2, n)
+#define Check(e) ((void)((e) || CheckFailed(WHERE, # e)))
 
 void PrErrork(Where_s w, const char *fmt, ...);
-bool IsSamek(Where_s w, const void *buf, int n, s64 offset);
-bool IsEqk(Where_s w, const void *b1, const void *b2, int n);
-bool IsFailed(Where_s w, const char *e);
+bool CheckFillk(Where_s w, const void *buf, int n, s64 offset);
+bool CheckEqk(Where_s w, const void *b1, const void *b2, int n);
+bool CheckFailed(Where_s w, const char *e);
 
 void Fill(void *buf, int n, s64 offset);
-char *Mkstr(char *s, ...);
-char *RndName(unsigned n);
+char *Catstr(char *s, ...);
+char *RndName(void);
 void CrFile (const char *name, u64 size);
 
 

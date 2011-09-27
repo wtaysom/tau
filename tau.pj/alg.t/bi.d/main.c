@@ -18,15 +18,11 @@
 
 #include "bitree.h"
 #include "lump.h"
+#include "main.h"
 
 enum { NUM_BUFS = 10 };
 
-struct {
-  int iterations;
-  int level;
-  bool debug;
-  bool print;
-} static Option = {
+Option_s Option = {
   .iterations = 3000,
   .level = 150,
   .debug = FALSE,
@@ -81,7 +77,7 @@ Lump_s seq_lump(void) {
   return lumpmk(MAX_KEY, s);
 }
 
-void pr_lump (Lump_s a) {
+static void pr_lump (Lump_s a) {
   enum { MAX_PRINT = 32 };
   int i;
   int size;
@@ -97,7 +93,7 @@ void pr_lump (Lump_s a) {
   }
 }
 
-int pr_rec (Rec_s rec, BiNode_s *root, void *user) {
+/*static*/ int pr_rec (Rec_s rec, BiNode_s *root, void *user) {
   u64 *recnum = user;
 
   printf("%4lld. ", ++*recnum);
@@ -108,8 +104,8 @@ int pr_rec (Rec_s rec, BiNode_s *root, void *user) {
   return 0;
 }
 
-void pr_stats (BiNode_s *root) {
-  BiStat_s s = bi_stats(root);
+static void pr_stats (BiTree_s *tree) {
+  BiStat_s s = bi_stats(tree);
   printf("num nodes=%lld sqrt=%g log2=%g\n"
          "max depth=%lld\n"
          "avg depth=%g\n"
@@ -120,7 +116,7 @@ void pr_stats (BiNode_s *root) {
          (double)s.total_depth / (double)s.num_nodes,
          s.num_left,
          s.num_right);
-  bi_pr_path(root, s.deepest);
+  bi_pr_path(tree, s.deepest);
 }
 
 enum { NUM_BUCKETS = (1 << 20) + 1,
@@ -155,7 +151,7 @@ static void r_add (Rec_s rec) {
   *r = rec;
 }
 
-void r_for_each (recFunc f, void *user) {
+static void r_for_each (recFunc f, void *user) {
   Rec_s *r;
 
   for (r = R; r < Next; r++) {
@@ -171,7 +167,7 @@ static snint r_rand_index (void) {
   return urand(x);
 }
 
-Rec_s r_get_rand (void) {
+/*static*/ Rec_s r_get_rand (void) {
   snint x = r_rand_index();
 
   if (x == -1) {
@@ -181,7 +177,7 @@ Rec_s r_get_rand (void) {
   return R[x];
 }
 
-Lump_s r_delete_rand (void) {
+static Lump_s r_delete_rand (void) {
   snint x = r_rand_index();
   Lump_s key;
 
@@ -203,7 +199,7 @@ void test1(int n) {
 }
 
 void test_seq(int n) {
-  BiNode_s *root = NULL;
+  BiTree_s tree = { 0 };
   Rec_s rec;
   unint i;
 
@@ -211,13 +207,13 @@ void test_seq(int n) {
   for (i = 0; i < n; i++) {
     rec.key = seq_lump();
     rec.val = rnd_lump();
-    bi_insert(&root, rec);
+    bi_insert(&tree, rec);
   }
-  bi_print(root);
+  bi_print(&tree);
 }
 
 void test_rnd(int n) {
-  BiNode_s *root = NULL;
+  BiTree_s tree = { 0 };
   Rec_s rec;
   unint i;
 
@@ -225,20 +221,20 @@ void test_rnd(int n) {
   for (i = 0; i < n; i++) {
     rec.key = fixed_lump(7);
     rec.val = rnd_lump();
-    bi_insert(&root, rec);
+    bi_insert(&tree, rec);
   }
-// bi_print(root);
-// pr_all_records(root);
-// pr_tree(root);
-  bi_audit(root);
+// bi_print(&tree);
+// pr_all_records(&tree);
+// pr_tree(&tree);
+  bi_audit(&tree);
 }
 
 void find_find (Lump_s key, Lump_s val, void *user) {
-  BiNode_s *root = user;
+  BiTree_s *tree = user;
   Lump_s fval;
   int rc;
 
-  rc = bi_find(root, key, &fval);
+  rc = bi_find(tree, key, &fval);
   if (rc) {
     fatal("Didn't find %s : rc=%d", key.d, rc);
   } else if (cmplump(val, fval) != 0) {
@@ -249,8 +245,8 @@ void find_find (Lump_s key, Lump_s val, void *user) {
   freelump(fval);
 }
 
-void tesbi_find(int n) {
-  BiNode_s *root = NULL;
+void test_bi_find(int n) {
+  BiTree_s tree = { 0 };
   Rec_s rec;
   unint i;
 
@@ -259,24 +255,24 @@ void tesbi_find(int n) {
     rec.key = fixed_lump(7);
     rec.val = rnd_lump();
     r_add(rec);
-    bi_insert(&root, rec);
+    bi_insert(&tree, rec);
   }
-  r_for_each(find_find, &root);
-  bi_audit(root);
+  r_for_each(find_find, &tree);
+  bi_audit(&tree);
 }
 
 void delete (Lump_s key, Lump_s val, void *user) {
-  BiNode_s *root = user;
+  BiTree_s *tree = user;
   int rc;
 
-  rc = bi_delete(&root, key);
+  rc = bi_delete(tree, key);
   if (rc) {
     fatal("Didn't find %s : rc=%d", key.d, rc);
   }
 }
 
-void tesbi_delete(int n) {
-  BiNode_s *root = NULL;
+void test_bi_delete(int n) {
+  BiTree_s tree = { 0 };
   Rec_s rec;
   unint i;
 
@@ -285,11 +281,11 @@ void tesbi_delete(int n) {
     rec.key = fixed_lump(7);
     rec.val = rnd_lump();
     r_add(rec);
-    bi_insert(&root, rec);
+    bi_insert(&tree, rec);
   }
-  r_for_each(delete, &root);
-  bi_audit(root);
-  pr_stats(root);
+  r_for_each(delete, &tree);
+  bi_audit(&tree);
+  pr_stats(&tree);
 }
 
 int should_delete(s64 count, s64 level) {
@@ -317,7 +313,7 @@ if (Option.print) {
 #endif
 
 void test_level(int n, int level) {
-  BiNode_s *root = NULL;
+  BiTree_s tree = { 0 };
   Rec_s rec;
   s64 count = 0;
   int i;
@@ -328,24 +324,24 @@ void test_level(int n, int level) {
 if (i % 1000 == 0) fprintf(stderr, ".");
     if (should_delete(count, level)) {
       rec.key = r_delete_rand();
-      rc = bi_delete(&root, rec.key);
+      rc = bi_delete(&tree, rec.key);
       if (rc) fatal("delete key=%s", rec.key.d);
       --count;
     } else {
       rec.key = fixed_lump(7);
       rec.val = rnd_lump();
       r_add(rec);
-      rc = bi_insert(&root, rec);
+      rc = bi_insert(&tree, rec);
       if (rc) fatal("bi_insert key=%s val=%s",
                     rec.key.d, rec.val.d);
       ++count;
     }
-    bi_audit(root);
+    bi_audit(&tree);
   }
 printf("\n");
-  bi_audit(root);
-  if (Option.print) bi_print(root);
-  pr_stats(root);
+  bi_audit(&tree);
+  if (Option.print) bi_print(&tree);
+  pr_stats(&tree);
 }
 
 void usage(void) {
@@ -395,11 +391,12 @@ void myoptions(int argc, char *argv[]) {
 
 int main(int argc, char *argv[]) {
   myoptions(argc, argv);
-  test_level(Option.iterations, Option.level);
+  test_perf(Option.iterations, Option.level);
+  test_rb(Option.iterations, Option.level);
   return 0;
 }
 
 #if 0
- tesbi_delete(Option.iterations);
+ test_bi_delete(Option.iterations);
   test_level(Option.iterations, Option.level);
 #endif

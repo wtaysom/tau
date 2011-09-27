@@ -10,15 +10,15 @@
 #include <eprintf.h>
 #include <style.h>
 
-#include "bitree.h"
+#include "ibitree.h"
 
-struct BiNode_s {
-  BiNode_s *left;
-  BiNode_s *right;
-  Rec_s rec;
+struct iBiNode_s {
+  iBiNode_s *left;
+  iBiNode_s *right;
+  u64 key;
 };
 
-int bi_audit (BiTree_s *tree) {
+int ibi_audit (iBiTree_s *tree) {
   return 0;
 }
 
@@ -28,51 +28,33 @@ static void pr_indent (int indent) {
   }
 }
 
-static void pr_lump (Lump_s a) {
-  enum { MAX_PR_LUMP = 32 };
-  u8 *p;
-  int size = a.size;
-  if (size > MAX_PR_LUMP) size = MAX_PR_LUMP;
-  for (p = a.d; size != 0; --size, p++) {
-    if (isprint(*p)) {
-      putchar(*p);
-    } else {
-      putchar('.');
-    }
-  }
-}
-
-static void pr_rec (Rec_s r, int indent) {
+static void pr_key (u64 key, int indent) {
   pr_indent(indent);
-  pr_lump(r.key);
-  printf(": ");
-  pr_lump(r.val);
-  printf("\n");
+  printf("%lld\n", key);
 }
 
-static void pr_node (BiNode_s *node, int indent) {
+static void pr_node (iBiNode_s *node, int indent) {
   if (!node) return;
   pr_node(node->left, indent + 1);
-  pr_rec(node->rec, indent);
+  pr_key(node->key, indent);
   pr_node(node->right, indent + 1);
 }
 
-int bi_print (BiTree_s *tree) {
+int ibi_print (iBiTree_s *tree) {
   pr_node(tree->root, 0);
   return 0;
 }
 
-void bi_pr_path (BiTree_s *tree, Lump_s key) {
-  BiNode_s *node = tree->root;
+void ibi_pr_path (iBiTree_s *tree, u64 key) {
+  iBiNode_s *node = tree->root;
   while (node) {
-    pr_lump(node->rec.key);
-    int r = cmplump(key, node->rec.key);
-    if (r == 0) {
+    printf("%lld", node->key);
+    if (key == node->key) {
       printf("\n");
       return;
     }
     printf(" ");
-    if (r < 0) {
+    if (key < node->key) {
       node = node->left;
     } else {
       node = node->right;
@@ -80,12 +62,12 @@ void bi_pr_path (BiTree_s *tree, Lump_s key) {
   }
 }
 
-static void node_stat (BiNode_s *node, BiStat_s *s, int depth) {
+static void node_stat (iBiNode_s *node, iBiStat_s *s, int depth) {
   if (!node) return;
   ++s->num_nodes;
   if (depth > s->max_depth) {
     s->max_depth = depth;
-    s->deepest = node->rec.key;
+    s->deepest = node->key;
   }
   s->total_depth += depth;
   if (node->left) {
@@ -98,21 +80,19 @@ static void node_stat (BiNode_s *node, BiStat_s *s, int depth) {
   }
 }
   
-BiStat_s bi_stats (BiTree_s *tree) {
-  BiStat_s stat = { 0 };
+iBiStat_s ibi_stats (iBiTree_s *tree) {
+  iBiStat_s stat = { 0 };
   node_stat(tree->root, &stat, 1);
   return stat;
 }
 
-int bi_find (BiTree_s *tree, Lump_s key, Lump_s *val) {
-  BiNode_s *node = tree->root;
+int ibi_find (iBiTree_s *tree, u64 key) {
+  iBiNode_s *node = tree->root;
   while (node) {
-    int r = cmplump(key, node->rec.key);
-    if (r == 0) {
-      *val = node->rec.val;
+    if (key == node->key) {
       return 0;
     }
-    if (r < 0) {
+    if (key < node->key) {
       node = node->left;
     } else {
       node = node->right;
@@ -128,10 +108,10 @@ int bi_find (BiTree_s *tree, Lump_s key, Lump_s *val) {
      / \                / \
     a   b              b   c
 */
-static void rot_right (BiNode_s **np) {
-  BiNode_s *x;
-  BiNode_s *y;
-  BiNode_s *tmp;
+static void rot_right (iBiNode_s **np) {
+  iBiNode_s *x;
+  iBiNode_s *y;
+  iBiNode_s *tmp;
   y = *np;
   if (!y) return;
   x = y->left;
@@ -142,10 +122,10 @@ static void rot_right (BiNode_s **np) {
   *np = x;
 }
 
-static void rot_left (BiNode_s **np) {
-  BiNode_s *x;
-  BiNode_s *y;
-  BiNode_s *tmp;
+static void rot_left (iBiNode_s **np) {
+  iBiNode_s *x;
+  iBiNode_s *y;
+  iBiNode_s *tmp;
   x = *np;
   if (!x) return;
   y = x->right;
@@ -156,15 +136,15 @@ static void rot_left (BiNode_s **np) {
   *np = y;
 }
 
-static BiNode_s *bi_new (Rec_s r) {
-  BiNode_s *node = ezalloc(sizeof(*node));
-  node->rec = r;
+static iBiNode_s *ibi_new (u64 key) {
+  iBiNode_s *node = ezalloc(sizeof(*node));
+  node->key = key;
   return node;
 }
 
 #if 0
-static void insert (BiNode_s **np, Rec_s r) {
-  BiNode_s *node = *np;
+static void insert (iBiNode_s **np, Rec_s r) {
+  iBiNode_s *node = *np;
   if (*np) {
     if (cmplump(r.key, node->rec.key) < 0) {
       insert(&node->left, r);
@@ -172,17 +152,17 @@ static void insert (BiNode_s **np, Rec_s r) {
       insert(&node->right, r);
     }
   } else {
-    *np = bi_new(r);
+    *np = ibi_new(r);
   }
 }
 
-int bi_insert (BiNode_s **root, Rec_s r) {
+int ibi_insert (iBiNode_s **root, Rec_s r) {
   insert(&t->root, r);
   return 0;
 }
 
-static void delete_node (BiNode_s **np) {
-  BiNode_s *node = *np;
+static void delete_node (iBiNode_s **np) {
+  iBiNode_s *node = *np;
   if (!node->right) {
     *np = node->left;
     free(node);
@@ -197,43 +177,42 @@ static void delete_node (BiNode_s **np) {
   delete_node(&((*np)->right));
 }
 
-static void delete (BiNode_s **np, Lump_s key) {
-  BiNode_s *node = *np;
+static void delete (iBiNode_s **np, u64 key) {
+  iBiNode_s *node = *np;
   if (!node) fatal("Key not found");
-  int r = cmplump(key, node->rec.key);
-  if (r < 0) {
+  if (key < node->key) {
     delete(&node->left, key);
-  } else if (r > 0) {
+  } else if (key > node->key) {
     delete(&node->right, key);
   } else {
     delete_node(np);
   }
 }
 
-int bi_delete (BiNode_s **root, Lump_s key) {
+int ibi_delete (iBiNode_s **root, u64 key) {
   delete(&t->root, key);
   return 0;
 }
 #endif
 
-int bi_insert (BiTree_s *tree, Rec_s r) {
-  BiNode_s **np = &tree->root;
+int ibi_insert (iBiTree_s *tree, u64 key) {
+  iBiNode_s **np = &tree->root;
   for (;;) {
-    BiNode_s *node = *np;
+    iBiNode_s *node = *np;
     if (!node) break;
-    if (cmplump(r.key, node->rec.key) < 0) {
+    if (key < node->key) {
       np = &node->left;
     } else {
       np = &node->right;
     }
   }
-  *np = bi_new(r);
+  *np = ibi_new(key);
   return 0;
 }
 
-static void delete_node (BiNode_s **np) {
+static void delete_node (iBiNode_s **np) {
   static int odd = 0;
-  BiNode_s *node;
+  iBiNode_s *node;
   for (;;) {
     node = *np;
     if (!node->right) {
@@ -256,14 +235,13 @@ static void delete_node (BiNode_s **np) {
   free(node);
 }
 
-int bi_delete (BiTree_s *tree, Lump_s key) {
-  BiNode_s **np = &tree->root;
+int ibi_delete (iBiTree_s *tree, u64 key) {
+  iBiNode_s **np = &tree->root;
   for (;;) {
-    BiNode_s *node = *np;
+    iBiNode_s *node = *np;
     if (!node) fatal("Key not found");
-    int r = cmplump(key, node->rec.key);
-    if (r == 0) break;
-    if (r < 0) {
+    if (key == node->key) break;
+    if (key < node->key) {
       np = &node->left;
     } else {
       np = &node->right;

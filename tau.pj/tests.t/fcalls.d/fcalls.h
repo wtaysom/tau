@@ -16,12 +16,14 @@
  * easy to find the case that fails.
  *
  * Yes, this is a shameless abuse of macros but it makes the tests easier
- * to read and write.
+ * to read and write (once you get used to it).
  *
  * Conventions:
- *   1. A macro is defined for each system call with the same name
+ *   1. A macro is defined for each system call with the same name as the
+ *      system call.
  *   2. A wrapper function is defined that is the name of system
  *      call followed by a 'k' which stands for check.
+ *   3. A macro, <sys_call>Err, allows specific error cases to be checked.
  */
 
 #define chdir(p)            chdirk    (WHERE, 0, p)
@@ -60,8 +62,8 @@
 #define pwrite(fd, b, n, o) pwritek   (WHERE, 0, fd, b, n, n, o)
 
 #define read(fd, b, n)      readk     (WHERE, 0, fd, b, n, n)
-#define readlinkk(p, b, n)  readlink  (WHERE, 0, p, b, n, n)
-#define readlinkatk(fd, p, b, n) readlinkat(WHERE, 0, fd, p, b, n, n)
+#define readlink(p, b, n)   readlinkk (WHERE, 0, p, b, n, n)
+#define readlinkat(fd, p, b, n) readlinkatk(WHERE, 0, fd, p, b, n, n)
 
 #define rmdir(p)            rmdirk    (WHERE, 0, p)
 

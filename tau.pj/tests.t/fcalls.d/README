@@ -1,0 +1,12 @@
+fcalls is a set of tests for kernel interfaces for the file system.
+
+The intent is to check basic functionality of a given file system by
+using most of the file system interfaces or system calls.
+
+Macros have been abused to make the tests easier to write.
+
+Please see fcalls.h.
+
+In the error reporting functions like PrError, warn, and fatal,
+putting ':' at the end of the format string, causes errno to be
+printed as part of the error message.

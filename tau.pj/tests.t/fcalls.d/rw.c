@@ -35,27 +35,27 @@ static void Simple (void) {
   lseek(fd, 0, 0);
 
   read(fd, buf, sizeof(buf));
-  IsSame(buf, sizeof(buf), 0);
+  CheckFill(buf, sizeof(buf), 0);
   readCheckSize(fd, buf, sizeof(buf), REMAINDER);
-  IsSame(buf, REMAINDER, sizeof(buf));
+  CheckFill(buf, REMAINDER, sizeof(buf));
   close(fd);
 }
 
 /* Normal read/lseek tests */
 static void rdseek (void) {
-  u8 buf[My_option.block_size];
+  u8 buf[Local_option.block_size];
   int fd;
   s64 offset;
   u64 size;
 
   /* Read BigFile and verify contents */
   fd = open(BigFile, O_RDWR, 0);
-  size = My_option.size_big_file;
-  for (offset = 0; size; offset += My_option.block_size) {
-    unint n = My_option.block_size;
+  size = Local_option.size_big_file;
+  for (offset = 0; size; offset += Local_option.block_size) {
+    unint n = Local_option.block_size;
     if (n > size) n = size;
     read(fd, buf, n);
-    IsSame(buf, n, offset);
+    CheckFill(buf, n, offset);
     size -= n;
   }
 
@@ -63,33 +63,33 @@ static void rdseek (void) {
   readCheckSize(fd, buf, sizeof(buf), 0);
 
   /* Start read before eof but go beyond eof */
-  offset = My_option.size_big_file - 47;
+  offset = Local_option.size_big_file - 47;
   lseek(fd, offset, SEEK_SET);
-  readCheckSize(fd, buf, My_option.block_size, 47);
-  IsSame(buf, 47, offset);
+  readCheckSize(fd, buf, Local_option.block_size, 47);
+  CheckFill(buf, 47, offset);
 
   /* Seek to middle of file and verify contents */
-  offset = My_option.size_big_file / 2;
+  offset = Local_option.size_big_file / 2;
   lseek(fd, offset, SEEK_SET);
-  read(fd, buf, My_option.block_size);
-  IsSame(buf, My_option.block_size, offset);
+  read(fd, buf, Local_option.block_size);
+  CheckFill(buf, Local_option.block_size, offset);
 
   /* Seek from current position forward 2 blocks */
-  offset += 3 * My_option.block_size;
-  lseekCheckOffset(fd, 2 * My_option.block_size, SEEK_CUR, offset);
-  read(fd, buf, My_option.block_size);
-  IsSame(buf, My_option.block_size, offset);
+  offset += 3 * Local_option.block_size;
+  lseekCheckOffset(fd, 2 * Local_option.block_size, SEEK_CUR, offset);
+  read(fd, buf, Local_option.block_size);
+  CheckFill(buf, Local_option.block_size, offset);
 
   /* Seek from eof back 3 blocks */
-  offset = My_option.size_big_file - 3 * My_option.block_size;
-  lseekCheckOffset(fd, -(3 * My_option.block_size), SEEK_END, offset);
-  read(fd, buf, My_option.block_size);
-  IsSame(buf, My_option.block_size, offset);
+  offset = Local_option.size_big_file - 3 * Local_option.block_size;
+  lseekCheckOffset(fd, -(3 * Local_option.block_size), SEEK_END, offset);
+  read(fd, buf, Local_option.block_size);
+  CheckFill(buf, Local_option.block_size, offset);
 
   /* Seek beyond eof */
-  offset = My_option.size_big_file + My_option.block_size;
+  offset = Local_option.size_big_file + Local_option.block_size;
   lseek(fd, offset, SEEK_SET);
-  readCheckSize(fd, buf, My_option.block_size, 0);
+  readCheckSize(fd, buf, Local_option.block_size, 0);
 
   /* Seek bad whence */
   lseekErr(EINVAL, fd, 0, 4);
@@ -135,10 +135,10 @@ segment_s Invalid[] = {
   { FALSE, 0, 0 }};
 
 static void write_segment (int fd, segment_s seg) {
-  u8 buf[My_option.block_size];
+  u8 buf[Local_option.block_size];
   s64 offset = seg.offset;
   u64 size;
-  unint n = My_option.block_size;
+  unint n = Local_option.block_size;
 
   lseek(fd, offset, SEEK_SET);
   for (size = seg.length; size; size -= n) {
@@ -150,16 +150,16 @@ static void write_segment (int fd, segment_s seg) {
 }
 
 static void check_segment (int fd, segment_s seg) {
-  u8 buf[My_option.block_size];
+  u8 buf[Local_option.block_size];
   s64 offset = seg.offset;
   u64 size;
-  unint n = My_option.block_size;
+  unint n = Local_option.block_size;
 
   lseek(fd, offset, SEEK_SET);
   for (size = seg.length; size; size -= n) {
     if (n > size) n = size;
     read(fd, buf, n);
-    IsSame(buf, n, offset);
+    CheckFill(buf, n, offset);
     offset += n;
   }
 }
@@ -176,9 +176,9 @@ static void is_zeros (void *buf, u64 n) {
 }
 
 static void check_hole (int fd, segment_s seg) {
-  u8 buf[My_option.block_size];
+  u8 buf[Local_option.block_size];
   u64 size;
-  unint n = My_option.block_size;
+  unint n = Local_option.block_size;
 
   lseek(fd, seg.offset, SEEK_SET);
   for (size = seg.length; size; size -= n) {
@@ -193,20 +193,20 @@ void wtseek (void) {
   int fd;
   s64 i;
 
-  name = RndName(8);
+  name = RndName();
   fd = creat(name, 0666);
   for (i = 0; Segment[i].offset >= 0; i++) {
-    if (Segment[i].sparse && !My_option.test_sparse) continue;
+    if (Segment[i].sparse && !Local_option.test_sparse) continue;
     write_segment(fd, Segment[i]);
   }
   close(fd);
   fd = open(name, O_RDONLY, 0);
   for (i = 0; Segment[i].offset >= 0; i++) {
-    if (Segment[i].sparse && !My_option.test_sparse) continue;
+    if (Segment[i].sparse && !Local_option.test_sparse) continue;
     check_segment(fd, Segment[i]);
   }
   for (i = 0; Hole[i].offset >= 0; i++) {
-    if (Hole[i].sparse && !My_option.test_sparse) continue;
+    if (Hole[i].sparse && !Local_option.test_sparse) continue;
     check_hole(fd, Hole[i]);
   }
   close(fd);

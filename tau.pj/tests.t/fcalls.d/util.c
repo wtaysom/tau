@@ -42,34 +42,32 @@ void PrErrork (Where_s w, const char *fmt, ...) {
   }
   va_end(args);
   fprintf(stderr, "\n");
-  if (My_option.stack_trace) stacktrace_err();
-  if (My_option.exit_on_error) exit(2);
+  if (Local_option.stack_trace) stacktrace_err();
+  if (Local_option.exit_on_error) exit(2);
 }
 
 /* RndName generates a random name. The caller must free the returned name */
-char *RndName (unsigned n) {
+char *RndName (void) {
   static char namechar[] = "abcdefghijklmnopqrstuvwxyz"
          "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
          "_";
   char *s;
   unint i;
 
-  if (!n) return NULL;
-
-  s = emalloc(n);
-  for (i = 0; i < n - 1; i++) {
+  s = emalloc(NAME_LEN);
+  for (i = 0; i < NAME_LEN - 1; i++) {
     s[i] = namechar[urand(sizeof(namechar) - 1)];
   }
   s[i] = '\0';
   return s;
 }
 
-/* Mkstr creates a string by concatenating all the string
+/* Catstr creates a string by concatenating all the string
  * arguments. The last string must be NULL.
  * Caller must free the returned pointer.
  * O(n^2), so don't pass too many strings.
  */
-char *Mkstr (char *s, ...) {
+char *Catstr (char *s, ...) {
   char *t;
   char *u;
   int sum;
@@ -114,15 +112,15 @@ void Fill (void *buf, int n, s64 offset) {
   }
 }
 
-/* IsSamek: does the buffer have the same content that was set by Fill */
-bool IsSamek (Where_s w, const void *buf, int n, s64 offset) {
+/* CheckFillk: does the buffer have the same content that was set by Fill */
+bool CheckFillk (Where_s w, const void *buf, int n, s64 offset) {
   const u8 *b = buf;
   const u8 *end = &b[n];
 
   for (; b < end; b++) {
     if (*b != Hash(offset)) {
       PrErrork(w,
-        "IsSame at offset %td expected 0x%2x"
+        "CheckFill at offset %td expected 0x%2x"
         " but is 0x%2x",
         b - (u8 *)buf, Hash(offset), *b);
       return FALSE;
@@ -132,30 +130,30 @@ bool IsSamek (Where_s w, const void *buf, int n, s64 offset) {
   return TRUE;
 }
 
-/* IsEqk: checks if the two buffers are equal */
-bool IsEqk (Where_s w, const void *b1, const void *b2, int n) {
+/* CheckEqk: checks if the two buffers are equal */
+bool CheckEqk (Where_s w, const void *b1, const void *b2, int n) {
   if (memcmp(b1, b2, n) != 0) {
-    PrErrork(w, "IsEq");
+    PrErrork(w, "CheckEq");
     return FALSE;
   }
   return TRUE;
 }
 
-/* IsFailed: reports failure of expression */
-bool IsFailed (Where_s w, const char *e) {
+/* CheckFailed: reports failure of expression */
+bool CheckFailed (Where_s w, const char *e) {
   PrErrork(w, " %s", e);
   return FALSE;
 }
 
 /* CrFile creates a file of specified size and Fills it with data. */
 void CrFile (const char *name, u64 size) {
-  u8 buf[My_option.block_size];
+  u8 buf[Local_option.block_size];
   int fd;
   u64 offset;
 
   fd = creat(name, 0666);
-  for (offset = 0; size; offset += My_option.block_size) {
-    unint n = My_option.block_size;
+  for (offset = 0; size; offset += Local_option.block_size) {
+    unint n = Local_option.block_size;
     if (n > size) n = size;
     Fill(buf, n, offset);
     write(fd, buf, n);

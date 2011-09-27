@@ -25,9 +25,9 @@ char *Scratch;
 char BigFile[]   = "bigfile";
 char EmptyFile[] = "emptyfile";
 char OneFile[]   = "onefile";
-bool IsRoot;
+bool CheckRoot;
 
-MyOption_s My_option = {
+LocalOption_s Local_option = {
   .size_big_file = (1LL << 32) + (1LL << 13) + 137,
   .block_size    = 4096,
   .exit_on_error = TRUE,
@@ -50,35 +50,36 @@ MyOption_s My_option = {
 void init_test (char *dir) {
   char *suffix;
 
-  if (My_option.seed_rand) srandom(nsecs());
-  IsRoot = (geteuid() == 0);
+  if (Local_option.seed_rand) srandom(nsecs());
+  CheckRoot = (geteuid() == 0);
 
   chdir(dir);
   chdirErr(ENOTDIR, "/etc/passwd");
 
-  suffix = RndName(10);
-  Scratch = Mkstr("scratch_", suffix, 0);
+  suffix = RndName();
+  Scratch = Catstr("scratch_", suffix, 0);
   free(suffix);
   mkdir(Scratch, 0777);
   chdir(Scratch);
 
-  CrFile(BigFile, My_option.size_big_file);
+  CrFile(BigFile, Local_option.size_big_file);
   CrFile(EmptyFile, 0);
   CrFile(OneFile, 1);
 }
 
-/* cleanup deletes the scratch directory eveything under it. */
+/* cleanup deletes the scratch directory and everything under it. */
 void cleanup (void) {
   char *cmd;
   int rc;
 
   chdir("..");
-  cmd = Mkstr("rm -fr ", Scratch, NULL);
+  cmd = Catstr("rm -fr ", Scratch, NULL);
 
   rc = system(cmd);
   if (rc == -1) PrError("%s:", cmd);
   free(cmd);
   free(Scratch);
+  Scratch = NULL;
 }
 
 void all_tests (char *dir) {
@@ -100,22 +101,22 @@ void all_tests (char *dir) {
 bool myopt (int c) {
   switch (c) {
   case 'b':
-    My_option.block_size = strtoll(optarg, NULL, 0);
+    Local_option.block_size = strtoll(optarg, NULL, 0);
     break;
   case 'f':
-    My_option.flaky = TRUE;
+    Local_option.flaky = TRUE;
     break;
   case 'o':
-    My_option.test_direct = TRUE;
+    Local_option.test_direct = TRUE;
     break;
   case 'r':
-    My_option.seed_rand = TRUE;
+    Local_option.seed_rand = TRUE;
     break;
   case 's':
-    My_option.test_sparse = TRUE;
+    Local_option.test_sparse = TRUE;
     break;
   case 'v':
-    My_option.verbose = TRUE;
+    Local_option.verbose = TRUE;
     break;
   default:
     return FALSE;
@@ -127,33 +128,32 @@ void usage (void) {
   pr_usage("[-foprsvh] [<directory>]*\n"
     "\th - help\n"
     "\tb - Block size [default = %ld]\n"
-    "\tf - My_option.flaky - run the flaky tests (may fail)\n"
+    "\tf - Local_option.flaky - run the flaky tests (may fail)\n"
     "\to - Test O_DIRECT\n"
     "\tp - Print results\n"
     "\tr - Don't seed random number generator\n"
     "\ts - Sparse file tests\n"
     "\tv - Verbose - display each file system call\n"
     "\tz - Size of big file [default = 0x%llx]",
-    My_option.block_size, My_option.size_big_file);
+    Local_option.block_size, Local_option.size_big_file);
 }
 
 int main (int argc, char *argv[]) {
-  extern void DumpRecords(void);
   int i;
 
-  Option.file_size = My_option.size_big_file;
+  Option.file_size = Local_option.size_big_file;
   Option.dir = ".";
   punyopt(argc, argv, myopt, "b:forsv");
-  My_option.size_big_file = Option.file_size;
+  Local_option.size_big_file = Option.file_size;
 
-  if (My_option.size_big_file < 40000) {
+  if (Local_option.size_big_file < 40000) {
     PrError("Size of big file, %lld, should be greater than 40K",
-            My_option.size_big_file);
+            Local_option.size_big_file);
     return 2;
   }
-  if (My_option.size_big_file < (1LL << 32)) {
+  if (Local_option.size_big_file < (1LL << 32)) {
     fprintf(stderr, "Size of big file only 0x%llx\n",
-            My_option.size_big_file);
+            Local_option.size_big_file);
   }
   if (argc == optind) {
     all_tests(Option.dir);

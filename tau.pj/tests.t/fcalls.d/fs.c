@@ -31,17 +31,17 @@ void FsTest (void) {
   fstatfs(fd, &s2);
   statvfs(".", &v1);
   fstatvfs(fd, &v2);
-  if (My_option.flaky) {
-    /* Can't be sure file system values wont change between calls */
-    IsEq(&s1, &s2, sizeof(s1));
-    IsEq(&v1, &v2, sizeof(v1));
-    Is(s1.f_bsize   == v1.f_bsize);
-    Is(s1.f_blocks  == v1.f_blocks);
-    Is(s1.f_bfree   == v1.f_bfree);
-    Is(s1.f_bavail  == v1.f_bavail);
-    Is(s1.f_files   == v1.f_files);
-    Is(s1.f_ffree   == v1.f_ffree);
-    Is(s1.f_namelen == v1.f_namemax);
+  if (Local_option.flaky) {
+    /* Can't be sure file system values won't change between calls */
+    CheckEq(&s1, &s2, sizeof(s1));
+    CheckEq(&v1, &v2, sizeof(v1));
+    Check(s1.f_bsize   == v1.f_bsize);
+    Check(s1.f_blocks  == v1.f_blocks);
+    Check(s1.f_bfree   == v1.f_bfree);
+    Check(s1.f_bavail  == v1.f_bavail);
+    Check(s1.f_files   == v1.f_files);
+    Check(s1.f_ffree   == v1.f_ffree);
+    Check(s1.f_namelen == v1.f_namemax);
   }
   close(fd);
 #endif
@@ -57,49 +57,49 @@ void StatTest (void) {
          GROUP_B    = 76543 };
   struct stat s1;
   struct stat s2;
-  char *name = RndName(9);
+  char *name = RndName();
   CrFile(name, FILE_SZ);
   stat(name, &s1);
   int fd = open(name, O_RDONLY, 0);
   fstat(fd, &s2);
-  IsEq(&s1, &s2, sizeof(s1));
-  Is(s1.st_size == FILE_SZ);
+  CheckEq(&s1, &s2, sizeof(s1));
+  Check(s1.st_size == FILE_SZ);
   close(fd);
 
-  if (My_option.is_root) {
+  if (Local_option.is_root) {
     chown(name, USER_A, GROUP_A);
     stat(name, &s1);
-    Is(s1.st_uid == USER_A);
-    Is(s1.st_gid == GROUP_A);
+    Check(s1.st_uid == USER_A);
+    Check(s1.st_gid == GROUP_A);
 
     fd = open(name, O_RDWR, 0);
     fchown(fd, USER_B, GROUP_B);
     fstat(fd, &s1);
-    Is(s1.st_uid == USER_B);
-    Is(s1.st_gid == GROUP_B);
+    Check(s1.st_uid == USER_B);
+    Check(s1.st_gid == GROUP_B);
     close(fd);
   }
   /* Truncate can both shrink and grow a file */
   truncate(name, FILE_TRUNC);
   stat(name, &s1);
-  Is(s1.st_size == FILE_TRUNC);
+  Check(s1.st_size == FILE_TRUNC);
   truncate(name, FILE_GROW);
   stat(name, &s1);
-  Is(s1.st_size == FILE_GROW);
+  Check(s1.st_size == FILE_GROW);
 
   fd = open(name, O_RDWR, 0);
   ftruncate(fd, FILE_TRUNC);
   fstat(fd, &s1);
-  Is(s1.st_size == FILE_TRUNC);
+  Check(s1.st_size == FILE_TRUNC);
   ftruncate(fd, FILE_GROW);
   fstat(fd, &s1);
-  Is(s1.st_size == FILE_GROW);
+  Check(s1.st_size == FILE_GROW);
   close(fd);
 
   fd = open(name, O_RDONLY, 0);
   ftruncateErr(EINVAL, fd, FILE_TRUNC);
   fstat(fd, &s1);
-  Is(s1.st_size == FILE_GROW);
+  Check(s1.st_size == FILE_GROW);
   close(fd);
 
   /* Dup - fds share seek pointer */
@@ -109,35 +109,36 @@ void StatTest (void) {
   write(fd1, "abc", 3);
   lseek(fd1, 0, 0);
   read(fd1, b, 1);
-  Is(b[0] == 'a');
+  Check(b[0] == 'a');
   read(fd2, b, 1);
-  Is(b[0] == 'b');
+  Check(b[0] == 'b');
   close(fd1);
   close(fd2);
   fd2 = dupErr(EBADF, fd1);
 
   /* Dup2 - like dup but can pick fd number */
+  /* TODO(taysom) add more tests */
   fd1 = open(name, O_RDWR | O_TRUNC, 0);
   fd2 = open(name, O_RDONLY, 0);
   fd2 = dup2(fd1, fd2);
   write(fd1, "abc", 3);
   lseek(fd1, 0, 0);
   read(fd1, b, 1);
-  Is(b[0] == 'a');
+  Check(b[0] == 'a');
   read(fd2, b, 1);
-  Is(b[0] == 'b');
+  Check(b[0] == 'b');
   close(fd1);
   close(fd2);
 
   /* Link */
-  char *name2 = RndName(9);
+  char *name2 = RndName();
   link(name, name2);
   stat(name, &s1);
-  Is(s1.st_nlink == 2);
+  Check(s1.st_nlink == 2);
   unlink(name2);
   free(name2);
   stat(name, &s1);
-  Is(s1.st_nlink == 1);
+  Check(s1.st_nlink == 1);
   /* TODO(taysom): need to try 64K links */
 
   unlink(name);

@@ -6,8 +6,7 @@
 #ifndef _MAIN_H_
 #define _MAIN_H_ 1
 
-
-typedef struct MyOption_s {
+typedef struct LocalOption_s {
   s64 size_big_file;   /* Size of the "Big File" in bytes */
   snint block_size;    /* Block size and buffer size */
   bool exit_on_error;  /* Exit on unexpected errors */
@@ -18,12 +17,14 @@ typedef struct MyOption_s {
   bool seed_rand;      /* Seed random numbers */
   bool test_sparse;    /* Run tests requiring sparse files */
   bool test_direct;    /* Run tests using O_DIRECT */
-} MyOption_s;
+} LocalOption_s;
 
-extern MyOption_s My_option;
+extern LocalOption_s Local_option;
 
 extern char BigFile[];
 extern char EmptyFile[];
 extern char OneFile[];
+
+void DumpRecords(void);
 
 #endif

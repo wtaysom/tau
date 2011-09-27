@@ -44,7 +44,7 @@ static bool ignore (char *name) {
       (strcmp(name, "..") == 0);
 }
 
-static inline bool IsEmpty(dir_s *d) { return d->next == 0; }
+static inline bool CheckEmpty(dir_s *d) { return d->next == 0; }
 
 static void AddFile (dir_s *d, int type, char *name) {
   if (d->max == d->next) {
@@ -83,94 +83,94 @@ static void RemoveFile (dir_s *d, char *name) {
   }
 }
 
-static void AddChildren (dir_s *parent, int num_children) {
+static void AddChildren (dir_s *dir, int num_children) {
   char *name;
   int i;
 
-  chdir(parent->name);
+  chdir(dir->name);
   for (i = 0; i < num_children; i++) {
-    name = RndName(10);
+    name = RndName();
     mkdir(name, 0777);
-    AddFile(parent, T_DIR, name);
+    AddFile(dir, T_DIR, name);
   }
   chdir("..");
 }
 
-static void DeleteChildren (dir_s *parent) {
-  chdir(parent->name);
-  while (!IsEmpty(parent)) {
-    rmdir(parent->file[0].name);
-    RemoveFile(parent, parent->file[0].name);
+static void DeleteChildren (dir_s *dir) {
+  chdir(dir->name);
+  while (!CheckEmpty(dir)) {
+    rmdir(dir->file[0].name);
+    RemoveFile(dir, dir->file[0].name);
   }
   chdir("..");
 }
 
-void for_each_file (dir_s *parent, dir_f fn, void *user) {
-  DIR *dir;
+void for_each_file (dir_s *dir, dir_f fn, void *user) {
+  DIR *d;
   struct dirent entry;
   struct dirent *result;
-  dir = opendir(parent->name);
+  d = opendir(dir->name);
   for (;;) {
-    readdir_r(dir, &entry, &result);
+    readdir_r(d, &entry, &result);
     if (result == NULL) break;
     if (!fn(&entry, user)) break;
   }
-  closedir(dir);
+  closedir(d);
 }
 
 static bool AuditChild (struct dirent *entry, void *user) {
-  dir_s *d = user;
+  dir_s *dir = user;
   if (ignore(entry->d_name)) return TRUE;
-  if (!FindFile(d, entry->d_name)) {
-    PrError("Didn't find %s in %s", entry->d_name, d->name);
+  if (!FindFile(dir, entry->d_name)) {
+    PrError("Didn't find %s in %s", entry->d_name, dir->name);
     return FALSE;
   }
   return TRUE;
 }
 
-static void AuditDir (dir_s *d) {
-  for_each_file(d, AuditChild, d);
+static void AuditDir (dir_s *dir) {
+  for_each_file(dir, AuditChild, dir);
 }
 
-static void SaveTell (DIR *dir, struct dirent *entry, dir_s *parent) {
+static void SaveTell (DIR *d, struct dirent *entry, dir_s *dir) {
   file_s *f;
   if (ignore(entry->d_name)) return;
-  if ((f = FindFile(parent, entry->d_name)) == NULL) {
-    PrError("Didn't find %s in %s", entry->d_name, parent->name);
+  if ((f = FindFile(dir, entry->d_name)) == NULL) {
+    PrError("Didn't find %s in %s", entry->d_name, dir->name);
     return;
   }
-  f->tell = telldir(dir);
+  f->tell = telldir(d);
 }
 
 void SeekTest (void) {
   int num_children = 10;
-  dir_s parent = NilDir;
-  DIR *dir;
+  dir_s dir = NilDir;
+  DIR *d;
   struct dirent *entry;
   int i;
 
-  parent.name = RndName(14);
-  mkdir(parent.name, 0777);
-  AddChildren(&parent, num_children);
+  dir.name = RndName();
+  mkdir(dir.name, 0777);
+  AddChildren(&dir, num_children);
 
-  dir = opendir(parent.name);
-  while ((entry = readdir(dir)) != NULL) {
-    SaveTell(dir, entry, &parent);
+  d = opendir(dir.name);
+  while ((entry = readdir(d)) != NULL) {
+    SaveTell(d, entry, &dir);
   }
   for (i = 0; i < 27; i++) {
     int k = urand(num_children);
-    file_s *file = &parent.file[k];
-    seekdir(dir, file->tell);
-    entry = readdir(dir);
+    file_s *file = &dir.file[k];
+    seekdir(d, file->tell);
+    entry = readdir(d);
     if (strcmp(entry->d_name, file->name) != 0) {
       PrError("Seekdir failed. Looking for %s found %s",
           entry->d_name, file->name);
     }
   }
-  closedir(dir);
-  DeleteChildren(&parent);
-  rmdir(parent.name);
-  free(parent.name);
+  closedir(d);
+  DeleteChildren(&dir);
+  rmdir(dir.name);
+  free(dir.name);
 }
 
 enum { NAME_SIZE = 17 };
@@ -183,27 +183,27 @@ struct DirEntry_s {
   DirEntry_s *child;
 };
 
-typedef bool (*walk_f)(DirEntry_s *parent);
+typedef bool (*walk_f)(DirEntry_s *dir);
 
 static DirEntry_s *CreateDirEntry (int type) {
   int fd;
-  DirEntry_s *d;
-  d = ezalloc(sizeof(*d));
-  d->name = RndName(NAME_SIZE);
-  d->type = type;
+  DirEntry_s *direntry;
+  direntry = ezalloc(sizeof(*direntry));
+  direntry->name = RndName();
+  direntry->type = type;
   switch (type) {
     case T_FILE:
-      fd = creat(d->name, 0700);
+      fd = creat(direntry->name, 0700);
       close(fd);
       break;
     case T_DIR:
-      mkdir(d->name, 0700);
+      mkdir(direntry->name, 0700);
       break;
     default:
       PrError("bad type %d", type);
       break;
   }
-  return d;
+  return direntry;
 }
 
 static void Indent (int indent) {
@@ -212,65 +212,65 @@ static void Indent (int indent) {
   }
 }
 
-static void PrintTree (DirEntry_s *parent, int indent) {
-  if (!parent) return;
+static void PrintTree (DirEntry_s *direntry, int indent) {
+  if (!direntry) return;
   if (Option.print) {
     Indent(indent);
-    printf("%s %s\n", parent->type == T_DIR ? "D" : "F", parent->name);
+    printf("%s %s\n", direntry->type == T_DIR ? "D" : "F", direntry->name);
   }
-  PrintTree(parent->child, indent + 1);
-  PrintTree(parent->sibling, indent);
+  PrintTree(direntry->child, indent + 1);
+  PrintTree(direntry->sibling, indent);
 }
 
-static bool WalkTree (DirEntry_s *parent, walk_f f) {
+static bool WalkTree (DirEntry_s *direntry, walk_f f) {
   bool continue_walking;
-  if (!parent) return TRUE;
-  if (!WalkTree(parent->sibling, f)) return FALSE;
-  if (parent->type == T_DIR) {
-    chdir(parent->name);
-    continue_walking = WalkTree(parent->child, f);
+  if (!direntry) return TRUE;
+  if (!WalkTree(direntry->sibling, f)) return FALSE;
+  if (direntry->type == T_DIR) {
+    chdir(direntry->name);
+    continue_walking = WalkTree(direntry->child, f);
     chdir("..");
     if (!continue_walking) return FALSE;
   }
-  return f(parent);
+  return f(direntry);
 }
 
-static bool DeleteDirEntry (DirEntry_s *parent) {
-  switch (parent->type) {
+static bool DeleteDirEntry (DirEntry_s *direntry) {
+  switch (direntry->type) {
     case T_FILE:
-      unlink(parent->name);
+      unlink(direntry->name);
       break;
     case T_DIR:
-      rmdir(parent->name);
+      rmdir(direntry->name);
       break;
     default:
-      PrError("bad type %d", parent->type);
+      PrError("bad type %d", direntry->type);
       break;
   }
   return TRUE;
 }
 
-static void DeleteTree (DirEntry_s *parent) {
-  WalkTree(parent, DeleteDirEntry);
+static void DeleteTree (DirEntry_s *direntry) {
+  WalkTree(direntry, DeleteDirEntry);
 }
 
 static DirEntry_s *CreateTree (int width, int depth, int level) {
   int i;
-  DirEntry_s *parent;
+  DirEntry_s *direntry;
   DirEntry_s *child;
   int type = random_percent(level * 15) ? T_FILE : T_DIR;
-  parent = CreateDirEntry(type);
+  direntry = CreateDirEntry(type);
   if ((depth == 0) || (type != T_DIR)) {
-    return parent;
+    return direntry;
   }
-  chdir(parent->name);
+  chdir(direntry->name);
   for (i = 0; i < width; i++) {
     child = CreateTree(width, depth - 1, level + 1);
-    child->sibling = parent->child;
-    parent->child = child;
+    child->sibling = direntry->child;
+    direntry->child = child;
   }
   chdir("..");
-  return parent;
+  return direntry;
 }
 
 static void TreeTest (void) {
@@ -282,15 +282,15 @@ static void TreeTest (void) {
 
 static void Simple (void) {
   int num_children = 20;
-  dir_s parent = NilDir;
+  dir_s dir = NilDir;
 
-  parent.name = RndName(10);
-  mkdir(parent.name, 0777);
-  AddChildren(&parent, num_children);
-  AuditDir(&parent);
-  DeleteChildren(&parent);
-  rmdir(parent.name);
-  free(parent.name);
+  dir.name = RndName();
+  mkdir(dir.name, 0777);
+  AddChildren(&dir, num_children);
+  AuditDir(&dir);
+  DeleteChildren(&dir);
+  rmdir(dir.name);
+  free(dir.name);
 }
 
 void DirTest (void) {

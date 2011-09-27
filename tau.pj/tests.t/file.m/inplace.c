@@ -16,6 +16,11 @@
 #include <eprintf.h>
 #include <puny.h>
 
+struct {
+	bool	read;
+	bool	write;
+} Local_option = { TRUE, TRUE };
+
 FILE *Results;
 
 static inline u64 nsecs (void)
@@ -84,9 +89,35 @@ static void report(char *label, u64 total, size_t n, int iterations)
 
 void usage(void)
 {
-	pr_usage("-f<file> -z<file size> -i<iterations> -r<results_file>");
+	pr_usage("[-RW] [-f<file>] [-z<file size>]"
+	         " [-i<iterations>] [-r<results_file>]\n"
+	         "\tR - turn off read test\n"
+	         "\tW - turn off write test\n"
+	         "\tf - file to use for test [%s]\n"
+	         "\tz - size of file [%d]\n"
+	         "\ti - number of iterations [%d]\n"
+	         "\tr - results files [%s]\n",
+	         Option.file,
+	         Option.file_size,
+	         Option.iterations,
+	         Option.results);
 }
 
+bool localoptions (int c)
+{
+	switch (c) {
+	case 'R':
+		Local_option.read = FALSE;
+		break;
+	case 'W':
+		Local_option.write = FALSE;
+		break;
+	default:
+		return FALSE;
+	}
+	return TRUE;
+}
+		
 int main(int argc, char *argv[])
 {
 	char *name;
@@ -99,7 +130,7 @@ int main(int argc, char *argv[])
 	u64 total;
 	int iterations;
 
-	punyopt(argc, argv, NULL, NULL);
+	punyopt(argc, argv, localoptions, "RW");
 	name = Option.file;
 	size = Option.file_size;
 	iterations = Option.iterations;
@@ -120,18 +151,20 @@ int main(int argc, char *argv[])
 	fd = init(name, size);
 	buf = malloc(size);
 
-	start = nsecs();
-	inplace_write(fd, buf, size, iterations);
-	finish = nsecs();
-	total = finish - start;
-	report("pwrite", total, size, iterations);
-
-	start = nsecs();
-	inplace_read(fd, buf, size, iterations);
-	finish = nsecs();
-	total = finish - start;
-	report("pread ", total, size, iterations);
-
+	if (Local_option.write) {
+		start = nsecs();
+		inplace_write(fd, buf, size, iterations);
+		finish = nsecs();
+		total = finish - start;
+		report("pwrite", total, size, iterations);
+	}
+	if (Local_option.read) {
+		start = nsecs();
+		inplace_read(fd, buf, size, iterations);
+		finish = nsecs();
+		total = finish - start;
+		report("pread ", total, size, iterations);
+	}
 	cleanup(name, fd);
 	return 0;
 }

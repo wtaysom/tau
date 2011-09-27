@@ -27,8 +27,8 @@
 void OpenTest (void) {
   int i;
   void *b;
-  char buf[My_option.block_size];
-  char *name = RndName(9);
+  char buf[Local_option.block_size];
+  char *name = RndName();
   CrFile(name, 1377);
 
   /* Open file twice */
@@ -50,25 +50,25 @@ void OpenTest (void) {
   write(fd2, msg2, sizeof(msg2));
   write(fd1, msg3, sizeof(msg3));
   pread(fd2, buf, sizeof(msg1), 0);
-  IsEq(buf, msg1, sizeof(msg1));
+  CheckEq(buf, msg1, sizeof(msg1));
   pread(fd1, buf, sizeof(msg2), sizeof(msg1));
-  IsEq(buf, msg2, sizeof(msg2));
+  CheckEq(buf, msg2, sizeof(msg2));
   pread(fd2, buf, sizeof(msg3), sizeof(msg1) + sizeof(msg2));
-  IsEq(buf, msg3, sizeof(msg3));
+  CheckEq(buf, msg3, sizeof(msg3));
   close(fd1);
   close(fd2);
 
   /* Append mode requires write mode, but read mode works */
   fd1 = open(name, O_APPEND, 0);
   read(fd1, buf, sizeof(msg1));
-  IsEq(buf, msg1, sizeof(msg1));
+  CheckEq(buf, msg1, sizeof(msg1));
   writeErr(EBADF, fd1, msg1, sizeof(msg1));
   close(fd1);
 
   /* No mode allows read but not writes, because 0 is O_RDONLY */
   fd1 = open(name, 0, 0);
   read(fd1, buf, sizeof(msg1));
-  IsEq(buf, msg1, sizeof(msg1));
+  CheckEq(buf, msg1, sizeof(msg1));
   writeErr(EBADF, fd1, msg1, sizeof(msg1));
   close(fd1);
 
@@ -76,11 +76,11 @@ void OpenTest (void) {
   fd1 = open(name, O_RDONLY, 0);
   fd2 = open(name, O_RDONLY, 0);
   pread(fd2, buf, sizeof(msg1), 0);
-  IsEq(buf, msg1, sizeof(msg1));
+  CheckEq(buf, msg1, sizeof(msg1));
   pread(fd1, buf, sizeof(msg2), sizeof(msg1));
-  IsEq(buf, msg2, sizeof(msg2));
+  CheckEq(buf, msg2, sizeof(msg2));
   pread(fd2, buf, sizeof(msg3), sizeof(msg1) + sizeof(msg2));
-  IsEq(buf, msg3, sizeof(msg3));
+  CheckEq(buf, msg3, sizeof(msg3));
   close(fd1);
   close(fd2);
 
@@ -88,7 +88,7 @@ void OpenTest (void) {
   int rc = posix_memalign(&b, PAGE_SIZE, PAGE_SIZE);
   if (rc) PrError("posix_memalign:");
 #if __linux__
-  if (My_option.test_direct) {
+  if (Local_option.test_direct) {
     fd1 = open(name, O_TRUNC | O_RDWR | O_DIRECT, 0);
     for (i = 0; i < 4; i++) {
       Fill(b, PAGE_SIZE, i * PAGE_SIZE);
@@ -97,7 +97,7 @@ void OpenTest (void) {
     lseek(fd1, 0, SEEK_SET);
     for (i = 0; i < 4; i++) {
       read(fd1, b, PAGE_SIZE);
-      IsSame(b, PAGE_SIZE, i * PAGE_SIZE);
+      CheckFill(b, PAGE_SIZE, i * PAGE_SIZE);
     }
     lseek(fd1, 0, SEEK_SET);
     writeErr(EINVAL, fd1, ((char *)b + 1), PAGE_SIZE);
@@ -115,7 +115,7 @@ void OpenTest (void) {
     lseek(fd1, 0, SEEK_SET);
     for (i = 3; i >= 0; i--) {
       pread(fd1, b, PAGE_SIZE, i * PAGE_SIZE);
-      IsSame(b, PAGE_SIZE, i * PAGE_SIZE);
+      CheckFill(b, PAGE_SIZE, i * PAGE_SIZE);
     }
     close(fd1);
   }
@@ -130,7 +130,7 @@ void OpenTest (void) {
   lseek(fd1, 0, SEEK_SET);
   for (i = 0; i < 4; i++) {
     read(fd1, b, PAGE_SIZE);
-    IsSame(b, PAGE_SIZE, i * PAGE_SIZE);
+    CheckFill(b, PAGE_SIZE, i * PAGE_SIZE);
   }
   close(fd1);
 
@@ -158,9 +158,9 @@ void OpenTest (void) {
 void OpenatTest (void) {
   int i;
   void *b;
-  char buf[My_option.block_size];
-  char *dirname = RndName(10);
-  char *name = RndName(9);
+  char buf[Local_option.block_size];
+  char *dirname = RndName();
+  char *name = RndName();
   mkdir(dirname, 0700);
   chdir(dirname);
   CrFile(name, 1377);
@@ -186,25 +186,25 @@ void OpenatTest (void) {
   write(fd2, msg2, sizeof(msg2));
   write(fd1, msg3, sizeof(msg3));
   pread(fd2, buf, sizeof(msg1), 0);
-  IsEq(buf, msg1, sizeof(msg1));
+  CheckEq(buf, msg1, sizeof(msg1));
   pread(fd1, buf, sizeof(msg2), sizeof(msg1));
-  IsEq(buf, msg2, sizeof(msg2));
+  CheckEq(buf, msg2, sizeof(msg2));
   pread(fd2, buf, sizeof(msg3), sizeof(msg1) + sizeof(msg2));
-  IsEq(buf, msg3, sizeof(msg3));
+  CheckEq(buf, msg3, sizeof(msg3));
   close(fd1);
   close(fd2);
 
   /* Append mode requires write mode, but read mode works */
   fd1 = openat(dirfd, name, O_APPEND, 0);
   read(fd1, buf, sizeof(msg1));
-  IsEq(buf, msg1, sizeof(msg1));
+  CheckEq(buf, msg1, sizeof(msg1));
   writeErr(EBADF, fd1, msg1, sizeof(msg1));
   close(fd1);
 
   /* No mode allows read but not writes, because 0 is O_RDONLY */
   fd1 = openat(dirfd, name, 0, 0);
   read(fd1, buf, sizeof(msg1));
-  IsEq(buf, msg1, sizeof(msg1));
+  CheckEq(buf, msg1, sizeof(msg1));
   writeErr(EBADF, fd1, msg1, sizeof(msg1));
   close(fd1);
 
@@ -212,11 +212,11 @@ void OpenatTest (void) {
   fd1 = openat(dirfd, name, O_RDONLY, 0);
   fd2 = openat(dirfd, name, O_RDONLY, 0);
   pread(fd2, buf, sizeof(msg1), 0);
-  IsEq(buf, msg1, sizeof(msg1));
+  CheckEq(buf, msg1, sizeof(msg1));
   pread(fd1, buf, sizeof(msg2), sizeof(msg1));
-  IsEq(buf, msg2, sizeof(msg2));
+  CheckEq(buf, msg2, sizeof(msg2));
   pread(fd2, buf, sizeof(msg3), sizeof(msg1) + sizeof(msg2));
-  IsEq(buf, msg3, sizeof(msg3));
+  CheckEq(buf, msg3, sizeof(msg3));
   close(fd1);
   close(fd2);
 
@@ -232,7 +232,7 @@ void OpenatTest (void) {
   lseek(fd1, 0, SEEK_SET);
   for (i = 0; i < 4; i++) {
     read(fd1, b, PAGE_SIZE);
-    IsSame(b, PAGE_SIZE, i * PAGE_SIZE);
+    CheckFill(b, PAGE_SIZE, i * PAGE_SIZE);
   }
   lseek(fd1, 0, SEEK_SET);
   writeErr(EINVAL, fd1, ((char *)b + 1), PAGE_SIZE);
@@ -250,7 +250,7 @@ void OpenatTest (void) {
   lseek(fd1, 0, SEEK_SET);
   for (i = 3; i >= 0; i--) {
     pread(fd1, b, PAGE_SIZE, i * PAGE_SIZE);
-    IsSame(b, PAGE_SIZE, i * PAGE_SIZE);
+    CheckFill(b, PAGE_SIZE, i * PAGE_SIZE);
   }
   close(fd1);
 #endif
@@ -264,7 +264,7 @@ void OpenatTest (void) {
   lseek(fd1, 0, SEEK_SET);
   for (i = 0; i < 4; i++) {
     read(fd1, b, PAGE_SIZE);
-    IsSame(b, PAGE_SIZE, i * PAGE_SIZE);
+    CheckFill(b, PAGE_SIZE, i * PAGE_SIZE);
   }
   close(fd1);
 
