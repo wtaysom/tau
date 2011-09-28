@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <debug.h>
 #include <eprintf.h>
 #include <style.h>
 
@@ -39,7 +40,7 @@ static void pr_indent (int indent) {
 static void pr_rec (addr link, int indent) {
   RbNode_s *node = ptr(link);
   pr_indent(indent);
-  printf("%c %lld\n", is_red(link) ? '*' : ' ',  node->key);
+  printf("%c %llu\n", is_red(link) ? '*' : ' ',  node->key);
 }
 
 static void pr_node (addr link, int indent) {
@@ -51,6 +52,7 @@ static void pr_node (addr link, int indent) {
 }
 
 int rb_print (RbTree_s *tree) {
+  printf("---\n");
   pr_node(tree->root, 0);
   return 0;
 }
@@ -158,35 +160,44 @@ static void rot_left (addr *np) {
 static addr rb_new (u64 key) {
   RbNode_s *node = ezalloc(sizeof(*node));
   node->key = key;
-  return (addr)node;
+  addr x = (addr)node;
+  return set_red(x);
 }
 
 int rb_insert (RbTree_s *tree, u64 key) {
   addr *np = &tree->root;
+  addr *child;
   for (;;) {
     RbNode_s *node = ptr(*np);
     if (!node) break;
+    if (key < node->key) {
+      child = &node->left;
+    } else {
+      child = &node->right;
+    }
     if (is_red(node->left)) {
       if (is_red(node->right)) {
         assert(is_black(*np));
         set_red(*np);
         clr_red(node->right);
         clr_red(node->left);
-        clr_red(*tree->root);  // root is always black
       } else {
+        if (child == &node->left) {
+          rot_right(np);
+        }
       }
     } else {
       if (is_red(node->right)) {
+        if (child == &node->right) {
+          rot_left(np);
+        }
       } else {
       }
     }
-    if (key < node->key) {
-      np = &node->left;
-    } else {
-      np = &node->right;
-    }
+    np = child;
   }
   *np = rb_new(key);
+  clr_red(tree->root);  // root is always black
   return 0;
 }
 

@@ -391,12 +391,12 @@ void myoptions(int argc, char *argv[]) {
 
 int main(int argc, char *argv[]) {
   myoptions(argc, argv);
-  test_perf(Option.iterations, Option.level);
   test_rb(Option.iterations, Option.level);
   return 0;
 }
 
 #if 0
- test_bi_delete(Option.iterations);
+  test_perf(Option.iterations, Option.level);
+  test_bi_delete(Option.iterations);
   test_level(Option.iterations, Option.level);
 #endif

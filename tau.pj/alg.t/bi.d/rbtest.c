@@ -141,13 +141,15 @@ void test_rb (int n, int level) {
   srandom(1);
   start = nsecs();
   for (i = 0; i < n; i++) {
+rb_print(&tree);
     if (should_delete(count, level)) {
       key = k_delete_rand();
       rc = rb_delete(&tree, key);
       if (rc) fatal("delete key=%lld", key);
       --count;
     } else {
-      key = random() * random();
+      //key = (u64)random() * (u64)random();
+      key = i;
       k_add(key);
       rc = rb_insert(&tree, key);
       if (rc) fatal("rb_insert key=%lld", key);
