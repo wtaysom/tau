@@ -3,6 +3,8 @@
  * Distributed under the terms of the GNU General Public License v2
  */
 
+/* Binary B trees */
+
 #include <ctype.h>
 #include <locale.h>
 #include <math.h>
@@ -17,10 +19,10 @@
 #include <timer.h>
 
 #include "main.h"
-#include "rbtree.h"
+#include "bbtree.h"
 
-static void pr_stats (RbTree_s *tree) {
-  RbStat_s s = rb_stats(tree);
+static void pr_stats (BbTree_s *tree) {
+  BbStat_s s = bb_stats(tree);
   printf("num nodes=%lld sqrt=%g log2=%g\n"
          "max depth=%lld\n"
          "avg depth=%g\n"
@@ -31,7 +33,7 @@ static void pr_stats (RbTree_s *tree) {
          (double)s.total_depth / (double)s.num_nodes,
          s.num_left,
          s.num_right);
-//  rb_pr_path(tree, s.deepest);
+//  bb_pr_path(tree, s.deepest);
 }
 
 enum { NUM_BUCKETS = (1 << 20) + 1,
@@ -130,8 +132,8 @@ if (Option.print) {
 }
 #endif
 
-void test_rb (int n, int level) {
-  RbTree_s tree = { 0 };
+void test_bb (int n, int level) {
+  BbTree_s tree = { 0 };
   u64 key;
   s64 count = 0;
   int i;
@@ -141,18 +143,18 @@ void test_rb (int n, int level) {
   srandom(1);
   start = nsecs();
   for (i = 0; i < n; i++) {
-rb_print(&tree);
+bb_print(&tree);
     if (should_delete(count, level)) {
       key = k_delete_rand();
-      rc = rb_delete(&tree, key);
+      rc = bb_delete(&tree, key);
       if (rc) fatal("delete key=%lld", key);
       --count;
     } else {
       //key = (u64)random() * (u64)random();
       key = i;
       k_add(key);
-      rc = rb_insert(&tree, key);
-      if (rc) fatal("rb_insert key=%lld", key);
+      rc = bb_insert(&tree, key);
+      if (rc) fatal("bb_insert key=%lld", key);
       ++count;
     }
   }
@@ -160,7 +162,7 @@ rb_print(&tree);
   total = finish - start;
   printf("%lld nsecs  %g nsecs/op\n", total, (double)total/(double)n);
 //printf("\n");
-  rb_audit(&tree);
-  if (Option.print) rb_print(&tree);
+  bb_audit(&tree);
+  if (Option.print) bb_print(&tree);
   pr_stats(&tree);
 }

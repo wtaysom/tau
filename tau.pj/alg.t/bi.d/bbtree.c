@@ -11,11 +11,11 @@
 #include <eprintf.h>
 #include <style.h>
 
-#include "rbtree.h"
+#include "bbtree.h"
 
 enum { BLACK = 0, RED = 1 };
 
-struct RbNode_s {
+struct BbNode_s {
   addr left;
   addr right;
   u64 key;
@@ -25,9 +25,9 @@ struct RbNode_s {
 #define clr_red(_link)  ((_link) &= ~RED)
 #define is_red(_link)   ((_link) & RED)
 #define is_black(_link) (!is_red(_link))
-#define ptr(_link)      ((RbNode_s *)((_link) & ~RED))
+#define ptr(_link)      ((BbNode_s *)((_link) & ~RED))
 
-int rb_audit (RbTree_s *tree) {
+int bb_audit (BbTree_s *tree) {
   return 0;
 }
 
@@ -38,27 +38,27 @@ static void pr_indent (int indent) {
 }
 
 static void pr_rec (addr link, int indent) {
-  RbNode_s *node = ptr(link);
+  BbNode_s *node = ptr(link);
   pr_indent(indent);
   printf("%c %llu\n", is_red(link) ? '*' : ' ',  node->key);
 }
 
 static void pr_node (addr link, int indent) {
-  RbNode_s *node = ptr(link);
+  BbNode_s *node = ptr(link);
   if (!node) return;
   pr_node(node->left, indent + 1);
   pr_rec(link, indent);
   pr_node(node->right, indent + 1);
 }
 
-int rb_print (RbTree_s *tree) {
+int bb_print (BbTree_s *tree) {
   printf("---\n");
   pr_node(tree->root, 0);
   return 0;
 }
 
-void rb_pr_path (RbTree_s *tree, u64 key) {
-  RbNode_s *node = ptr(tree->root);
+void bb_pr_path (BbTree_s *tree, u64 key) {
+  BbNode_s *node = ptr(tree->root);
   while (node) {
     printf("%lld", node->key);
     if (key == node->key) {
@@ -74,8 +74,8 @@ void rb_pr_path (RbTree_s *tree, u64 key) {
   }
 }
 
-static void node_stat (addr link, RbStat_s *s, int depth) {
-  RbNode_s *node = ptr(link);
+static void node_stat (addr link, BbStat_s *s, int depth) {
+  BbNode_s *node = ptr(link);
   if (!node) return;
   ++s->num_nodes;
   if (depth > s->max_depth) {
@@ -93,14 +93,14 @@ static void node_stat (addr link, RbStat_s *s, int depth) {
   }
 }
   
-RbStat_s rb_stats (RbTree_s *tree) {
-  RbStat_s stat = { 0 };
+BbStat_s bb_stats (BbTree_s *tree) {
+  BbStat_s stat = { 0 };
   node_stat(tree->root, &stat, 1);
   return stat;
 }
 
-int rb_find (RbTree_s *tree, u64 key) {
-  RbNode_s *node = ptr(tree->root);
+int bb_find (BbTree_s *tree, u64 key) {
+  BbNode_s *node = ptr(tree->root);
   while (node) {
     if (key == node->key) {
       return 0;
@@ -125,8 +125,8 @@ static void rot_right (addr *np) {
   addr x;
   addr y;
   addr tmp;
-  RbNode_s *xnode;
-  RbNode_s *ynode;
+  BbNode_s *xnode;
+  BbNode_s *ynode;
   y = *np;
   if (!y) return;
   ynode = ptr(y);
@@ -143,8 +143,8 @@ static void rot_left (addr *np) {
   addr x;
   addr y;
   addr tmp;
-  RbNode_s *xnode;
-  RbNode_s *ynode;
+  BbNode_s *xnode;
+  BbNode_s *ynode;
   x = *np;
   if (!x) return;
   xnode = ptr(x);
@@ -157,18 +157,18 @@ static void rot_left (addr *np) {
   *np = y;
 }
 
-static addr rb_new (u64 key) {
-  RbNode_s *node = ezalloc(sizeof(*node));
+static addr bb_new (u64 key) {
+  BbNode_s *node = ezalloc(sizeof(*node));
   node->key = key;
   addr x = (addr)node;
   return set_red(x);
 }
 
-int rb_insert (RbTree_s *tree, u64 key) {
+int bb_insert (BbTree_s *tree, u64 key) {
   addr *np = &tree->root;
   addr *child;
   for (;;) {
-    RbNode_s *node = ptr(*np);
+    BbNode_s *node = ptr(*np);
     if (!node) break;
     if (key < node->key) {
       child = &node->left;
@@ -196,14 +196,14 @@ int rb_insert (RbTree_s *tree, u64 key) {
     }
     np = child;
   }
-  *np = rb_new(key);
+  *np = bb_new(key);
   clr_red(tree->root);  // root is always black
   return 0;
 }
 
 static void delete_node (addr *np) {
   static int odd = 0;
-  RbNode_s *node;
+  BbNode_s *node;
   for (;;) {
     node = ptr(*np);
     if (!node->right) {
@@ -226,10 +226,10 @@ static void delete_node (addr *np) {
   free(node);
 }
 
-int rb_delete (RbTree_s *tree, u64 key) {
+int bb_delete (BbTree_s *tree, u64 key) {
   addr *np = &tree->root;
   for (;;) {
-    RbNode_s *node = ptr(*np);
+    BbNode_s *node = ptr(*np);
     if (!node) fatal("Key not found");
     if (key == node->key) break;
     if (key < node->key) {
