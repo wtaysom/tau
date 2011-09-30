@@ -31,6 +31,8 @@ enum {	HELP_ROW = 0,
 	SELF_COL = 0,
 	MAX_ROW  = SELF_ROW,
 	MAX_COL  = SELF_COL + 40,
+	TOP_PID_CALL_ROW = TOP_ROW,
+	TOP_PID_CALL_COL = 35,
 };
 
 typedef struct Top_ten_s {
@@ -72,7 +74,7 @@ static void help(void)
 		"q quit  c clear  k kernel ops  p plot op"
 		"  i internal ops  f file ops"
 		"  < shorter  > longer %d.%.3d",
-		Sleep.tv_sec, Sleep.tv_nsec / A_MILLION);
+		Sleep.tv_sec, Sleep.tv_nsec / ONE_MILLION);
 }
 
 static void file_system(void)
@@ -93,7 +95,7 @@ static void self(void)
 	static double max = 0;
 	double avg;
 
-	mvprintw(SELF_ROW,   SELF_COL, "Skipped:     %12lld", MyPidCount);
+	mvprintw(SELF_ROW,   SELF_COL, "Skipped:     %12lld", Ignored_pid_count);
 	mvprintw(SELF_ROW+1, SELF_COL, "Slept:       %12lld", Slept);
 	mvprintw(SELF_ROW+2, SELF_COL, "Tick:        %12zd", sizeof(TickCounter_s));
 	mvprintw(SELF_ROW+3, SELF_COL, "No_enter:    %12lld", No_enter);
@@ -102,10 +104,10 @@ static void self(void)
 	mvprintw(SELF_ROW+6, SELF_COL, "No_start:    %12lld", No_start);
 	mvprintw(SELF_ROW+7, SELF_COL, "Bad type:    %12lld", Bad_type);
 	if (1) {
-		mvprintw(SELF_ROW+10, SELF_COL, "Ticks:       %12lld", Pidcall_tick);
-		if (PidcallRecord == 0) return;
-		avg = (double)PidcallIterations / (double)PidcallRecord;
-		PidcallIterations = PidcallRecord = 0;
+		mvprintw(SELF_ROW+10, SELF_COL, "Ticks:       %12lld", Pid_call_tick);
+		if (Pid_call_record == 0) return;
+		avg = (double)Pid_call_iterations / (double)Pid_call_record;
+		Pid_call_iterations = Pid_call_record = 0;
 		if (avg > max) max =avg;
 		mvprintw(SELF_ROW+11, SELF_COL, "Avg:              %g", avg);
 		mvprintw(SELF_ROW+12, SELF_COL, "Max:              %g", max);
@@ -151,7 +153,7 @@ static char *getpidname(int pid)
 
 static void display_pidcall(void)
 {
-	Pidcall_s *pc;
+	PidCall_s *pc;
 	int row = PID_ROW;
 	int col = PID_COL;
 	int pid;
@@ -177,12 +179,30 @@ static void display_pidcall(void)
 	}
 }
 
+static void display_top_pid_call(void)
+{
+	TopPidCall_s *tc;
+	int row = TOP_PID_CALL_ROW;
+	int col = TOP_PID_CALL_COL;
+
+	mvprintw(row++, col, "   count   duration when   pid");
+	for (tc = Top_pid_call; tc < &Top_pid_call[MAX_TOP]; tc++, row++) {
+		if (tc->count == 0) return;
+		mvprintw(row, col,
+		         "%8d %10lld %4d %5d %-22.22s %-30.30s",
+		         tc->count, tc->time / tc->count,
+		         tc->interval, get_pid(tc->pidcall),
+		         Syscall[get_call(tc->pidcall)],
+		         tc->name);
+	}
+}
+
 static void display_top_ten(void)
 {
 	int row = TOP_ROW;
 	int i;
 
-	mvprintw(row++, TOP_COL, "    hits sys_call");
+	mvprintw(row++, TOP_COL, "   count sys_call");
 	for (i = 0; i < 10; i++, row++) {
 		if (Top_ten[i].value == 0) return;
 		mvprintw(row, TOP_COL, "%8d %-22.22s",
@@ -225,10 +245,10 @@ static void graph_total(void)
 	int i;
 	int j;
 
-	j = TotalDelta.itick;
+	j = Total_delta.itick;
 	for (i = 0; i < WHEEL_SIZE; i++) {
 		v.p[i].x = j;
-		v.p[i].y = TotalDelta.tick[j];
+		v.p[i].y = Total_delta.tick[j];
 		if (++j == WHEEL_SIZE) {
 			j = 0;
 		}
@@ -245,7 +265,7 @@ void init_display(void)
 	idlok(stdscr, TRUE);
 	keypad(stdscr, TRUE);
 
-	init_counter(&TotalDelta, 1);
+	init_counter(&Total_delta, 1);
 }
 
 void kernel_display(void)
@@ -254,6 +274,7 @@ void kernel_display(void)
 	top_ten();
 	display_pidcall();
 	display_top_ten();
+	display_top_pid_call();
 	help();
 	refresh();
 }

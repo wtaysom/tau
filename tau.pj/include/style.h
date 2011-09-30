@@ -217,9 +217,9 @@ typedef struct timeval		timeval_s;
 
 #define unused(_x)	((void) _x)
 enum {
-	A_THOUSAND  = 1000,
-	A_MILLION   = A_THOUSAND * A_THOUSAND,
-	A_BILLION   = A_MILLION * A_THOUSAND
+	ONE_THOUSAND  = 1000,
+	ONE_MILLION   = ONE_THOUSAND * ONE_THOUSAND,
+	ONE_BILLION   = ONE_MILLION * ONE_THOUSAND
 };
 
 #ifndef MAGIC_STRING

@@ -65,8 +65,7 @@ void OpenTest (void) {
   writeErr(EBADF, fd1, msg1, sizeof(msg1));
   close(fd1);
 
-  /* No mode allows read but not writes, because 0 is O_RDONLY */
-  fd1 = open(name, 0, 0);
+  fd1 = open(name, O_RDONLY, 0);
   read(fd1, buf, sizeof(msg1));
   CheckEq(buf, msg1, sizeof(msg1));
   writeErr(EBADF, fd1, msg1, sizeof(msg1));
@@ -91,6 +90,7 @@ void OpenTest (void) {
   if (Local_option.test_direct) {
     fd1 = open(name, O_TRUNC | O_RDWR | O_DIRECT, 0);
     for (i = 0; i < 4; i++) {
+      /* Fill buffer with data based on the offset in the file */
       Fill(b, PAGE_SIZE, i * PAGE_SIZE);
       write(fd1, b, PAGE_SIZE);
     }

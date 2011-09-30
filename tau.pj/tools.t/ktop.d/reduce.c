@@ -31,13 +31,14 @@ u64 *New = B;
 int Delta[NUM_SYS_CALLS];
 void *Rank_pidcall[MAX_PIDCALLS];
 int Num_rank;
+TopPidCall_s Top_pid_call[MAX_TOP];
 
-TickCounter_s TotalDelta;
+TickCounter_s Total_delta;
 
 static int compare_pidcall(const void *a, const void *b)
 {
-	const Pidcall_s *p = *(const Pidcall_s **)a;
-	const Pidcall_s *q = *(const Pidcall_s **)b;
+	const PidCall_s *p = *(const PidCall_s **)a;
+	const PidCall_s *q = *(const PidCall_s **)b;
 
 	if (p->save.count > q->save.count) return -1;
 	if (p->save.count == q->save.count) return 0;
@@ -46,13 +47,16 @@ static int compare_pidcall(const void *a, const void *b)
 
 static void reduce_pidcall(void)
 {
-	Pidcall_s *pc;
+	static int interval = 0;
+	PidCall_s *pc;
+	int i;
 	int j;
+	int k;
 
 	pthread_mutex_lock(&Count_lock);
-	for (pc = Pidcall, j = 0; pc < &Pidcall[MAX_PIDCALLS]; pc++) {
+	for (pc = Pid_call, k = 0; pc < &Pid_call[MAX_PIDCALLS]; pc++) {
 		if (pc->count) {
-			Rank_pidcall[j++] = pc;
+			Rank_pidcall[k++] = pc;
 			pc->save.count = pc->count;
 			pc->count = 0;
 			pc->save.time = pc->time.total;
@@ -60,10 +64,33 @@ static void reduce_pidcall(void)
 		}
 	}
 	pthread_mutex_unlock(&Count_lock);
-	Num_rank = j;
-	if (1) {
-		qsort(Rank_pidcall, j, sizeof(void *), compare_pidcall);
-	}
+	Num_rank = k;
+
+	qsort(Rank_pidcall, k, sizeof(void *), compare_pidcall);
+
+	++interval;
+	if (k > MAX_TOP) k = MAX_TOP;
+	for (i = 0; i < k; i++) {
+		pc = Rank_pidcall[i];
+		if (pc->save.count < Top_pid_call[MAX_TOP - 1].count) break;
+		for (j = 0; j < MAX_TOP; j++) {
+			TopPidCall_s *tc = &Top_pid_call[j];
+			if (pc->save.count >= tc->count) {
+				memmove(&tc[1], tc, (MAX_TOP - j - 1));
+				tc->pidcall  = pc->pidcall;
+				tc->count    = pc->save.count;
+				tc->interval = interval;
+				tc->time     = pc->save.time;
+				if (pc->name) {
+					strncpy(tc->name, pc->name, MAX_THREAD_NAME);
+					tc->name[MAX_THREAD_NAME - 1] = '\0';
+				} else {
+					tc->name[0] = '\0';
+				}
+				break;
+			}
+		}
+	} 		
 }
 
 static void delta(void)
@@ -94,24 +121,24 @@ static void delta(void)
 			sum += Delta[i];
 		}
 	}
-	tick(&TotalDelta, sum);
+	tick(&Total_delta, sum);
 }
 
 void decrease_reduce_interval(void)
 {
 	if (Sleep.tv_sec == 1) {
 		Sleep.tv_sec = 0;
-		Sleep.tv_nsec = 500 * A_MILLION;
+		Sleep.tv_nsec = 500 * ONE_MILLION;
 	} else if (Sleep. tv_sec > 1) {
 		Sleep.tv_sec >>= 1;
-	} else if (Sleep.tv_nsec > A_MILLION) {
+	} else if (Sleep.tv_nsec > ONE_MILLION) {
 		Sleep.tv_nsec >>= 1;
 	}
 }
 
 void increase_reduce_interval(void)
 {
-	if (Sleep.tv_nsec >= 500 * A_MILLION) {
+	if (Sleep.tv_nsec >= 500 * ONE_MILLION) {
 		Sleep.tv_sec = 1;
 		Sleep.tv_nsec = 0;
 	} else if (Sleep. tv_sec >= 1) {
@@ -127,8 +154,9 @@ void reset_reduce(void)
 	zero(B);
 	zero(Pid);
 	zero(Syscall_count);
-	MyPidCount = 0;
+	Ignored_pid_count = 0;
 	Slept = 0;
+	zero(Top_pid_call);
 }
 
 void *reduce(void *arg)

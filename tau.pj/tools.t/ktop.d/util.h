@@ -6,7 +6,7 @@
 #ifndef _UTIL_H_
 #define _UTIL_H_ 1
 
-int release(char *r);
-int uname_release(void);
+int release_to_int(char *r);
+int kernel_release(void);
 
 #endif /* _UTIL_H_ */

@@ -101,7 +101,12 @@ static inline u8 Hash (s64 x) {
   return crc32( &x, sizeof(x));
 }
 
-/* Fill a buffer of size n with bytes starting with a seed */
+/* Fill a buffer of size n with bytes.
+ * The values used to fill the buffer are derived
+ * from the offset in the file for the data.
+ * When the data is read, we can then check that
+ * is the correct data for that location in the file.
+ */
 void Fill (void *buf, int n, s64 offset) {
   u8 *b = buf;
   u8 *end = &b[n];

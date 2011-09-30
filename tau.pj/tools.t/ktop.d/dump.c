@@ -56,7 +56,7 @@ static void pr_sys_exit(void *event)
 void pr_ring_header(ring_header_s *rh)
 {
 	printf("%lld %lld %ld\n",
-		rh->time_stamp / A_BILLION, rh->time_stamp % A_BILLION,
+		rh->time_stamp / ONE_BILLION, rh->time_stamp % ONE_BILLION,
 		rh->commit);
 }
 

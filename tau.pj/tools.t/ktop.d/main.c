@@ -29,7 +29,7 @@ pid_t gettid(void) { return syscall(__NR_gettid); }
 
 u8 Ignore_pid[(MAX_PID + 4) / 8];
 pthread_mutex_t Ignore_pid_lock = PTHREAD_MUTEX_INITIALIZER;
-u64 MyPidCount;
+u64 Ignored_pid_count;
 
 void ignore_pid(int pid)
 {
@@ -47,7 +47,7 @@ bool do_ignore_pid(int pid)
 		return TRUE;
 	}
 	if (Ignore_pid[pid / 8] & (1 << (pid & 0x7))) {
-		++MyPidCount;
+		++Ignored_pid_count;
 		return TRUE;
 	} else {
 		return FALSE;
@@ -57,12 +57,11 @@ bool do_ignore_pid(int pid)
 
 void cleanup(int sig)
 {
-PRd(sig);
-	if (sig) {
-		fprintf(stderr, "died because %d\n", sig);
-	}
 	cleanup_collector();
 	cleanup_display();
+	if (sig) {
+		fatal("killed by signal %d\n", sig);
+	}
 	exit(0);
 }
 
@@ -109,7 +108,7 @@ static void init(int argc, char *argv[])
 	setprogname(argv[0]);
 	set_signals();
 
-	while ((c = getopt(argc, argv, "dhs?")) != -1) {
+	while ((c = getopt(argc, argv, "dhs")) != -1) {
 		switch (c) {
 		case 'd':
 			Dump = TRUE;
@@ -118,11 +117,10 @@ static void init(int argc, char *argv[])
 			Trace_self = TRUE;
 			break;
 		case 'h':
-		case '?':
 			usage();
 			break;
 		default:
-			fprintf(stderr, "unknown option '%c'\n", c);
+			fprintf(stderr, "unknown flag '%c'\n", c);
 			usage();
 			break;
 		}

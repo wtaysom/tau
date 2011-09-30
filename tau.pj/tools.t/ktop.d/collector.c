@@ -37,11 +37,11 @@ u64 Syscall_count[NUM_SYS_CALLS];
 u64 Slept;
 int Pid[MAX_PID];
 
-Pidcall_s Pidcall[MAX_PIDCALLS];
-Pidcall_s *Pidclock = Pidcall;
-u64 PidcallIterations;
-u64 PidcallRecord;
-u64 Pidcall_tick;
+PidCall_s Pid_call[MAX_PIDCALLS];
+PidCall_s *Pidclock = Pid_call;
+u64 Pid_call_iterations;
+u64 Pid_call_record;
+u64 Pid_call_tick;
 
 u64 No_enter;
 u64 Found;
@@ -49,37 +49,16 @@ u64 Out_of_order;
 u64 No_start;
 u64 Bad_type;
 
-Pidcall_s *Pidcall_bucket[PIDCALL_BUCKETS];
+PidCall_s *Pid_call_bucket[PIDCALL_BUCKETS];
 
 int Sys_exit;
 int Sys_enter;
 
 static char *Event_path;
 
-static int get_id(char *name)
+static void init_kernel_release(void)
 {
-	char file_name[MAX_PATH];
-	const char *trace_file;
-	FILE *file;
-	int rc;
-
-	snprintf(file_name, MAX_PATH, Event_path, name);
-	trace_file = tracing_file(file_name);
-	file = fopen(trace_file, "r");
-	if (!file) {
-		fatal("fopen %s:", trace_file);
-	}
-	rc = fprintf(file, "%s\n", update);
-	if (rc < 0) {
-		fatal("fprintf %s:", trace_file);
-	}
-	fclose(file);
-
-}
-
-static void init_release(void)
-{
-	if (uname_release() < release("2.6.38")) {
+	if (kernel_release() < release_to_int("2.6.38")) {
 		Event_path = "events/syscalls/%s/enable";
 		Sys_exit = 21;
 		Sys_enter = 22;
@@ -185,18 +164,18 @@ int open_raw(int cpu)
 	return fd;
 }
 
-static Pidcall_s *hash_pidcall(u32 pidcall)
+static PidCall_s *hash_pidcall(u32 pidcall)
 {
-	return (Pidcall_s *)&Pidcall_bucket[pidcall % PIDCALL_BUCKETS];
+	return (PidCall_s *)&Pid_call_bucket[pidcall % PIDCALL_BUCKETS];
 }
 
-static Pidcall_s *find_pidcall(u32 pidcall)
+static PidCall_s *find_pidcall(u32 pidcall)
 {
-	Pidcall_s *pc = hash_pidcall(pidcall);
+	PidCall_s *pc = hash_pidcall(pidcall);
 
-	++PidcallRecord;
+	++Pid_call_record;
 	for (;;) {
-		++PidcallIterations;
+		++Pid_call_iterations;
 		pc = pc->next;
 		if (!pc) return NULL;
 		if (pc->pidcall == pidcall) {
@@ -206,18 +185,18 @@ static Pidcall_s *find_pidcall(u32 pidcall)
 	}
 }
 
-static void add_pidcall(Pidcall_s *pidcall)
+static void add_pidcall(PidCall_s *pidcall)
 {
-	Pidcall_s *pc = hash_pidcall(pidcall->pidcall);
+	PidCall_s *pc = hash_pidcall(pidcall->pidcall);
 
 	pidcall->next = pc->next;
 	pc->next = pidcall;
 }
 
-static void rmv_pidcall(u32 pidcall)
+static void remove_pidcall(u32 pidcall)
 {
-	Pidcall_s *prev = hash_pidcall(pidcall);
-	Pidcall_s *next;
+	PidCall_s *prev = hash_pidcall(pidcall);
+	PidCall_s *next;
 
 	for (;;) {
 		next = prev->next;
@@ -230,20 +209,24 @@ static void rmv_pidcall(u32 pidcall)
 	}
 }
 
-static Pidcall_s *victim_pidcall(u32 pidcall)
+/* victim_pidcall finds a Pid_call slot using a clock
+ * algorithm, throws away the data and gives it out
+ * to be reused.
+ */
+static PidCall_s *victim_pidcall(u32 pidcall)
 {
-	Pidcall_s *pc = Pidclock;
+	PidCall_s *pc = Pidclock;
 
 	while (pc->clock) {
-		++Pidcall_tick;
+		++Pid_call_tick;
 		pc->clock = 0;
-		if (++Pidclock == &Pidcall[MAX_PIDCALLS]) {
-			Pidclock = Pidcall;
+		if (++Pidclock == &Pid_call[MAX_PIDCALLS]) {
+			Pidclock = Pid_call;
 		}
 		pc = Pidclock;
 	}
 	if (pc->pidcall) {
-		rmv_pidcall(pc->pidcall);
+		remove_pidcall(pc->pidcall);
 	}
 	if (pc->name) {
 		free(pc->name);
@@ -261,7 +244,7 @@ static void parse_sys_enter(void *event, u64 time)
 	int	pid      = sy->ev.pid;
 	snint	call_num = sy->id;
 	u32	pidcall  = mkpidcall(pid, call_num);
-	Pidcall_s *pc;
+	PidCall_s *pc;
 
 	++Pid[pid];
 
@@ -286,7 +269,7 @@ static void parse_sys_exit(void *event, u64 time)
 	int	pid      = sy->ev.pid;
 	snint	call_num = sy->id;
 	u32	pidcall  = mkpidcall(pid, call_num);
-	Pidcall_s *pc;
+	PidCall_s *pc;
 
 	pc = find_pidcall(pidcall);
 	if (!pc) {
@@ -322,7 +305,7 @@ static void parse_event(void *buf, u64 time)
 		if (do_ignore_pid(event->pid) && !Trace_self) return;
 		parse_sys_enter(event, time);
 	} else {
-		printf("%d no processing\n", event->type);
+		//printf("%d no processing\n", event->type);
 		++Bad_type;
 	}
 }
@@ -376,7 +359,7 @@ unint parse_buf(u8 *buf)
 			/* Sync time with external clock (NOT IMMPLEMENTED) */
 			size = 12;
 			time = r->array[0];
-			time += *(u64 *)&(r->array[1]) * A_BILLION;
+			time += *(u64 *)&(r->array[1]) * ONE_BILLION;
 		} else {
 			warn(" Unknown event %d", r->type_len);
 			/* Unknown - ignore */
@@ -395,7 +378,7 @@ void *collector(void *args)
 	 *  1 ms -> 7% overhead
 	 * 10 ms -> 3% overhead
 	 */
-	struct timespec sleep = { 0, 10 * A_MILLION };
+	struct timespec sleep = { 0, 10 * ONE_MILLION };
 	u8 buf[BUF_SIZE];
 	int cpu = a->cpu_id;
 	int trace_pipe;
@@ -433,7 +416,7 @@ void start_collector(void)
 	int i;
 	int rc;
 
-	init_release();
+	init_kernel_release();
 	enable_sys_enter();
 	if (Trace_exit) {
 		enable_sys_exit();

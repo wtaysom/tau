@@ -10,7 +10,7 @@
 
 #include "util.h"
 
-int release (char *r)
+int release_to_int (char *r)
 {
 	int a;
 	int b;
@@ -26,10 +26,10 @@ int release (char *r)
 	return a;
 }
 
-int uname_release (void)
+int kernel_release (void)
 {
 	struct utsname buf;
 	int rc = uname(&buf);
 	if (rc) fatal("rc=%d:", rc);
-	return release(buf.release);
+	return release_to_int(buf.release);
 }

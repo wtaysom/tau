@@ -29,7 +29,7 @@ extern u64 *New;
 extern int Delta[NUM_SYS_CALLS];
 extern void *Rank_pidcall[MAX_PIDCALLS];
 extern int Num_rank;
-extern TickCounter_s TotalDelta;
+extern TickCounter_s Total_delta;
 
 extern void init_display(void);
 extern void display(void);

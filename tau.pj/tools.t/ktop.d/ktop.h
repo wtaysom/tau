@@ -19,7 +19,9 @@ enum {	MAX_PID = 1 << 15,
 	MAX_NAME = 1 << 12,
 	SYSCALL_SHIFT = 9,
 	SYSCALL_MASK  = (1 << SYSCALL_SHIFT) - 1,
-	NUM_ARGS = 6 };
+	NUM_ARGS = 6,
+	MAX_TOP = 10,
+	MAX_THREAD_NAME = 40 };
 
 CHECK_CONST((1 << SYSCALL_SHIFT) >= NUM_SYS_CALLS);
 
@@ -40,9 +42,9 @@ static inline u32 get_call(u32 pidcall)
 
 typedef void (*display_fn)(void);
 
-typedef struct Pidcall_s Pidcall_s;
-struct Pidcall_s {
-	Pidcall_s *next;
+typedef struct PidCall_s PidCall_s;
+struct PidCall_s {
+	PidCall_s *next;
 	u32 pidcall;
 	u32 count;
 	unint clock;
@@ -58,22 +60,28 @@ struct Pidcall_s {
 	char *name;
 };
 
+typedef struct TopPidCall_s {
+	u32 pidcall;
+	u32 count;
+	u32 interval;
+	u64 time;
+	char name[MAX_THREAD_NAME];
+} TopPidCall_s;
+
 extern bool Dump;	/* Dump of ftrace logs - don't start display */
 extern bool Trace_exit;	/* Trace sys_exit events */
 extern bool Trace_self;	/* Trace myself and ignore others */
 
 extern display_fn Display;
-void internal_display(void);
-void kernel_display(void);
-void plot_display(void);
-void file_system_display(void);
 
 extern u64 Syscall_count[NUM_SYS_CALLS];
 extern int Pid[MAX_PID];
-extern Pidcall_s Pidcall[MAX_PIDCALLS];
-extern u64 PidcallRecord;
-extern u64 PidcallIterations;
-extern u64 Pidcall_tick;
+extern PidCall_s Pid_call[MAX_PIDCALLS];
+extern u64 Pid_call_record;
+extern u64 Pid_call_iterations;
+extern u64 Pid_call_tick;
+
+extern TopPidCall_s Top_pid_call[MAX_TOP];
 
 extern u64 No_enter;
 extern u64 Found;
@@ -81,9 +89,14 @@ extern u64 Out_of_order;
 extern u64 No_start;
 extern u64 Bad_type;
 
-extern u64 MyPidCount;
+extern u64 Ignored_pid_count;
 extern u64 Slept;
 extern bool Halt;
+
+void internal_display(void);
+void kernel_display(void);
+void plot_display(void);
+void file_system_display(void);
 
 void cleanup(int sig);
 

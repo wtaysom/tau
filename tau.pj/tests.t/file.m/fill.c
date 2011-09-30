@@ -97,7 +97,7 @@ void *writer (void *arg)
 
 void *timer (void *arg)
 {
-	struct timespec sleep = { 1, 0 * A_MILLION };
+	struct timespec sleep = { 1, 0 * ONE_MILLION };
 	unint	old_bufs_written;
 	u64	delta;
 	u64	i;
