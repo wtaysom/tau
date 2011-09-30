@@ -121,7 +121,7 @@ if (Option.print) {
 }
 #endif
 
-void test_perf(int n, int level) {
+void test_ibi(int n, int level) {
   iBiTree_s tree = { 0 };
   u64 key;
   s64 count = 0;

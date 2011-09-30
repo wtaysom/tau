@@ -3,10 +3,10 @@
  * Distributed under the terms of the GNU General Public License v2
  */
 
+/* Binary B Tree */
+
 #ifndef _BBTREE_H_
 #define _BBTREE_H_ 1
-
-/* Binary B trees */
 
 typedef struct BbNode_s BbNode_s;
 
@@ -20,7 +20,7 @@ typedef struct BbStat_s {
 } BbStat_s;
 
 typedef struct BbTree_s {
-  addr root;
+  BbNode_s *root;
   u64 num_inserts;
   u64 num_deletes;
   u64 num_rotates;

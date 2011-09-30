@@ -13,4 +13,4 @@ endif
 LIBS += -lm
 
 run:$(opus)
-	$(opus) -i 8
+	$(opus) -i 1000

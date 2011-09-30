@@ -117,7 +117,7 @@ bool localoptions (int c)
 	}
 	return TRUE;
 }
-		
+
 int main(int argc, char *argv[])
 {
 	char *name;

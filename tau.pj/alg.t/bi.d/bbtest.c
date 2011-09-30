@@ -3,7 +3,7 @@
  * Distributed under the terms of the GNU General Public License v2
  */
 
-/* Binary B trees */
+/* Binary B Tree */
 
 #include <ctype.h>
 #include <locale.h>
@@ -18,7 +18,6 @@
 #include <style.h>
 #include <timer.h>
 
-#include "main.h"
 #include "bbtree.h"
 
 static void pr_stats (BbTree_s *tree) {
@@ -65,16 +64,6 @@ static void k_add (u64 key) {
   *Next++ = key;
 }
 
-#if 0
-static void k_for_each (recFunc f, void *user) {
-  u64 *k;
-
-  for (k = K; k < Next; k++) {
-    f(*k, user);
-  }
-}
-#endif
-
 static snint k_rand_index (void) {
   snint x = Next - K;
 
@@ -82,17 +71,6 @@ static snint k_rand_index (void) {
   if (x == 0) return -1;
   return urand(x);
 }
-
-#if 0
-static u64 k_get_rand (void) {
-  snint x = k_rand_index();
-
-  if (x == -1) {
-    return 0;
-  }
-  return K[x];
-}
-#endif
 
 static u64 k_delete_rand (void) {
   snint x = k_rand_index();
@@ -105,12 +83,8 @@ static u64 k_delete_rand (void) {
 }
 
 static int should_delete(s64 count, s64 level) {
-#if 0
   enum { RANGE = 1<<20, MASK = (2*RANGE) - 1 };
   return (random() & MASK) * count / level / RANGE;
-#else
-  return 0;
-#endif
 }
 
 #if 0
@@ -132,7 +106,7 @@ if (Option.print) {
 }
 #endif
 
-void test_bb (int n, int level) {
+void test_bb(int n, int level) {
   BbTree_s tree = { 0 };
   u64 key;
   s64 count = 0;
@@ -143,15 +117,13 @@ void test_bb (int n, int level) {
   srandom(1);
   start = nsecs();
   for (i = 0; i < n; i++) {
-bb_print(&tree);
     if (should_delete(count, level)) {
       key = k_delete_rand();
       rc = bb_delete(&tree, key);
       if (rc) fatal("delete key=%lld", key);
       --count;
     } else {
-      //key = (u64)random() * (u64)random();
-      key = i;
+      key = random() * random();
       k_add(key);
       rc = bb_insert(&tree, key);
       if (rc) fatal("bb_insert key=%lld", key);
@@ -162,7 +134,7 @@ bb_print(&tree);
   total = finish - start;
   printf("%lld nsecs  %g nsecs/op\n", total, (double)total/(double)n);
 //printf("\n");
-  bb_audit(&tree);
-  if (Option.print) bb_print(&tree);
+//  bb_audit(&tree);
+//  if (Option.print) bb_print(&tree);
   pr_stats(&tree);
 }
