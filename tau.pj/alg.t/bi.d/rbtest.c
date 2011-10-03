@@ -130,6 +130,10 @@ if (Option.print) {
 }
 #endif
 
+static u64 rand_key (void) {
+  return (u64)random() * (u64)random();
+}
+
 void test_rb (int n, int level) {
   RbTree_s tree = { 0 };
   u64 key;
@@ -148,7 +152,7 @@ rb_print(&tree);
       if (rc) fatal("delete key=%lld", key);
       --count;
     } else {
-      //key = (u64)random() * (u64)random();
+      key = rand_key();
       key = i;
       k_add(key);
       rc = rb_insert(&tree, key);

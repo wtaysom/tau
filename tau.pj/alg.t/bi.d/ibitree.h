@@ -29,6 +29,7 @@ iBiStat_s ibi_stats(iBiTree_s *tree);
 int ibi_audit (iBiTree_s *tree);
 int ibi_print (iBiTree_s *tree);
 int ibi_find  (iBiTree_s *tree, u64 key);
+u64 ibi_next  (iBiTree_s *tree, u64 key);
 int ibi_insert(iBiTree_s *tree, u64 key);
 int ibi_delete(iBiTree_s *tree, u64 key);
 

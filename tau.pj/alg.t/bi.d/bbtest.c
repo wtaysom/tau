@@ -106,6 +106,10 @@ if (Option.print) {
 }
 #endif
 
+static u64 rand_key (void) {
+  return (u64)random() * (u64)random();
+}
+
 void test_bb(int n, int level) {
   BbTree_s tree = { 0 };
   u64 key;
@@ -123,7 +127,7 @@ void test_bb(int n, int level) {
       if (rc) fatal("delete key=%lld", key);
       --count;
     } else {
-      key = random() * random();
+      key = rand_key();
       k_add(key);
       rc = bb_insert(&tree, key);
       if (rc) fatal("bb_insert key=%lld", key);

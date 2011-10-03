@@ -121,6 +121,31 @@ if (Option.print) {
 }
 #endif
 
+void Pause(void) {
+  printf(": ");
+  getchar();
+}
+
+static u64 rand_key (void) {
+  return (u64)random() * (u64)random();
+#if 0
+  static u64 key = 0;
+  return ++key;
+  return urand(100);
+  return (u64)random() * (u64)random();
+#endif
+}
+
+static void pr_next (iBiTree_s *tree) {
+  u64 key = 0;
+  printf("------\n");
+  for (;;) {
+    key = ibi_next(tree, key);
+    if (key == 0) return;
+    printf("%llu\n", key);
+  }
+}
+
 void test_ibi(int n, int level) {
   iBiTree_s tree = { 0 };
   u64 key;
@@ -132,13 +157,18 @@ void test_ibi(int n, int level) {
   srandom(1);
   start = nsecs();
   for (i = 0; i < n; i++) {
+//PRd(i);
+//ibi_print(&tree);
     if (should_delete(count, level)) {
       key = k_delete_rand();
+//PRd(key);
       rc = ibi_delete(&tree, key);
+//ibi_print(&tree);
+//Pause();
       if (rc) fatal("delete key=%lld", key);
       --count;
     } else {
-      key = random() * random();
+      key = rand_key();
       k_add(key);
       rc = ibi_insert(&tree, key);
       if (rc) fatal("ibi_insert key=%lld", key);
@@ -148,6 +178,9 @@ void test_ibi(int n, int level) {
   finish = nsecs();
   total = finish - start;
   printf("%lld nsecs  %g nsecs/op\n", total, (double)total/(double)n);
+  ibi_audit(&tree);
+ibi_print(&tree);
+  pr_next(&tree);
 //printf("\n");
 //  ibi_audit(&tree);
 //  if (Option.print) ibi_print(&tree);

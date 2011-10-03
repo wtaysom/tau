@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <debug.h>
 #include <eprintf.h>
 #include <style.h>
 
@@ -30,7 +31,7 @@ static void pr_indent (int indent) {
 
 static void pr_key (u64 key, int indent) {
   pr_indent(indent);
-  printf("%lld\n", key);
+  printf("%llu\n", key);
 }
 
 static void pr_node (iBiNode_s *node, int indent) {
@@ -48,7 +49,7 @@ int ibi_print (iBiTree_s *tree) {
 void ibi_pr_path (iBiTree_s *tree, u64 key) {
   iBiNode_s *node = tree->root;
   while (node) {
-    printf("%lld", node->key);
+    printf("%llu", node->key);
     if (key == node->key) {
       printf("\n");
       return;
@@ -101,6 +102,78 @@ int ibi_find (iBiTree_s *tree, u64 key) {
   return -1;
 }
 
+u64 ibi_first (iBiTree_s *tree) {
+  iBiNode_s *node = tree->root;
+  if (!node) return 0;
+  while (node->left) node = node->left;
+  return node->key;
+}
+
+u64 ibi_next (iBiTree_s *tree, u64 key) {
+  iBiNode_s *node = tree->root;
+  iBiNode_s *nextrt = NULL;
+
+  if (key == 0) return ibi_first(tree);
+  while (node) {
+    if (key < node->key) {
+      if (node->right) nextrt = node;
+      node = node->left;
+    } else if (key == node->key) {
+      if (node->right) {
+        node = node->right;
+        while (node->left) node = node->left;
+        return node->key;
+      } else {
+        if (nextrt) {
+          return nextrt->key;
+        } else {
+          return 0;
+        }
+      }
+    } else {
+      node = node->right;
+    }
+  }
+  return 0;
+}
+
+#if 0
+u64 ibi_next (iBiTree_s *tree, u64 key) {
+  iBiNode_s *node = tree->root;
+  iBiNode_s *lastrt = NULL;
+/* Have to get first key some how */
+/* Not getting root */
+//PRd(key);
+  if (key == 0) {
+    if (!node) return 0;
+    while (node->left) node = node->left;
+    return node->key;
+  }
+  if (!node) return 0;
+  if (key < node->key) {
+    lastrt = node;
+  }
+  while (node) {
+//PRd(node->key);
+    if (key == node->key) {
+      if (node->right) lastrt = node->right;
+      if (!lastrt) return 0;
+      node = lastrt;
+      while (node->left) node = node->left;
+      return node->key;
+    }
+    if (key < node->key) {
+      lastrt = node->right;
+      node = node->left;
+    } else {
+      node = node->right;
+    }
+  }
+  return 0;
+}
+#endif
+
+#if 0
 /* Rotations:
         y    right->   x
        / \   <-left   / \
@@ -135,6 +208,7 @@ static void rot_left (iBiNode_s **np) {
   x->right = tmp;
   *np = y;
 }
+#endif
 
 static iBiNode_s *ibi_new (u64 key) {
   iBiNode_s *node = ezalloc(sizeof(*node));
@@ -210,9 +284,38 @@ int ibi_insert (iBiTree_s *tree, u64 key) {
   return 0;
 }
 
-static void delete_node (iBiNode_s **np) {
-  static int odd = 0;
+static void delete_node (iBiNode_s **dp) {
+  //static int odd = 0;
+  iBiNode_s **np = dp;
+  iBiNode_s *deletee;
   iBiNode_s *node;
+  deletee = *dp;
+  if (!deletee->right) {
+    *np = deletee->left;
+    free(deletee);
+    return;
+  }
+  np = &deletee->right;
+  node = *np;
+  if (!node->left) {
+    node->left = deletee->left;
+    *dp = node;
+    free(deletee);
+    return;
+  }
+  for (;;) {
+    np = &node->left;
+    node = *np;
+    if (!node->left) {
+      *dp = node;
+      *np = node->right;
+      node->right = deletee->right;
+      node->left = deletee->left;
+      free(deletee);
+      return;
+    }
+  }
+#if 0
   for (;;) {
     node = *np;
     if (!node->right) {
@@ -233,13 +336,14 @@ static void delete_node (iBiNode_s **np) {
     ++odd;
   }
   free(node);
+#endif
 }
 
 int ibi_delete (iBiTree_s *tree, u64 key) {
   iBiNode_s **np = &tree->root;
   for (;;) {
     iBiNode_s *node = *np;
-    if (!node) fatal("Key not found");
+    if (!node) fatal("Key %llu not found", key);
     if (key == node->key) break;
     if (key < node->key) {
       np = &node->left;
