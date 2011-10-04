@@ -22,6 +22,7 @@ bool Halt = FALSE;
 bool Dump = FALSE;
 bool Trace_exit = TRUE;
 bool Trace_self = FALSE;
+bool Pause = FALSE;
 
 display_fn Display = kernel_display;
 
@@ -92,9 +93,10 @@ static void usage(void)
 		"\tq - quit\n"
 		"\tc - reset internal counters\n"
 		"\tk - display top kernel operations (default)\n"
-		"\tp - display plot of selected operation\n"
+		"\tg - display graph of selected operation\n"
 		"\tf - display just file system operations\n"
 		"\ti - display counters internal to ktop for debugging\n"
+		"\tp - toggle pause\n"
 		"\t< - reduce redisplay interval\n"
 		"\t> - increase redisplay interval\n",
 		getprogname());
@@ -161,11 +163,14 @@ void commander(void)
 		case 'k':
 			Display = kernel_display;
 			break;
-		case 'p':
+		case 'g':
 			Display = plot_display;
 			break;
 		case 'f':
 			Display = file_system_display;
+			break;
+		case 'p':
+			Pause = !Pause;
 			break;
 		default:
 			break;  // ignore

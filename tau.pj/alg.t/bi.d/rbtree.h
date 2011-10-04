@@ -9,19 +9,19 @@
 typedef struct RbNode_s RbNode_s;
 
 typedef struct RbStat_s {
-  u64 num_nodes;
-  u64 max_depth;
-  u64 total_depth;
-  u64 num_left;
-  u64 num_right;
-  u64 deepest;
+	u64 num_nodes;
+	u64 max_depth;
+	u64 total_depth;
+	u64 num_left;
+	u64 num_right;
+	u64 deepest;
 } RbStat_s;
 
 typedef struct RbTree_s {
-  addr root;
-  u64 num_inserts;
-  u64 num_deletes;
-  u64 num_rotates;
+	addr root;
+	u64 num_inserts;
+	u64 num_deletes;
+	u64 num_rotates;
 } RbTree_s;
 
 RbStat_s rb_stats(RbTree_s *tree);

@@ -9,10 +9,10 @@
 #include <style.h>
 
 typedef struct Option_s {
-  int iterations;
-  int level;
-  bool debug;
-  bool print;
+	int iterations;
+	int level;
+	bool debug;
+	bool print;
 } Option_s;
 
 extern Option_s Option;

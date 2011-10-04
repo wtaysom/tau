@@ -19,12 +19,12 @@
 #endif
 
 enum { BT_ERR_NOT_FOUND = 2000, /* Key not found */
-  BT_ERR_BAD_NODE,  /* Internal error: bad node */
-  FAILURE = -1 };
+	BT_ERR_BAD_NODE,  /* Internal error: bad node */
+	FAILURE = -1 };
 
 typedef struct Rec_s {
-  Lump_s key;
-  Lump_s val;
+	Lump_s key;
+	Lump_s val;
 } Rec_s;
 
 typedef struct Btree_s Btree_s;
@@ -32,22 +32,22 @@ typedef struct Btree_s Btree_s;
 typedef int (*Apply_f)(Rec_s rec, Btree_s *t, void *user);
 
 typedef struct Stat_s {
-  u64 new_leaves;
-  u64 new_branches;
-  u64 split_leaf;
-  u64 split_branch;
-  u64 insert;
-  u64 find;
-  u64 delete;
-  u64 join;
+	u64 new_leaves;
+	u64 new_branches;
+	u64 split_leaf;
+	u64 split_branch;
+	u64 insert;
+	u64 find;
+	u64 delete;
+	u64 join;
 } Stat_s;
 
 typedef struct Audit_s {
-  u64 leaves;
-  u64 branches;
-  u64 records;
-  u64 splits;
-  int max_depth;
+	u64 leaves;
+	u64 branches;
+	u64 records;
+	u64 splits;
+	int max_depth;
 } Audit_s;
 
 Btree_s *t_new(char *file, int num_bufs);

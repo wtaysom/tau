@@ -71,8 +71,9 @@ Display_call_s Display_call[] = {
 static void help(void)
 {
 	mvprintw(HELP_ROW, HELP_COL,
-		"q quit  c clear  k kernel ops  p plot op"
+		"q quit  c clear  k kernel ops  g graph op"
 		"  i internal ops  f file ops"
+		"  p pause"
 		"  < shorter  > longer %d.%.3d",
 		Sleep.tv_sec, Sleep.tv_nsec / ONE_MILLION);
 }
@@ -104,10 +105,10 @@ static void self(void)
 	mvprintw(SELF_ROW+6, SELF_COL, "No_start:    %12lld", No_start);
 	mvprintw(SELF_ROW+7, SELF_COL, "Bad type:    %12lld", Bad_type);
 	if (1) {
-		mvprintw(SELF_ROW+10, SELF_COL, "Ticks:       %12lld", Pid_call_tick);
-		if (Pid_call_record == 0) return;
-		avg = (double)Pid_call_iterations / (double)Pid_call_record;
-		Pid_call_iterations = Pid_call_record = 0;
+		mvprintw(SELF_ROW+10, SELF_COL, "Ticks:       %12lld", Pidcall_tick);
+		if (Pidcall_record == 0) return;
+		avg = (double)Pidcall_iterations / (double)Pidcall_record;
+		Pidcall_iterations = Pidcall_record = 0;
 		if (avg > max) max =avg;
 		mvprintw(SELF_ROW+11, SELF_COL, "Avg:              %g", avg);
 		mvprintw(SELF_ROW+12, SELF_COL, "Max:              %g", max);
@@ -153,7 +154,7 @@ static char *getpidname(int pid)
 
 static void display_pidcall(void)
 {
-	PidCall_s *pc;
+	Pidcall_s *pc;
 	int row = PID_ROW;
 	int col = PID_COL;
 	int pid;
@@ -179,19 +180,19 @@ static void display_pidcall(void)
 	}
 }
 
-static void display_top_pid_call(void)
+static void display_top_pidcall(void)
 {
-	TopPidCall_s *tc;
+	TopPidcall_s *tc;
 	int row = TOP_PID_CALL_ROW;
 	int col = TOP_PID_CALL_COL;
 
-	mvprintw(row++, col, "   count   duration when   pid");
-	for (tc = Top_pid_call; tc < &Top_pid_call[MAX_TOP]; tc++, row++) {
+	mvprintw(row++, col, "   count   duration   when    pid");
+	for (tc = Top_pidcall; tc < &Top_pidcall[MAX_TOP]; tc++, row++) {
 		if (tc->count == 0) return;
 		mvprintw(row, col,
-		         "%8d %10lld %4d %5d %-22.22s %-30.30s",
+		         "%8d %10lld %6d %6d %-22.22s %-30.30s",
 		         tc->count, tc->time / tc->count,
-		         tc->interval, get_pid(tc->pidcall),
+		         tc->tick, get_pid(tc->pidcall),
 		         Syscall[get_call(tc->pidcall)],
 		         tc->name);
 	}
@@ -274,7 +275,7 @@ void kernel_display(void)
 	top_ten();
 	display_pidcall();
 	display_top_ten();
-	display_top_pid_call();
+	display_top_pidcall();
 	help();
 	refresh();
 }

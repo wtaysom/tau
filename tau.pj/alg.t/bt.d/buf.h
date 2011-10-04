@@ -13,25 +13,26 @@
 typedef struct Cache_s Cache_s;
 
 typedef struct Buf_s {
-  Cache_s *cache;
-  u64 block;
-  u64 crc;
-  int inuse;
-  bool dirty;
-  bool clock;
-  void *user;
-  void *d;
+	Cache_s *cache;
+	u64 block;
+	u64 crc;
+	int inuse;
+	bool dirty;
+	bool clock;
+	void *user;
+	void *d;
 } Buf_s;
 
 typedef struct CacheStat_s {
-  int numbufs;
-  s64 gets;
-  s64 puts;
-  s64 hits;
-  s64 miss;
+	int numbufs;
+	s64 gets;
+	s64 puts;
+	s64 hits;
+	s64 miss;
 } CacheStat_s;
 
-static inline void buf_dirty(Buf_s *b) { b->dirty = TRUE; }
+static inline void buf_dirty(Buf_s *b)
+{ b->dirty = TRUE; }
 
 CacheStat_s cache_stats(Cache_s *cache);
 Cache_s *cache_new(char *filename, u64 num_bufs, u64 blockSize);

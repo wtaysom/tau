@@ -20,7 +20,6 @@
 
 extern pthread_mutex_t Count_lock;
 
-
 struct timespec Sleep = { 1, 0 };
 
 static u64 A[NUM_SYS_CALLS];
@@ -31,30 +30,89 @@ u64 *New = B;
 int Delta[NUM_SYS_CALLS];
 void *Rank_pidcall[MAX_PIDCALLS];
 int Num_rank;
-TopPidCall_s Top_pid_call[MAX_TOP];
+TopPidcall_s Top_pidcall[MAX_TOP];
 
 TickCounter_s Total_delta;
 
+static int Num_ticks = 0;
+
 static int compare_pidcall(const void *a, const void *b)
 {
-	const PidCall_s *p = *(const PidCall_s **)a;
-	const PidCall_s *q = *(const PidCall_s **)b;
+	const Pidcall_s *p = *(const Pidcall_s **)a;
+	const Pidcall_s *q = *(const Pidcall_s **)b;
 
 	if (p->save.count > q->save.count) return -1;
 	if (p->save.count == q->save.count) return 0;
 	return 1;
 }
 
-static void reduce_pidcall(void)
+static void fill_top_pidcall(TopPidcall_s *tc, Pidcall_s *pc)
 {
-	static int interval = 0;
-	PidCall_s *pc;
+	tc->pidcall = pc->pidcall;
+	tc->count   = pc->save.count;
+	tc->tick    = Num_ticks;
+	tc->time    = pc->save.time;
+	if (pc->name) {
+		strncpy(tc->name, pc->name, MAX_THREAD_NAME);
+		tc->name[MAX_THREAD_NAME - 1] = '\0';
+	} else {
+		tc->name[0] = '\0';
+	}
+}
+
+static void replace_top_pidcall(TopPidcall_s *insert_here, Pidcall_s *pc)
+{
+	TopPidcall_s *tc;
+
+	/* see if this pidcall is already in list */
+	for (tc = Top_pidcall; tc < &Top_pidcall[MAX_TOP]; tc++) {
+		if (pc->pidcall == tc->pidcall) {
+			if (pc->save.count <= tc->count) return;
+			assert(tc >= insert_here);
+			memmove(&insert_here[1], insert_here,
+				(tc - insert_here) * sizeof(*tc));
+			fill_top_pidcall(insert_here, pc);
+			return;
+		}
+	}
+	memmove(&insert_here[1], insert_here,
+		(tc - insert_here - 1) * sizeof(*tc));
+	fill_top_pidcall(insert_here, pc);
+}
+
+static void top_pidcall(void)
+{
+	Pidcall_s *pc;
 	int i;
 	int j;
+	int num_top;
+
+	++Num_ticks;
+	if (Num_rank < MAX_TOP) {
+		num_top = Num_rank;
+	} else {
+		num_top = MAX_TOP;
+	}
+	for (i = 0; i < num_top; i++) {
+		pc = Rank_pidcall[i];
+		if (pc->save.count < Top_pidcall[MAX_TOP - 1].count) break;
+		for (j = 0; j < MAX_TOP; j++) {
+			TopPidcall_s *tc = &Top_pidcall[j];
+			if (pc->save.count >= tc->count) {
+				replace_top_pidcall(tc, pc);
+				break;
+			}
+		}
+	}
+}
+
+static void reduce_pidcall(void)
+{
+	Pidcall_s *pc;
 	int k;
 
 	pthread_mutex_lock(&Count_lock);
-	for (pc = Pid_call, k = 0; pc < &Pid_call[MAX_PIDCALLS]; pc++) {
+	for (pc = Pidcall, k = 0; pc < &Pidcall[MAX_PIDCALLS]; pc++) {
 		if (pc->count) {
 			Rank_pidcall[k++] = pc;
 			pc->save.count = pc->count;
@@ -68,29 +126,7 @@ static void reduce_pidcall(void)
 
 	qsort(Rank_pidcall, k, sizeof(void *), compare_pidcall);
 
-	++interval;
-	if (k > MAX_TOP) k = MAX_TOP;
-	for (i = 0; i < k; i++) {
-		pc = Rank_pidcall[i];
-		if (pc->save.count < Top_pid_call[MAX_TOP - 1].count) break;
-		for (j = 0; j < MAX_TOP; j++) {
-			TopPidCall_s *tc = &Top_pid_call[j];
-			if (pc->save.count >= tc->count) {
-				memmove(&tc[1], tc, (MAX_TOP - j - 1));
-				tc->pidcall  = pc->pidcall;
-				tc->count    = pc->save.count;
-				tc->interval = interval;
-				tc->time     = pc->save.time;
-				if (pc->name) {
-					strncpy(tc->name, pc->name, MAX_THREAD_NAME);
-					tc->name[MAX_THREAD_NAME - 1] = '\0';
-				} else {
-					tc->name[0] = '\0';
-				}
-				break;
-			}
-		}
-	} 		
+	top_pidcall();
 }
 
 static void delta(void)
@@ -156,7 +192,7 @@ void reset_reduce(void)
 	zero(Syscall_count);
 	Ignored_pid_count = 0;
 	Slept = 0;
-	zero(Top_pid_call);
+	zero(Top_pidcall);
 }
 
 void *reduce(void *arg)
@@ -168,7 +204,7 @@ void *reduce(void *arg)
 		if (Halt) return NULL;
 		delta();
 		reduce_pidcall();
-		Display();
+		if (!Pause) Display();
 		nanosleep(&Sleep, NULL);
 	}
 }

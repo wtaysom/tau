@@ -9,26 +9,26 @@
 #include <lump.h>
 
 typedef struct Rec_s {
-  Lump_s key;
-  Lump_s val;
+	Lump_s key;
+	Lump_s val;
 } Rec_s;
 
 typedef struct BiNode_s BiNode_s;
 
 typedef struct BiStat_s {
-  u64 num_nodes;
-  u64 max_depth;
-  u64 total_depth;
-  u64 num_left;
-  u64 num_right;
-  Lump_s deepest;
+	u64 num_nodes;
+	u64 max_depth;
+	u64 total_depth;
+	u64 num_left;
+	u64 num_right;
+	Lump_s deepest;
 } BiStat_s;
 
 typedef struct BiTree_s {
-  BiNode_s *root;
-  u64 num_inserts;
-  u64 num_deletes;
-  u64 num_rotates;
+	BiNode_s *root;
+	u64 num_inserts;
+	u64 num_deletes;
+	u64 num_rotates;
 } BiTree_s;
 
 BiStat_s bi_stats(BiTree_s *tree);

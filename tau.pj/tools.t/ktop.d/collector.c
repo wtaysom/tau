@@ -37,11 +37,11 @@ u64 Syscall_count[NUM_SYS_CALLS];
 u64 Slept;
 int Pid[MAX_PID];
 
-PidCall_s Pid_call[MAX_PIDCALLS];
-PidCall_s *Pidclock = Pid_call;
-u64 Pid_call_iterations;
-u64 Pid_call_record;
-u64 Pid_call_tick;
+Pidcall_s Pidcall[MAX_PIDCALLS];
+Pidcall_s *Pidclock = Pidcall;
+u64 Pidcall_iterations;
+u64 Pidcall_record;
+u64 Pidcall_tick;
 
 u64 No_enter;
 u64 Found;
@@ -49,7 +49,7 @@ u64 Out_of_order;
 u64 No_start;
 u64 Bad_type;
 
-PidCall_s *Pid_call_bucket[PIDCALL_BUCKETS];
+Pidcall_s *Pidcall_bucket[PIDCALL_BUCKETS];
 
 int Sys_exit;
 int Sys_enter;
@@ -164,18 +164,18 @@ int open_raw(int cpu)
 	return fd;
 }
 
-static PidCall_s *hash_pidcall(u32 pidcall)
+static Pidcall_s *hash_pidcall(u32 pidcall)
 {
-	return (PidCall_s *)&Pid_call_bucket[pidcall % PIDCALL_BUCKETS];
+	return (Pidcall_s *)&Pidcall_bucket[pidcall % PIDCALL_BUCKETS];
 }
 
-static PidCall_s *find_pidcall(u32 pidcall)
+static Pidcall_s *find_pidcall(u32 pidcall)
 {
-	PidCall_s *pc = hash_pidcall(pidcall);
+	Pidcall_s *pc = hash_pidcall(pidcall);
 
-	++Pid_call_record;
+	++Pidcall_record;
 	for (;;) {
-		++Pid_call_iterations;
+		++Pidcall_iterations;
 		pc = pc->next;
 		if (!pc) return NULL;
 		if (pc->pidcall == pidcall) {
@@ -185,9 +185,9 @@ static PidCall_s *find_pidcall(u32 pidcall)
 	}
 }
 
-static void add_pidcall(PidCall_s *pidcall)
+static void add_pidcall(Pidcall_s *pidcall)
 {
-	PidCall_s *pc = hash_pidcall(pidcall->pidcall);
+	Pidcall_s *pc = hash_pidcall(pidcall->pidcall);
 
 	pidcall->next = pc->next;
 	pc->next = pidcall;
@@ -195,8 +195,8 @@ static void add_pidcall(PidCall_s *pidcall)
 
 static void remove_pidcall(u32 pidcall)
 {
-	PidCall_s *prev = hash_pidcall(pidcall);
-	PidCall_s *next;
+	Pidcall_s *prev = hash_pidcall(pidcall);
+	Pidcall_s *next;
 
 	for (;;) {
 		next = prev->next;
@@ -209,19 +209,19 @@ static void remove_pidcall(u32 pidcall)
 	}
 }
 
-/* victim_pidcall finds a Pid_call slot using a clock
+/* victim_pidcall finds a Pidcall slot using a clock
  * algorithm, throws away the data and gives it out
  * to be reused.
  */
-static PidCall_s *victim_pidcall(u32 pidcall)
+static Pidcall_s *victim_pidcall(u32 pidcall)
 {
-	PidCall_s *pc = Pidclock;
+	Pidcall_s *pc = Pidclock;
 
 	while (pc->clock) {
-		++Pid_call_tick;
+		++Pidcall_tick;
 		pc->clock = 0;
-		if (++Pidclock == &Pid_call[MAX_PIDCALLS]) {
-			Pidclock = Pid_call;
+		if (++Pidclock == &Pidcall[MAX_PIDCALLS]) {
+			Pidclock = Pidcall;
 		}
 		pc = Pidclock;
 	}
@@ -244,7 +244,7 @@ static void parse_sys_enter(void *event, u64 time)
 	int	pid      = sy->ev.pid;
 	snint	call_num = sy->id;
 	u32	pidcall  = mkpidcall(pid, call_num);
-	PidCall_s *pc;
+	Pidcall_s *pc;
 
 	++Pid[pid];
 
@@ -269,7 +269,7 @@ static void parse_sys_exit(void *event, u64 time)
 	int	pid      = sy->ev.pid;
 	snint	call_num = sy->id;
 	u32	pidcall  = mkpidcall(pid, call_num);
-	PidCall_s *pc;
+	Pidcall_s *pc;
 
 	pc = find_pidcall(pidcall);
 	if (!pc) {
@@ -346,7 +346,7 @@ unint parse_buf(u8 *buf)
 		} else if (r->type_len == 29) {
 			/* Left over page padding or discarded event */
 			if (r->time_delta == 0) {
-				goto done;
+				break;
 			} else {
 				length = r->array[0];
 				size = 4 + length * 4;
@@ -364,9 +364,12 @@ unint parse_buf(u8 *buf)
 			warn(" Unknown event %d", r->type_len);
 			/* Unknown - ignore */
 			size = 4;
+			break;
+		}
+		if (size > end - buf) {
+			break;
 		}
 	}
-done:
 	pthread_mutex_unlock(&Count_lock);
 	return commit;
 }

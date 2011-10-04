@@ -11,19 +11,19 @@
 typedef struct BbNode_s BbNode_s;
 
 typedef struct BbStat_s {
-  u64 num_nodes;
-  u64 max_depth;
-  u64 total_depth;
-  u64 num_left;
-  u64 num_right;
-  u64 deepest;
+	u64 num_nodes;
+	u64 max_depth;
+	u64 total_depth;
+	u64 num_left;
+	u64 num_right;
+	u64 deepest;
 } BbStat_s;
 
 typedef struct BbTree_s {
-  BbNode_s *root;
-  u64 num_inserts;
-  u64 num_deletes;
-  u64 num_rotates;
+	BbNode_s *root;
+	u64 num_inserts;
+	u64 num_deletes;
+	u64 num_rotates;
 } BbTree_s;
 
 BbStat_s bb_stats(BbTree_s *tree);

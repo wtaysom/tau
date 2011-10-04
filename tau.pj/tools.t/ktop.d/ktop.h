@@ -42,9 +42,9 @@ static inline u32 get_call(u32 pidcall)
 
 typedef void (*display_fn)(void);
 
-typedef struct PidCall_s PidCall_s;
-struct PidCall_s {
-	PidCall_s *next;
+typedef struct Pidcall_s Pidcall_s;
+struct Pidcall_s {
+	Pidcall_s *next;
 	u32 pidcall;
 	u32 count;
 	unint clock;
@@ -60,28 +60,29 @@ struct PidCall_s {
 	char *name;
 };
 
-typedef struct TopPidCall_s {
+typedef struct TopPidcall_s {
 	u32 pidcall;
 	u32 count;
-	u32 interval;
+	u32 tick;
 	u64 time;
 	char name[MAX_THREAD_NAME];
-} TopPidCall_s;
+} TopPidcall_s;
 
 extern bool Dump;	/* Dump of ftrace logs - don't start display */
 extern bool Trace_exit;	/* Trace sys_exit events */
 extern bool Trace_self;	/* Trace myself and ignore others */
+extern bool Pause;	/* Pause display */
 
 extern display_fn Display;
 
 extern u64 Syscall_count[NUM_SYS_CALLS];
 extern int Pid[MAX_PID];
-extern PidCall_s Pid_call[MAX_PIDCALLS];
-extern u64 Pid_call_record;
-extern u64 Pid_call_iterations;
-extern u64 Pid_call_tick;
+extern Pidcall_s Pidcall[MAX_PIDCALLS];
+extern u64 Pidcall_record;
+extern u64 Pidcall_iterations;
+extern u64 Pidcall_tick;
 
-extern TopPidCall_s Top_pid_call[MAX_TOP];
+extern TopPidcall_s Top_pidcall[MAX_TOP];
 
 extern u64 No_enter;
 extern u64 Found;

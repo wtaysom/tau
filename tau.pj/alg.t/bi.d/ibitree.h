@@ -9,19 +9,19 @@
 typedef struct iBiNode_s iBiNode_s;
 
 typedef struct iBiStat_s {
-  u64 num_nodes;
-  u64 max_depth;
-  u64 total_depth;
-  u64 num_left;
-  u64 num_right;
-  u64 deepest;
+	u64 num_nodes;
+	u64 max_depth;
+	u64 total_depth;
+	u64 num_left;
+	u64 num_right;
+	u64 deepest;
 } iBiStat_s;
 
 typedef struct iBiTree_s {
-  iBiNode_s *root;
-  u64 num_inserts;
-  u64 num_deletes;
-  u64 num_rotates;
+	iBiNode_s *root;
+	u64 num_inserts;
+	u64 num_deletes;
+	u64 num_rotates;
 } iBiTree_s;
 
 iBiStat_s ibi_stats(iBiTree_s *tree);
