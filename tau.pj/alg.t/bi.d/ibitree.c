@@ -116,7 +116,7 @@ u64 ibi_next (iBiTree_s *tree, u64 key) {
   if (key == 0) return ibi_first(tree);
   while (node) {
     if (key < node->key) {
-      if (node->right) nextrt = node;
+      nextrt = node;
       node = node->left;
     } else if (key == node->key) {
       if (node->right) {
