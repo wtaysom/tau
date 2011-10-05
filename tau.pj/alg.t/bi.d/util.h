@@ -8,9 +8,20 @@
 
 #include <lump.h>
 
+void Pause(void);
+
 char *rndstring(unint n);
 Lump_s rnd_lump(void);
 Lump_s fixed_lump(unint n);
 Lump_s seq_lump(void);
+
+void k_init(void);
+void k_add (u64 key);
+void k_for_each(recFunc f, void *user);
+snint k_rand_index (void);
+u64 k_get_rand(void);
+u64 k_delete_rand (void);
+int k_should_delete(s64 count, s64 level);
+static u64 k_rand_key (void);
 
 #endif

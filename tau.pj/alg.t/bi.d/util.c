@@ -10,6 +10,12 @@
 
 #include "util.h"
 
+void Pause(void)
+{
+	printf(": ");
+	getchar();
+}
+
 char *rndstring(unint n)
 {
 	char *s;
@@ -61,4 +67,94 @@ Lump_s seq_lump(void)
 		s[i] = ' ';
 	}
 	return lumpmk(MAX_KEY, s);
+}
+
+
+enum {	DYNA_START  = (1<<10),
+	DYNA_MAX    = 1 << 27 };
+
+typedef void (*recFunc)(u64 key, void *user);
+
+static u64 *K;
+static u64 *Next;
+static unint Size;
+
+void k_init (void)
+{
+	if (K) {
+		ftree(K);
+	}
+	Size = DYNA_START;
+	Next = K = emalloc(Size * sizeof(*K));
+}
+
+void k_add (u64 key)
+{
+	assert(K);
+	if (Next == &K[Size]) {
+		unint  newsize;
+
+		if (Size >= DYNA_MAX) {
+			fatal("Size %ld > %d", Size, DYNA_MAX);
+		}
+		newsize = Size << 2;
+		K = erealloc(K, newsize * sizeof(*K));
+		Next = &K[Size];
+		Size = newsize;
+	}
+	*Next++ = key;
+}
+
+void k_for_each (recFunc f, void *user) {
+	u64 *k;
+
+	for (k = K; k < Next; k++) {
+		f(*k, user);
+	}
+}
+
+snint k_rand_index (void)
+{
+	snint x = Next - K;
+
+	if (!K) return -1;
+	if (x == 0) return -1;
+	return urand(x);
+}
+
+u64 k_get_rand (void) {
+	snint x = k_rand_index();
+
+	if (x == -1) {
+		return 0;
+	}
+	return K[x];
+}
+
+u64 k_delete_rand (void)
+{
+	snint x = k_rand_index();
+	u64 key;
+
+	if (x == -1) return 0;
+	key = K[x];
+	K[x] = *--Next;
+	return key;
+}
+
+int k_should_delete(s64 count, s64 level)
+{
+	enum { RANGE = 1<<20, MASK = (2*RANGE) - 1 };
+	return (random() & MASK) * count / level / RANGE;
+}
+
+static u64 k_rand_key (void)
+{
+	return (u64)random() * (u64)random();
+#if 0
+	static u64 key = 0;
+	return ++key;
+	return urand(100);
+	return (u64)random() * (u64)random();
+#endif
 }
