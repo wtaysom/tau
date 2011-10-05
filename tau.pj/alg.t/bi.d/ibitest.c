@@ -22,21 +22,21 @@ static void pr_stats (iBiTree_s *tree)
 {
 	iBiStat_s s = ibi_stats(tree);
 	printf("num nodes=%lld sqrt=%g log2=%g\n"
-				"max depth=%lld\n"
-				"avg depth=%g\n"
-				"num left =%lld\n"
-				"num right=%lld\n",
-				s.num_nodes, sqrt(s.num_nodes), log(s.num_nodes)/log(2.0),
-				s.max_depth,
-				(double)s.total_depth / (double)s.num_nodes,
-				s.num_left,
-				s.num_right);
+		"max depth=%lld\n"
+		"avg depth=%g\n"
+		"num left =%lld\n"
+		"num right=%lld\n",
+		s.num_nodes, sqrt(s.num_nodes), log(s.num_nodes)/log(2.0),
+		s.max_depth,
+		(double)s.total_depth / (double)s.num_nodes,
+		s.num_left,
+		s.num_right);
 //  ibi_pr_path(tree, s.deepest);
 }
 
-enum { NUM_BUCKETS = (1 << 20) + 1,
-			DYNA_START  = 1,
-			DYNA_MAX    = 1 << 27 };
+enum {	NUM_BUCKETS = (1 << 20) + 1,
+	DYNA_START  = 1,
+	DYNA_MAX    = 1 << 27 };
 
 typedef void (*recFunc)(u64 key, void *user);
 

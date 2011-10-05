@@ -124,12 +124,12 @@ int rb_find (RbTree_s *tree, u64 key)
 }
 
 /* Rotations:
-				y    right->   x
-			/ \   <-left   / \
-			x   c          a   y
-		/ \                / \
-		a   b              b   c
-*/
+ *     y    right->   x
+ *    / \   <-left   / \
+ *   x   c          a   y
+ *  / \                / \
+ * a   b              b   c
+ */
 static void rot_right (addr *np)
 {
 	addr x;

@@ -132,12 +132,12 @@ int bi_find (BiTree_s *tree, Lump_s key, Lump_s *val)
 }
 
 /* Rotations:
-				y    right->   x
-			/ \   <-left   / \
-			x   c          a   y
-		/ \                / \
-		a   b              b   c
-*/
+ *     y    right->   x
+ *    / \   <-left   / \
+ *   x   c          a   y
+ *  / \                / \
+ * a   b              b   c
+ */
 static void rot_right (BiNode_s **np)
 {
 	BiNode_s *x;
@@ -174,65 +174,6 @@ static BiNode_s *bi_new (Rec_s r)
 	node->rec = r;
 	return node;
 }
-
-#if 0
-static void insert (BiNode_s **np, Rec_s r)
-{
-	BiNode_s *node = *np;
-	if (*np) {
-		if (cmplump(r.key, node->rec.key) < 0) {
-			insert(&node->left, r);
-		} else {
-			insert(&node->right, r);
-		}
-	} else {
-		*np = bi_new(r);
-	}
-}
-
-int bi_insert (BiNode_s **root, Rec_s r)
-{
-	insert(&t->root, r);
-	return 0;
-}
-
-static void delete_node (BiNode_s **np)
-{
-	BiNode_s *node = *np;
-	if (!node->right) {
-		*np = node->left;
-		free(node);
-		return;
-	}
-	if (!node->left) {
-		*np = node->right;
-		free(node);
-		return;
-	}
-	rot_right(np);
-	delete_node(&((*np)->right));
-}
-
-static void delete (BiNode_s **np, Lump_s key)
-{
-	BiNode_s *node = *np;
-	if (!node) fatal("Key not found");
-	int r = cmplump(key, node->rec.key);
-	if (r < 0) {
-		delete(&node->left, key);
-	} else if (r > 0) {
-		delete(&node->right, key);
-	} else {
-		delete_node(np);
-	}
-}
-
-int bi_delete (BiNode_s **root, Lump_s key)
-{
-	delete(&t->root, key);
-	return 0;
-}
-#endif
 
 int bi_insert (BiTree_s *tree, Rec_s r)
 {

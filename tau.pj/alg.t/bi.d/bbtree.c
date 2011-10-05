@@ -111,10 +111,10 @@ int bb_find (BbTree_s *tree, u64 key)
 }
 
 /* Rotations:
- *   y    right->   x
- *  / \   <-left   / \
- *  x   c          a   y
- * / \                / \
+ *     y    right->   x
+ *    / \   <-left   / \
+ *   x   c          a   y
+ *  / \                / \
  * a   b              b   c
  */
 static void rot_right (BbNode_s **np)

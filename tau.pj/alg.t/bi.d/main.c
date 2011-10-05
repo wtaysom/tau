@@ -61,15 +61,15 @@ static void pr_stats (BiTree_s *tree)
 {
 	BiStat_s s = bi_stats(tree);
 	printf("num nodes=%lld sqrt=%g log2=%g\n"
-				"max depth=%lld\n"
-				"avg depth=%g\n"
-				"num left =%lld\n"
-				"num right=%lld\n",
-				s.num_nodes, sqrt(s.num_nodes), log(s.num_nodes)/log(2.0),
-				s.max_depth,
-				(double)s.total_depth / (double)s.num_nodes,
-				s.num_left,
-				s.num_right);
+		"max depth=%lld\n"
+		"avg depth=%g\n"
+		"num left =%lld\n"
+		"num right=%lld\n",
+		s.num_nodes, sqrt(s.num_nodes), log(s.num_nodes)/log(2.0),
+		s.max_depth,
+		(double)s.total_depth / (double)s.num_nodes,
+		s.num_left,
+		s.num_right);
 	bi_pr_path(tree, s.deepest);
 }
 

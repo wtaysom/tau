@@ -37,8 +37,7 @@ struct Cache_s {
 	CacheStat_s stat;
 };
 
-CacheStat_s cache_stats (Cache_s *cache)
-{ return cache->stat; }
+CacheStat_s cache_stats (Cache_s *cache) { return cache->stat; }
 
 Dev_s *dev_open(char *name, u64 block_size)
 {
@@ -80,7 +79,8 @@ void dev_fill(Buf_s *b)
 {
 FN;
 	Dev_s *dev = b->cache->dev;
-	int rc = pread(dev->fd, b->d, dev->block_size, b->block * dev->block_size);
+	int rc = pread(dev->fd, b->d, dev->block_size,
+			b->block * dev->block_size);
 
 	if (rc == -1) {
 		fatal("pread of %s at %lld:", dev->name, b->block);

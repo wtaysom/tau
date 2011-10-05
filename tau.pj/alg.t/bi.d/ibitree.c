@@ -149,50 +149,13 @@ u64 ibi_next (iBiTree_s *tree, u64 key)
 }
 
 #if 0
-u64 ibi_next (iBiTree_s *tree, u64 key)
-{
-	iBiNode_s *node = tree->root;
-	iBiNode_s *lastrt = NULL;
-/* Have to get first key some how */
-/* Not getting root */
-//PRd(key);
-	if (key == 0) {
-		if (!node) return 0;
-		while (node->left) node = node->left;
-		return node->key;
-	}
-	if (!node) return 0;
-	if (key < node->key) {
-		lastrt = node;
-	}
-	while (node) {
-//PRd(node->key);
-		if (key == node->key) {
-			if (node->right) lastrt = node->right;
-			if (!lastrt) return 0;
-			node = lastrt;
-			while (node->left) node = node->left;
-			return node->key;
-		}
-		if (key < node->key) {
-			lastrt = node->right;
-			node = node->left;
-		} else {
-			node = node->right;
-		}
-	}
-	return 0;
-}
-#endif
-
-#if 0
 /* Rotations:
-				y    right->   x
-			/ \   <-left   / \
-			x   c          a   y
-		/ \                / \
-		a   b              b   c
-*/
+ *     y    right->   x
+ *    / \   <-left   / \
+ *   x   c          a   y
+ *  / \                / \
+ * a   b              b   c
+ */
 static void rot_right (iBiNode_s **np)
 {
 	iBiNode_s *x;
@@ -231,63 +194,6 @@ static iBiNode_s *ibi_new (u64 key)
 	return node;
 }
 
-#if 0
-static void insert (iBiNode_s **np, Rec_s r)
-{
-	iBiNode_s *node = *np;
-	if (*np) {
-		if (cmplump(r.key, node->rec.key) < 0) {
-			insert(&node->left, r);
-		} else {
-			insert(&node->right, r);
-		}
-	} else {
-		*np = ibi_new(r);
-	}
-}
-
-int ibi_insert (iBiNode_s **root, Rec_s r)
-{
-	insert(&t->root, r);
-	return 0;
-}
-
-static void delete_node (iBiNode_s **np)
-{
-	iBiNode_s *node = *np;
-	if (!node->right) {
-		*np = node->left;
-		free(node);
-		return;
-	}
-	if (!node->left) {
-		*np = node->right;
-		free(node);
-		return;
-	}
-	rot_right(np);
-	delete_node(&((*np)->right));
-}
-
-static void delete (iBiNode_s **np, u64 key)
-{
-	iBiNode_s *node = *np;
-	if (!node) fatal("Key not found");
-	if (key < node->key) {
-		delete(&node->left, key);
-	} else if (key > node->key) {
-		delete(&node->right, key);
-	} else {
-		delete_node(np);
-	}
-}
-
-int ibi_delete (iBiNode_s **root, u64 key)
-{
-	delete(&t->root, key);
-	return 0;
-}
-#endif
 
 int ibi_insert (iBiTree_s *tree, u64 key)
 {
