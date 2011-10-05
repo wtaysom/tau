@@ -22,18 +22,31 @@ extern pthread_mutex_t Count_lock;
 
 struct timespec Sleep = { 1, 0 };
 
+/*
+ * A and B are two arrays of counters for sys_call events
+ * that are swapped between old and new.
+ */
 static u64 A[NUM_SYS_CALLS];
 static u64 B[NUM_SYS_CALLS];
-
 u64 *Old = A;
 u64 *New = B;
+
+/* Difference between New and Old */
 int Delta[NUM_SYS_CALLS];
+
+/* Descending sorted array of counts for pid/system_calls */
 void *Rank_pidcall[MAX_PIDCALLS];
+
+/* Current number pid/sys_calls in Rank_pidcall array */
 int Num_rank;
+
+/* Top count for pid/sys_calls since last clear */
 TopPidcall_s Top_pidcall[MAX_TOP];
 
+/* Change in total count of sys_calls events */
 TickCounter_s Total_delta;
 
+/* Number of times reduce/display has been called. */
 static int Num_ticks = 0;
 
 static int compare_pidcall(const void *a, const void *b)

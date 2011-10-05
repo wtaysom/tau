@@ -209,11 +209,11 @@ static void remove_pidcall(u32 pidcall)
 	}
 }
 
-/* victim_pidcall finds a Pidcall slot using a clock
+/* reallocate_pidcall finds a Pidcall slot using a clock
  * algorithm, throws away the data and gives it out
  * to be reused.
  */
-static Pidcall_s *victim_pidcall(u32 pidcall)
+static Pidcall_s *reallocate_pidcall(u32 pidcall)
 {
 	Pidcall_s *pc = Pidclock;
 
@@ -256,7 +256,7 @@ static void parse_sys_enter(void *event, u64 time)
 
 	pc = find_pidcall(pidcall);
 	if (!pc) {
-		pc = victim_pidcall(pidcall);
+		pc = reallocate_pidcall(pidcall);
 	}
 	++pc->count;
 	pc->time.start = time;
@@ -331,13 +331,13 @@ unint parse_buf(u8 *buf)
 		if (r->type_len == 0) {
 			/* Larger record where size is at beginning of record */
 			length = r->array[0];
-			size	= 4 + length * 4;
-			time	+= r->time_delta;
+			size = 4 + length * 4;
+			time += r->time_delta;
 		} else if (r->type_len <= 28) {
 			/* Data record */
 			length = r->type_len;
-			size	= 4 + length * 4;
-			time	+= r->time_delta;
+			size = 4 + length * 4;
+			time += r->time_delta;
 			if (Dump) {
 				dump_event(buf);
 			} else {

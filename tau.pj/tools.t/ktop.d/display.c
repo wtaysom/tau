@@ -45,10 +45,10 @@ typedef struct Display_call_s {
 	int	index;
 } Display_call_s;
 
-bool Plot = FALSE;
-
+/* Top ten highest count for pid/sys_call */
 static Top_ten_s Top_ten[10];
 
+/* Defines graph area for total system calls */
 static graph_s TotalGraph = {{0, 0}, {{0, 10}, {60, 20}}};
 
 Display_call_s Display_call[] = {
