@@ -35,14 +35,14 @@ typedef struct {
 #define LOCK_SECTION_NAME ".text.lock.rgb"
 
 #define LOCK_SECTION_START(extra)               \
-        ".subsection 1\n\t"                     \
-        extra                                   \
-        ".ifndef " LOCK_SECTION_NAME "\n\t"     \
-        LOCK_SECTION_NAME ":\n\t"               \
-        ".endif\n"
+	".subsection 1\n\t"                     \
+	extra                                   \
+	".ifndef " LOCK_SECTION_NAME "\n\t"     \
+	LOCK_SECTION_NAME ":\n\t"               \
+	".endif\n"
 
 #define LOCK_SECTION_END                        \
-        ".previous\n\t"
+	".previous\n\t"
 
 #define __lockfunc fastcall __attribute__((section(".spinlock.text")))
 

@@ -13,9 +13,9 @@
 #undef WHERE
 
 typedef struct Where_s {
-  const char *file;
-  const char *fn;
-  int line;
+	const char *file;
+	const char *fn;
+	int line;
 } Where_s;
 
 #define WHERE ({ Where_s w = { __FILE__, __FUNCTION__, __LINE__ }; w; })

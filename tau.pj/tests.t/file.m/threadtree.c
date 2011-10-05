@@ -542,7 +542,7 @@ void usage (void)
 bool myopt (int c)
 {
 	switch (c) {
-        case 'r':
+	case 'r':
 		Myopt.rate = TRUE;
 		break;
 	case 'k':
