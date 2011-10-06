@@ -148,12 +148,19 @@ int k_should_delete(s64 count, s64 level)
 	return (random() & MASK) * count / level / RANGE;
 }
 
+static u64 Key = 1;
+
+void k_seed (u64 seed)
+{
+	srandom(seed);
+	Key = seed;
+}
+
 u64 k_rand_key (void)
 {
-	return (u64)random() * (u64)random();
+	return Key++;
 #if 0
-	static u64 key = 0;
-	return ++key;
+	return ++Key;
 	return urand(100);
 	return (u64)random() * (u64)random();
 #endif

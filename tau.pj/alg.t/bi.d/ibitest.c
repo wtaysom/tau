@@ -68,7 +68,24 @@ static void pr_next (iBiTree_s *tree)
 	}
 }
 
-void test_ibi(int n, int level)
+void test_ibi (int n)
+{
+	iBiTree_s tree = { 0 };
+	u64 key;
+	int i;
+
+	k_seed(1);
+	for (i = 0; i < n; i++) {
+		key = k_rand_key();
+		ibi_insert(&tree, key);
+	}
+	ibi_audit(&tree);
+	ibi_print(&tree);
+	pr_next(&tree);
+	pr_stats(&tree);
+}
+
+void test_ibi_level (int n, int level)
 {
 	iBiTree_s tree = { 0 };
 	u64 key;
@@ -77,7 +94,7 @@ void test_ibi(int n, int level)
 	int rc;
 	u64 start, finish, total;
 
-	srandom(1);
+	k_seed(1);
 	k_init();
 	start = nsecs();
 	for (i = 0; i < n; i++) {

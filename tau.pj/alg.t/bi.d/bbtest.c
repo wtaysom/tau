@@ -59,29 +59,43 @@ if (Option.print)
 }
 #endif
 
-void test_bb(int n, int level)
+void test_bb(int n)
+{
+	BbTree_s tree = { 0 };
+	u64 key;
+	int i;
+
+	k_seed(1);
+	for (i = 0; i < n; i++) {
+		key = k_rand_key();
+		bb_insert(&tree, key);
+	}
+//  bb_audit(&tree);
+//  if (Option.print) bb_print(&tree);
+	bb_print(&tree);
+	pr_stats(&tree);
+}
+
+void test_bb_level(int n, int level)
 {
 	BbTree_s tree = { 0 };
 	u64 key;
 	s64 count = 0;
 	int i;
-	int rc;
 	u64 start, finish, total;
 
-	srandom(1);
+	k_seed(1);
 	k_init();
 	start = nsecs();
 	for (i = 0; i < n; i++) {
 		if (k_should_delete(count, level)) {
 			key = k_delete_rand();
-			rc = bb_delete(&tree, key);
-			if (rc) fatal("delete key=%lld", key);
+			bb_delete(&tree, key);
 			--count;
 		} else {
 			key = k_rand_key();
 			k_add(key);
-			rc = bb_insert(&tree, key);
-			if (rc) fatal("bb_insert key=%lld", key);
+			bb_insert(&tree, key);
 			++count;
 		}
 	}

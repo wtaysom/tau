@@ -17,7 +17,7 @@
 struct BbNode_s {
 	BbNode_s *left;
 	BbNode_s *right;
-	int num_siblings;
+	int siblings;
 	u64 key;
 };
 
@@ -39,7 +39,7 @@ static void pr_node (BbNode_s *node, int indent)
 	pr_node(node->left, indent + 1);
 
 	pr_indent(indent);
-	printf("%d %lld\n", node->num_siblings, node->key);
+	printf("%d %lld\n", node->siblings, node->key);
 
 	pr_node(node->right, indent + 1);
 }
@@ -122,6 +122,7 @@ static void rot_right (BbNode_s **np)
 	BbNode_s *x;
 	BbNode_s *y;
 	BbNode_s *tmp;
+
 	y = *np;
 	if (!y) return;
 	x = y->left;
@@ -137,6 +138,7 @@ static void rot_left (BbNode_s **np)
 	BbNode_s *x;
 	BbNode_s *y;
 	BbNode_s *tmp;
+
 	x = *np;
 	if (!x) return;
 	y = x->right;
@@ -150,13 +152,89 @@ static void rot_left (BbNode_s **np)
 static BbNode_s *bb_new (u64 key)
 {
 	BbNode_s *node = ezalloc(sizeof(*node));
+
 	node->key = key;
 	return node;
 }
 
-int bb_insert (BbTree_s *tree, u64 key)
+/*
+ *          r
+ *          |
+ *          h-i
+ *         /
+ *        b-d-f
+ *       / / / \
+ *      a c e   g
+ *
+ *           r
+ *           |
+ *           d-h-i
+ *          / /
+ *         /   \
+ *        b     f
+ *       / \   / \
+ *      a   c e   g
+ */
+ void split (BbNode_s **pp, BbNode_s **np, BbNode_s *node)
+{
+	BbNode_s *h, *b, *d;
+
+	h = *pp;
+	b = *np;
+	d = b->right;
+	b->right = d->left;
+	d->left = b;
+	h->left = d->right;
+	d->right = h;
+	*pp = d;
+}
+
+/*
+ *        r
+ *        |
+ *        b-d-f
+ *       / / / \
+ *      a c e   g
+ *
+ *           r
+ *           |
+ *           d
+ *          / \
+ *         /   \
+ *        b     f
+ *       / \   / \
+ *      a   c e   g
+ */
+static void grow (BbNode_s **r, BbNode_s *b)
+{
+	BbNode_s *tmp;
+	BbNode_s *d = b->right;
+
+	tmp = d->left;
+	d->left = b;
+	b->right = tmp;
+	*r = d;
+	b->siblings = 0;
+	d->siblings = 0;
+}
+	
+void bb_insert (BbTree_s *tree, u64 key)
 {
 	BbNode_s **np = &tree->root;
+//	BbNode_s **pp = NULL;
+//	BbNode_s *parent = NULL;
+	BbNode_s *node = *np;
+
+	if (!node) {
+		*np = bb_new(key);
+		return;
+	}
+	if (node->siblings == 2) {
+		grow(np, node);
+		node = *np;
+	}
+	if (!node->left) {
+	}
 	for (;;) {
 		BbNode_s *node = *np;
 		if (!node) break;
@@ -167,13 +245,13 @@ int bb_insert (BbTree_s *tree, u64 key)
 		}
 	}
 	*np = bb_new(key);
-	return 0;
 }
 
 static void delete_node (BbNode_s **np)
 {
 	static int odd = 0;
 	BbNode_s *node;
+
 	for (;;) {
 		node = *np;
 		if (!node->right) {
@@ -196,9 +274,10 @@ static void delete_node (BbNode_s **np)
 	free(node);
 }
 
-int bb_delete (BbTree_s *tree, u64 key)
+void bb_delete (BbTree_s *tree, u64 key)
 {
 	BbNode_s **np = &tree->root;
+
 	for (;;) {
 		BbNode_s *node = *np;
 		if (!node) fatal("Key not found");
@@ -210,5 +289,4 @@ int bb_delete (BbTree_s *tree, u64 key)
 		}
 	}
 	delete_node(np);
-	return 0;
 }

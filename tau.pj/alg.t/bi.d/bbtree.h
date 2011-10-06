@@ -31,8 +31,8 @@ BbStat_s bb_stats(BbTree_s *tree);
 int bb_audit (BbTree_s *tree);
 int bb_print (BbTree_s *tree);
 int bb_find  (BbTree_s *tree, u64 key);
-int bb_insert(BbTree_s *tree, u64 key);
-int bb_delete(BbTree_s *tree, u64 key);
+void bb_insert(BbTree_s *tree, u64 key);
+void bb_delete(BbTree_s *tree, u64 key);
 
 void bb_pr_path(BbTree_s *tree, u64 key);
 

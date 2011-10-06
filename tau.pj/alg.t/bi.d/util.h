@@ -18,6 +18,7 @@ Lump_s fixed_lump(unint n);
 Lump_s seq_lump(void);
 
 void k_init(void);
+void k_seed(u64 seed);
 void k_add (u64 key);
 void k_for_each(krecFunc f, void *user);
 snint k_rand_index (void);

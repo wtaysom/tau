@@ -58,7 +58,7 @@ if (Option.print)
 }
 #endif
 
-void test_rb (int n, int level)
+void test_rb_level (int n, int level)
 {
 	RbTree_s tree = { 0 };
 	u64 key;
@@ -67,7 +67,7 @@ void test_rb (int n, int level)
 	int rc;
 	u64 start, finish, total;
 
-	srandom(1);
+	k_seed(1);
 	k_init();
 	start = nsecs();
 	for (i = 0; i < n; i++) {
