@@ -3,8 +3,10 @@
  * Distributed under the terms of the GNU General Public License v2
  */
 
+#include <stdio.h>
 #include <stdlib.h>
 
+#include <eprintf.h>
 #include <lump.h>
 #include <mystdlib.h>
 
@@ -73,8 +75,6 @@ Lump_s seq_lump(void)
 enum {	DYNA_START  = (1<<10),
 	DYNA_MAX    = 1 << 27 };
 
-typedef void (*recFunc)(u64 key, void *user);
-
 static u64 *K;
 static u64 *Next;
 static unint Size;
@@ -82,7 +82,7 @@ static unint Size;
 void k_init (void)
 {
 	if (K) {
-		ftree(K);
+		free(K);
 	}
 	Size = DYNA_START;
 	Next = K = emalloc(Size * sizeof(*K));
@@ -105,7 +105,7 @@ void k_add (u64 key)
 	*Next++ = key;
 }
 
-void k_for_each (recFunc f, void *user) {
+void k_for_each (krecFunc f, void *user) {
 	u64 *k;
 
 	for (k = K; k < Next; k++) {
@@ -148,7 +148,7 @@ int k_should_delete(s64 count, s64 level)
 	return (random() & MASK) * count / level / RANGE;
 }
 
-static u64 k_rand_key (void)
+u64 k_rand_key (void)
 {
 	return (u64)random() * (u64)random();
 #if 0

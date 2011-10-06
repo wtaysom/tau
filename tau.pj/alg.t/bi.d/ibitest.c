@@ -92,7 +92,7 @@ void test_ibi(int n, int level)
 			if (rc) fatal("delete key=%lld", key);
 			--count;
 		} else {
-			key = rand_key();
+			key = k_rand_key();
 			k_add(key);
 			rc = ibi_insert(&tree, key);
 			if (rc) fatal("ibi_insert key=%lld", key);

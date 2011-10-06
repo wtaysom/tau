@@ -8,6 +8,8 @@
 
 #include <lump.h>
 
+typedef void (*krecFunc)(u64 key, void *user);
+
 void Pause(void);
 
 char *rndstring(unint n);
@@ -17,11 +19,11 @@ Lump_s seq_lump(void);
 
 void k_init(void);
 void k_add (u64 key);
-void k_for_each(recFunc f, void *user);
+void k_for_each(krecFunc f, void *user);
 snint k_rand_index (void);
 u64 k_get_rand(void);
-u64 k_delete_rand (void);
+u64 k_delete_rand(void);
 int k_should_delete(s64 count, s64 level);
-static u64 k_rand_key (void);
+u64 k_rand_key(void);
 
 #endif
