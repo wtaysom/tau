@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <debug.h>
 #include <eprintf.h>
 #include <style.h>
 
@@ -36,12 +37,12 @@ static void pr_indent (int indent)
 static void pr_node (BbNode_s *node, int indent)
 {
 	if (!node) return;
-	pr_node(node->left, indent + 1);
+	pr_node(node->right, indent + 1);
 
 	pr_indent(indent);
 	printf("%d %lld\n", node->siblings, node->key);
 
-	pr_node(node->right, indent + 1);
+	pr_node(node->left, indent + 1);
 }
 
 int bb_print (BbTree_s *tree)
@@ -158,7 +159,7 @@ static BbNode_s *bb_new (u64 key)
 }
 
 /*
- *          r
+ *          gp
  *          |
  *          h-i
  *         /
@@ -166,27 +167,61 @@ static BbNode_s *bb_new (u64 key)
  *       / / / \
  *      a c e   g
  *
- *           r
+ *           gp
  *           |
- *           d-h-i
- *          / /
- *         /   \
+ *           d-----h-----i
+ *          /     /
+ *         /     /
  *        b     f
  *       / \   / \
  *      a   c e   g
  */
- void split (BbNode_s **pp, BbNode_s **np, BbNode_s *node)
+/*
+ * Three possible cases for split, all slightly different.
+ *          gp
+ *          |
+ *    head->h---------q-----\
+ *         /         /       \
+ *        b-d-f     k-m-o     s-u-w
+ *       / / / \   / / / \   / / / \
+ *      a c e   g j l n   p r t v   x
+ *
+ *          gp
+ *          |
+ *          d-----h-----m-----q------u
+ *         /     /     /     /      / \
+ *        /     /     /     /      /   \
+ *       b     f     k     o      s     w
+ *      / \   / \   / \   / \    / \   / \
+ *     a   c e   g j   l n   p  r   t v   x
+ */
+BbNode_s **split (BbNode_s *head, BbNode_s **pp, BbNode_s *node)
 {
-	BbNode_s *h, *b, *d;
+	BbNode_s *bravo  = node;
+	BbNode_s *delta  = bravo->right;
+	BbNode_s *parent = *pp;
 
-	h = *pp;
-	b = *np;
-	d = b->right;
-	b->right = d->left;
-	d->left = b;
-	h->left = d->right;
-	d->right = h;
-	*pp = d;
+	bravo->right = delta->left;
+	delta->left = bravo;
+	bravo->siblings = 0;
+	delta->siblings = 0;
+
+	if (parent->siblings) {
+		parent->left = delta->right;
+		delta->right = parent;
+		*pp = delta;
+		delta->siblings = parent->siblings + 1;
+		parent->siblings = 0;
+	} else if (delta->key < parent->key) {
+		parent->left = delta->right;
+		delta->right = parent;
+		*pp = delta;
+		++head->siblings;
+	} else {
+		parent->right = delta;
+		++head->siblings;
+	}
+	return pp;
 }
 
 /*
@@ -205,24 +240,23 @@ static BbNode_s *bb_new (u64 key)
  *       / \   / \
  *      a   c e   g
  */
-static void grow (BbNode_s **r, BbNode_s *b)
+static void grow (BbNode_s **rootp)
 {
-	BbNode_s *tmp;
-	BbNode_s *d = b->right;
+	BbNode_s *bravo = *rootp;
+	BbNode_s *delta = bravo->right;
 
-	tmp = d->left;
-	d->left = b;
-	b->right = tmp;
-	*r = d;
-	b->siblings = 0;
-	d->siblings = 0;
+	bravo->right = delta->left;
+	delta->left = bravo;
+	*rootp = delta;
+	bravo->siblings = 0;
+	delta->siblings = 0;
 }
 	
 void bb_insert (BbTree_s *tree, u64 key)
 {
 	BbNode_s **np = &tree->root;
-//	BbNode_s **pp = NULL;
-//	BbNode_s *parent = NULL;
+	BbNode_s **pp;
+	BbNode_s *head = NULL;
 	BbNode_s *node = *np;
 
 	if (!node) {
@@ -230,11 +264,57 @@ void bb_insert (BbTree_s *tree, u64 key)
 		return;
 	}
 	if (node->siblings == 2) {
-		grow(np, node);
+		grow(np);
 		node = *np;
 	}
-	if (!node->left) {
+	head = node;
+	while (node->left) {
+		pp = np;
+		if (key < node->key) {
+			np = &node->left;
+			node = *np;
+			head = node;
+		} else {
+			np = &node->right;
+			node =*np;
+			assert(node);
+		}
+		if (node->siblings == 2) {
+			np = split(head, pp, node);
+			node = *np;
+		}
+		assert(node->siblings < 2);
 	}
+	if (!node->left) {
+		if (key < node->key) {
+			BbNode_s *child = bb_new(key);
+			child->right = node;
+			child->siblings = node->siblings + 1;
+			node->siblings = 0;
+			*np = child;
+			return;
+		}
+		head = node;
+		for (;;) {
+			np = &node->right;
+			node = *np;
+			if (!node) {
+				*np = bb_new(key);
+				++head->siblings;
+				return;
+			}
+			if (key < node->key) {
+				BbNode_s *child = bb_new(key);
+				child->right = node;
+				child->siblings = node->siblings + 1;
+				node->siblings = 0;
+				*np = child;
+				++head->siblings;
+				return;
+			}
+		}
+	}
+#if 0
 	for (;;) {
 		BbNode_s *node = *np;
 		if (!node) break;
@@ -245,6 +325,7 @@ void bb_insert (BbTree_s *tree, u64 key)
 		}
 	}
 	*np = bb_new(key);
+#endif
 }
 
 static void delete_node (BbNode_s **np)
