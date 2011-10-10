@@ -15,6 +15,11 @@
 
 #include "bbtree.h"
 
+#define PRk(_key) prc(FN_ARG, # _key, '@' + _key)
+#define PRnode(_n) printf("%s<%d> %s %p %d %c %p %p\n",		\
+	__FUNCTION__, __LINE__, # _n, (_n), (_n)->siblings,	\
+	(char)(_n)->key + '@', (_n)->left, (_n)->right)
+
 struct BbNode_s {
 	BbNode_s *left;
 	BbNode_s *right;
@@ -40,13 +45,18 @@ static void pr_node (BbNode_s *node, int indent)
 	pr_node(node->right, indent + 1);
 
 	pr_indent(indent);
-	printf("%d %lld\n", node->siblings, node->key);
+	if (node->key < 26) {
+		printf("%d %c\n", node->siblings, '@' + (u8)node->key);
+	} else {
+		printf("%d %lld\n", node->siblings, node->key);
+	}
 
 	pr_node(node->left, indent + 1);
 }
 
 int bb_print (BbTree_s *tree)
 {
+	puts("----------------\n");
 	pr_node(tree->root, 0);
 	return 0;
 }
@@ -200,26 +210,42 @@ BbNode_s **split (BbNode_s *head, BbNode_s **pp, BbNode_s *node)
 	BbNode_s *bravo  = node;
 	BbNode_s *delta  = bravo->right;
 	BbNode_s *parent = *pp;
-
+#if 0
+PRk(head->key);
+PRk(node->key);
+PRk(parent->key);
+PRk(bravo->key);
+PRk(delta->key);
+#else
+PRnode(head);
+PRnode(node);
+PRnode(parent);
+PRnode(bravo);
+PRnode(delta);
+#endif
 	bravo->right = delta->left;
 	delta->left = bravo;
 	bravo->siblings = 0;
 	delta->siblings = 0;
 
 	if (parent->siblings) {
+HERE;
 		parent->left = delta->right;
 		delta->right = parent;
 		*pp = delta;
 		delta->siblings = parent->siblings + 1;
 		parent->siblings = 0;
 	} else if (delta->key < parent->key) {
+HERE;
 		parent->left = delta->right;
 		delta->right = parent;
 		*pp = delta;
 		++head->siblings;
 	} else {
+HERE;
 		parent->right = delta;
-		++head->siblings;
+		++head->siblings;  // Wrong thing to increment
+PRnode(head);
 	}
 	return pp;
 }
@@ -258,6 +284,7 @@ void bb_insert (BbTree_s *tree, u64 key)
 	BbNode_s **pp;
 	BbNode_s *head = NULL;
 	BbNode_s *node = *np;
+	int siblings;
 
 	if (!node) {
 		*np = bb_new(key);
@@ -268,15 +295,26 @@ void bb_insert (BbTree_s *tree, u64 key)
 		node = *np;
 	}
 	head = node;
+	siblings = head->siblings;
 	while (node->left) {
 		pp = np;
 		if (key < node->key) {
 			np = &node->left;
 			node = *np;
 			head = node;
+			siblings = head->siblings;
 		} else {
 			np = &node->right;
 			node =*np;
+// Need to know when going right goes down a level.
+// 1. keep a count from head
+// 2. Keep a count of right siblings
+			if (siblings) {
+				--siblings;
+			} else {
+				head = node;
+				siblings = head->siblings;
+			}
 			assert(node);
 		}
 		if (node->siblings == 2) {

@@ -36,6 +36,7 @@ void debugstdout(void);
 
 bool prf     (const char *);
 bool pr      (const char *fn, unsigned line, const char *);
+bool prc     (const char *fn, unsigned line, const char *, char);
 bool prd     (const char *fn, unsigned line, const char *, s64);
 bool prp     (const char *fn, unsigned line, const char *, void *);
 bool prs     (const char *fn, unsigned line, const char *, const char *);
@@ -51,6 +52,7 @@ bool print   (const char *fn, unsigned line, const char *format, ...);
 #define FN		prf(__FUNCTION__)
 #define HERE		pr(FN_ARG, NULL)
 #define PR(_s_)		pr(FN_ARG, # _s_)
+#define PRc(_x_)	prc(FN_ARG, # _x_, _x_)
 #define PRd(_x_)	prd(FN_ARG, # _x_, _x_)
 #define PRp(_x_)	prp(FN_ARG, # _x_, _x_)
 #define PRs(_x_)	prs(FN_ARG, # _x_, _x_)

@@ -124,6 +124,11 @@ bool pr (const char *fn, unsigned line, const char *label)
 	else return print(fn, line, "");
 }
 
+bool prc (const char *fn, unsigned line, const char *label, char x)
+{
+	return print(fn, line, "%s=%c", label, x);
+}
+
 bool prd (const char *fn, unsigned line, const char *label, s64 x)
 {
 	return print(fn, line, "%s=%lld", label, x);

@@ -68,6 +68,7 @@ void test_bb(int n)
 	k_seed(1);
 	for (i = 0; i < n; i++) {
 		key = k_rand_key();
+bb_print(&tree);
 		bb_insert(&tree, key);
 	}
 //  bb_audit(&tree);
