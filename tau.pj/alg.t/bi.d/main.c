@@ -77,9 +77,7 @@ void myoptions(int argc, char *argv[])
 int main(int argc, char *argv[])
 {
 	myoptions(argc, argv);
-	test_bi_level(Option.iterations, Option.level);
-	test_ibi_level(Option.iterations, Option.level);
-	test_jsw_level(Option.iterations, Option.level);
+	test_bt(Option.iterations);
 	return 0;
 }
 
@@ -94,4 +92,9 @@ int main(int argc, char *argv[])
 	test_bi_delete(Option.iterations);
 	test_bi_level(Option.iterations, Option.level);
 	test_jsw_level(Option.iterations, Option.level);
+	test_bi_level(Option.iterations, Option.level);
+	test_ibi_level(Option.iterations, Option.level);
+	test_jsw_level(Option.iterations, Option.level);
+	test_bt(Option.iterations);
+	test_bt_level(Option.iterations, Option.level);
 #endif
