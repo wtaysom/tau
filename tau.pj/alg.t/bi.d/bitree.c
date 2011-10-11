@@ -18,9 +18,9 @@ struct BiNode_s {
 	Rec_s rec;
 };
 
-int bi_audit (BiTree_s *tree)
+BiStat_s bi_stat (BiTree_s *tree)
 {
-	return 0;
+	return tree->stat;
 }
 
 static void pr_indent (int indent)
@@ -87,7 +87,7 @@ void bi_pr_path (BiTree_s *tree, Lump_s key)
 	}
 }
 
-static void node_stat (BiNode_s *node, BiStat_s *s, int depth)
+static void node_audit (BiNode_s *node, BiAudit_s *s, int depth)
 {
 	if (!node) return;
 	++s->num_nodes;
@@ -98,19 +98,19 @@ static void node_stat (BiNode_s *node, BiStat_s *s, int depth)
 	s->total_depth += depth;
 	if (node->left) {
 		++s->num_left;
-		node_stat(node->left, s, depth + 1);
+		node_audit(node->left, s, depth + 1);
 	}
 	if (node->right) {
 		++s->num_right;
-		node_stat(node->right, s, depth + 1);
+		node_audit(node->right, s, depth + 1);
 	}
 }
 	
-BiStat_s bi_stats (BiTree_s *tree)
+BiAudit_s bi_audit (BiTree_s *tree)
 {
-	BiStat_s stat = { 0 };
-	node_stat(tree->root, &stat, 1);
-	return stat;
+	BiAudit_s audit = { 0 };
+	node_audit(tree->root, &audit, 1);
+	return audit;
 }
 
 int bi_find (BiTree_s *tree, Lump_s key, Lump_s *val)

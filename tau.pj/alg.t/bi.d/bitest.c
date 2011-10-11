@@ -49,20 +49,20 @@ static void pr_lump (Lump_s a)
 	return 0;
 }
 
-static void pr_stats (BiTree_s *tree)
+static void pr_audit (BiTree_s *tree)
 {
-	BiStat_s s = bi_stats(tree);
+	BiAudit_s a = bi_audit(tree);
 	printf("num nodes=%lld sqrt=%g log2=%g\n"
 		"max depth=%lld\n"
 		"avg depth=%g\n"
 		"num left =%lld\n"
 		"num right=%lld\n",
-		s.num_nodes, sqrt(s.num_nodes), log(s.num_nodes)/log(2.0),
-		s.max_depth,
-		(double)s.total_depth / (double)s.num_nodes,
-		s.num_left,
-		s.num_right);
-	bi_pr_path(tree, s.deepest);
+		a.num_nodes, sqrt(a.num_nodes), log(a.num_nodes)/log(2.0),
+		a.max_depth,
+		(double)a.total_depth / (double)a.num_nodes,
+		a.num_left,
+		a.num_right);
+	bi_pr_path(tree, a.deepest);
 }
 
 enum {	DYNA_START = 1,
@@ -241,7 +241,7 @@ void test_bi_delete(int n)
 	}
 	r_for_each(delete, &tree);
 	bi_audit(&tree);
-	pr_stats(&tree);
+	pr_audit(&tree);
 }
 
 int should_delete(s64 count, s64 level)
@@ -272,7 +272,7 @@ if (Option.print)
 }
 #endif
 
-void test_level(int n, int level)
+void test_bi_level(int n, int level)
 {
 	BiTree_s tree = { 0 };
 	Rec_s rec;
@@ -302,5 +302,5 @@ if (i % 1000 == 0) fprintf(stderr, ".");
 printf("\n");
 	bi_audit(&tree);
 	if (Option.print) bi_print(&tree);
-	pr_stats(&tree);
+	pr_audit(&tree);
 }

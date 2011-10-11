@@ -158,9 +158,9 @@ void k_seed (u64 seed)
 
 u64 k_rand_key (void)
 {
-	return Key++;
+	return (u64)random() * (u64)random();
 #if 0
-	return ++Key;
+	return Key++;
 	return urand(100);
 	return (u64)random() * (u64)random();
 #endif

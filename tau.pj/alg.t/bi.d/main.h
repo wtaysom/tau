@@ -22,5 +22,7 @@ void test_ibi(int n);
 void test_ibi_level(int n, int level);
 void test_bb_level(int n, int level);
 void test_rb_level(int n, int level);
+void test_bi_level(int n, int level);
+void test_jsw_level (int n, int level);
 
 #endif

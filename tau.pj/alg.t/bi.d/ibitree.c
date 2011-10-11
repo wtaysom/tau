@@ -19,9 +19,9 @@ struct iBiNode_s {
 	u64 key;
 };
 
-int ibi_audit (iBiTree_s *tree)
+iBiStat_s ibi_stat (iBiTree_s *tree)
 {
-	return 0;
+	return tree->stat;
 }
 
 static void pr_indent (int indent)
@@ -69,30 +69,30 @@ void ibi_pr_path (iBiTree_s *tree, u64 key)
 	}
 }
 
-static void node_stat (iBiNode_s *node, iBiStat_s *s, int depth)
+static void node_audit (iBiNode_s *node, iBiAudit_s *audit, int depth)
 {
 	if (!node) return;
-	++s->num_nodes;
-	if (depth > s->max_depth) {
-		s->max_depth = depth;
-		s->deepest = node->key;
+	++audit->num_nodes;
+	if (depth > audit->max_depth) {
+		audit->max_depth = depth;
+		audit->deepest = node->key;
 	}
-	s->total_depth += depth;
+	audit->total_depth += depth;
 	if (node->left) {
-		++s->num_left;
-		node_stat(node->left, s, depth + 1);
+		++audit->num_left;
+		node_audit(node->left, audit, depth + 1);
 	}
 	if (node->right) {
-		++s->num_right;
-		node_stat(node->right, s, depth + 1);
+		++audit->num_right;
+		node_audit(node->right, audit, depth + 1);
 	}
 }
 	
-iBiStat_s ibi_stats (iBiTree_s *tree)
+iBiAudit_s ibi_audit (iBiTree_s *tree)
 {
-	iBiStat_s stat = { 0 };
-	node_stat(tree->root, &stat, 1);
-	return stat;
+	iBiAudit_s audit = { 0 };
+	node_audit(tree->root, &audit, 1);
+	return audit;
 }
 
 int ibi_find (iBiTree_s *tree, u64 key)

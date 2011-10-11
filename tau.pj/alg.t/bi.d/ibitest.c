@@ -19,19 +19,19 @@
 #include "ibitree.h"
 #include "util.h"
 
-static void pr_stats (iBiTree_s *tree)
+static void pr_audit (iBiTree_s *tree)
 {
-	iBiStat_s s = ibi_stats(tree);
+	iBiAudit_s a = ibi_audit(tree);
 	printf("num nodes=%lld sqrt=%g log2=%g\n"
 		"max depth=%lld\n"
 		"avg depth=%g\n"
 		"num left =%lld\n"
 		"num right=%lld\n",
-		s.num_nodes, sqrt(s.num_nodes), log(s.num_nodes)/log(2.0),
-		s.max_depth,
-		(double)s.total_depth / (double)s.num_nodes,
-		s.num_left,
-		s.num_right);
+		a.num_nodes, sqrt(a.num_nodes), log(a.num_nodes)/log(2.0),
+		a.max_depth,
+		(double)a.total_depth / (double)a.num_nodes,
+		a.num_left,
+		a.num_right);
 //  ibi_pr_path(tree, s.deepest);
 }
 
@@ -82,7 +82,7 @@ void test_ibi (int n)
 	ibi_audit(&tree);
 	ibi_print(&tree);
 	pr_next(&tree);
-	pr_stats(&tree);
+	pr_audit(&tree);
 }
 
 void test_ibi_level (int n, int level)
@@ -125,7 +125,7 @@ ibi_print(&tree);
 //printf("\n");
 //  ibi_audit(&tree);
 //  if (Option.print) ibi_print(&tree);
-	pr_stats(&tree);
+	pr_audit(&tree);
 }
 
 /*

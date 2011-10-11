@@ -77,16 +77,21 @@ void myoptions(int argc, char *argv[])
 int main(int argc, char *argv[])
 {
 	myoptions(argc, argv);
-	test_ibi(Option.iterations);
-	test_bb(Option.iterations);
+	test_bi_level(Option.iterations, Option.level);
+	test_ibi_level(Option.iterations, Option.level);
+	test_jsw_level(Option.iterations, Option.level);
 	return 0;
 }
 
 #if 0
+	test_ibi(Option.iterations);
+	test_bb(Option.iterations);
+
 	test_ibi_level(Option.iterations, Option.level);
 	test_bb_level(Option.iterations, Option.level);
 	test_perf(Option.iterations, Option.level);
 	test_rb(Option.iterations, Option.level);
 	test_bi_delete(Option.iterations);
-	test_level(Option.iterations, Option.level);
+	test_bi_level(Option.iterations, Option.level);
+	test_jsw_level(Option.iterations, Option.level);
 #endif
