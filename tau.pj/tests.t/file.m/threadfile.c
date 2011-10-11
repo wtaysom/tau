@@ -13,18 +13,19 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <stdlib.h>
 #include <dirent.h>
 #include <fcntl.h>
-#include <string.h>
-#include <stdio.h>
-#include <unistd.h>
 #include <pthread.h>
+#include <spinlock.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
+#include <eprintf.h>
 #include <debug.h>
 #include <style.h>
 #include <mystdlib.h>
-#include <eprintf.h>
 #include <puny.h>
 
 
@@ -40,7 +41,7 @@ typedef struct arg_s {
 } arg_s;
 
 struct {
-	bool		rate;
+	bool	rate;
 } Myopt = {
 	.rate  = FALSE };
 
@@ -76,19 +77,6 @@ void gen_name (char *c, arg_s *arg)
 					&arg->seed)];
 	}
 	*c = '\0';
-}
-
-int is_dir (const char *dir)
-{
-	struct stat	stbuf;
-	int		rc;
-
-	rc = stat(dir, &stbuf);
-	if (rc) {
-		eprintf("is_dir stat \"%s\" :", dir);
-		return 0;
-	}
-	return S_ISDIR(stbuf.st_mode);
 }
 
 void cd (char *dir)
@@ -191,12 +179,51 @@ unint Level = 100;
 unint Max = 200;
 unint Next = 0;
 char **Name;
-#define lock()		((void)0)
-#define unlock()	((void)0)
+
+#ifdef __APPLE__
+
+pthread_mutex_t Name_lock;
+
+static void init_lock (void)
+{
+	pthread_mutext_init( &Name_lock, NULL)
+}
+
+static void lock (void)
+{
+	pthread_mutex_lock(&Name_lock);
+}
+
+void unlock (void)
+{
+	pthread_unmutex_lock(&Name_lock);
+}
+
+#else
+
+pthread_spinlock_t Lock_name;
+
+void init_lock (void)
+{
+	pthread_spin_init( &Name_lock, PTHREAD_PROCESS_PRIVATE);
+}
+
+void lock (void)
+{
+	pthread_spin_lock(&Name_lock);
+}
+
+void unlock (void)
+{
+	pthread_spin_unlock(&Name_lock);
+}
+
+#endif
 
 char *rand_remove_name (arg_s *arg)
 {
-	unint	x;
+	unint x;
+	char *name;
 
 	lock();
 	if (!Next) return NULL;
@@ -204,6 +231,19 @@ char *rand_remove_name (arg_s *arg)
 	x = urand_r(Next, &arg->seed);
 	name = Name[x];
 	Name[x] = Name[--Next];
+
+	unlock();
+	return name;
+}
+
+char *remove_name (void)
+{
+	char *name;
+
+	lock();
+	if (!Next) return NULL;
+
+	name = Name[--Next];
 
 	unlock();
 	return name;
