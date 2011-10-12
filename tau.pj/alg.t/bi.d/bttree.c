@@ -15,7 +15,11 @@
 #include "bttree.h"
 
 enum {	NUM_KEYS = 15,
-	NUM_TWIGS = NUM_KEYS * sizeof(u64) / (sizeof(void *) + sizeof(u64)) };
+	KEYS_LOWER_HALF = NUM_KEYS / 2,
+	KEYS_UPPER_HALF = NUM_KEYS - KEYS_LOWER_HALF,
+	NUM_TWIGS = NUM_KEYS * sizeof(u64) / (sizeof(void *) + sizeof(u64)),
+	TWIGS_LOWER_HALF = NUM_TWIGS / 2,
+	TWIGS_UPPER_HALF = NUM_TWIGS - TWIGS_LOWER_HALF };
 
 
 #if 0
@@ -229,13 +233,34 @@ static void leaf_insert (BtNode_s *leaf, u64 key)
 	assert(leaf->num < NUM_KEYS);
 	for (i = 0; i < leaf->num; i++) {
 		if (key < leaf->key[i]) {
-			memmove(&leaf->key[i+1], &leaf->key[i], leaf->num - i);
+			memmove(&leaf->key[i+1], &leaf->key[i],
+				sizeof(u64) * (leaf->num - i));
 			++leaf->num;
 			leaf->key[i] = key;
 			return;
 		}
 	}
 	leaf->key[leaf->num++] = key;
+}
+
+static void branch_insert (BtNode_s *parent, u64 key, BtNode_s *node)
+{
+	int i;
+
+	assert(parent->num < NUM_KEYS);
+	for (i = 0; i < parent->num; i++) {
+		if (key < parent->key[i]) {
+			memmove(&parent->key[i+1], &parent->key[i],
+				sizeof(Twig_s) * (parent->num - i));
+			parent->twig[i].key = key;
+			parent->twig[i].node = node;
+			++parent->num;
+			return;
+		}
+	}
+	parent->twig[parent->num].key = key;
+	parent->twig[parent->num].node = node;
+	++parent->num;
 }
 
 static bool is_full (BtNode_s *node)
@@ -265,6 +290,39 @@ static BtNode_s *lookup (BtNode_s *branch, u64 key)
 	return node;
 }
 
+static BtNode_s *split_leaf (BtNode_s *parent, BtNode_s *node)
+{
+	BtNode_s *sibling = new_leaf();
+
+	memmove(sibling->key, &node->key[KEYS_LOWER_HALF],
+		sizeof(u64) * KEYS_UPPER_HALF);
+	node->num = KEYS_LOWER_HALF;
+	sibling->num = KEYS_UPPER_HALF;
+	branch_insert(parent, sibling->key[0], node);
+	return parent;	
+}
+
+static BtNode_s *split_branch (BtNode_s *parent, BtNode_s *node)
+{
+	BtNode_s *sibling = new_branch();
+
+	memmove(sibling->twig, &node->twig[TWIGS_LOWER_HALF],
+		sizeof(Twig_s) * TWIGS_UPPER_HALF);
+	node->num = TWIGS_LOWER_HALF;
+	sibling->num = TWIGS_UPPER_HALF;
+	branch_insert(parent, sibling->twig[0].key, node);
+	return parent;	
+}
+
+static BtNode_s *split (BtNode_s *parent, BtNode_s *node)
+{
+	if (node->is_leaf) {
+		return split_leaf(parent, node);
+	} else {
+		return split_branch(parent, node);
+	}
+}
+
 int bt_insert (BtTree_s *tree, u64 key)
 {
 	BtNode_s *node;
@@ -287,7 +345,7 @@ int bt_insert (BtTree_s *tree, u64 key)
 		parent = node;
 		node = lookup(node, key);
 		if (is_full(node)) {
-			node = split(parent, node, key);
+			node = split(parent, node);
 		}
 	}
 }
