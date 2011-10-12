@@ -6,6 +6,7 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <debug.h>
 #include <eprintf.h>
@@ -14,28 +15,40 @@
 #include "bttree.h"
 
 enum {	NUM_KEYS = 15,
-	NUM_TWIGS = 7 };
+	NUM_TWIGS = NUM_KEYS * sizeof(u64) / (sizeof(void *) + sizeof(u64)) };
 
-struct BtHead_s {
-	bool is_leaf;
-	u16 num;
-};
 
-typedef struct Leaf_s {
-	BtHead_s head;
-	u64 key[NUM_KEYS];
-} Leaf_s;
+#if 0
+typedef struct Twig_s {
+	union {
+		u64 key;
+		struct {
+			bool is_leaf;
+			u16 num;
+		};
+	};
+	BtNode_s *node;
+} Twig_s;
+#endif
 
 typedef struct Twig_s {
-	BtHead_s *hp;
 	u64 key;
+	BtNode_s *node;
 } Twig_s;
 
-typedef struct Branch_s {
-	BtHead_s head;
-	BtHead_s *first;
-	Twig_s twig[NUM_TWIGS];
-} Branch_s;
+struct BtNode_s {
+	bool is_leaf;
+	u16 num;
+	union {
+		u64 key[NUM_KEYS];
+		struct {
+			BtNode_s *first;
+			Twig_s twig[NUM_TWIGS];
+		};
+	};
+};
+
+CHECK_CONST(sizeof(BtNode_s) == (NUM_KEYS + 1) * sizeof(u64));
 	
 
 BtStat_s bt_stat (BtTree_s *tree)
@@ -56,37 +69,37 @@ static void pr_key (u64 key, int indent)
 	printf("%llu\n", key);
 }
 
-static void pr_leaf (Leaf_s *leaf, int indent)
+static void pr_leaf (BtNode_s *leaf, int indent)
 {
 	int i;
 
-	for (i = 0; i < leaf->head.num; i++) {
+	for (i = 0; i < leaf->num; i++) {
 		pr_indent(indent);
 		printf("%llu\n", leaf->key[i]);
 	}
 }
 
-static void pr_node(BtHead_s *head, int indent);
+static void pr_node(BtNode_s *node, int indent);
 
-static void pr_branch (Branch_s *branch, int indent)
+static void pr_branch (BtNode_s *branch, int indent)
 {
 	int i;
 
 	pr_node(branch->first, indent + 1);
-	for (i = 0; i < branch->head.num; i++) {
+	for (i = 0; i < branch->num; i++) {
 		pr_indent(indent);
 		printf("%llu\n", branch->twig[i].key);
-		pr_node(branch->twig[i].hp, indent + 1);
+		pr_node(branch->twig[i].node, indent + 1);
 	}
 }
 
-static void pr_node (BtHead_s *head, int indent)
+static void pr_node (BtNode_s *node, int indent)
 {
-	if (!head) return;
-	if (head->is_leaf) {
-		pr_leaf((Leaf_s *)head, indent);
+	if (!node) return;
+	if (node->is_leaf) {
+		pr_leaf(node, indent);
 	} else {
-		pr_branch((Branch_s *)head, indent);
+		pr_branch(node, indent);
 	}
 }
 
@@ -195,75 +208,88 @@ u64 bt_next (BtTree_s *tree, u64 key)
 }
 #endif
 
-static Leaf_s *leaf_new (void)
+static BtNode_s *new_leaf (void)
 {
-	Leaf_s *leaf = ezalloc(sizeof(*leaf));
-	leaf->is_leaf = TRUE;
-	return leaf;
+	BtNode_s *node = ezalloc(sizeof(*node));
+	node->is_leaf = TRUE;
+	return node;
 }
 
-static Branch_s *branch_new (void)
+static BtNode_s *new_branch (void)
 {
-	Branch_s *branch = ezalloc(sizeof(*branch));
-	branch->is_leaf = FALSE;
-	return branch;
+	BtNode_s *node = ezalloc(sizeof(*node));
+	node->is_leaf = FALSE;
+	return node;
 }
 
-static void leaf_insert (Leaf_s *leaf, u64 key)
+static void leaf_insert (BtNode_s *leaf, u64 key)
 {
-	assert(leaf->head.num < NUM_KEYS);
-	for (i = 0; i < leaf->head.num; i++) {
+	int i;
+
+	assert(leaf->num < NUM_KEYS);
+	for (i = 0; i < leaf->num; i++) {
 		if (key < leaf->key[i]) {
-			memmove(&leaf->key[i+1], &leaf->key[i], leaf->head.num - i);
-			++leaf->head.num;
+			memmove(&leaf->key[i+1], &leaf->key[i], leaf->num - i);
+			++leaf->num;
 			leaf->key[i] = key;
 			return;
 		}
 	}
-	leaf->key[leaf->head.num++] = key;
+	leaf->key[leaf->num++] = key;
 }
 
-static bool is_full (BtHead_s *head)
+static bool is_full (BtNode_s *node)
 {
-	return head->num == (head->is_leaf ? NUM_KEYS : NUM_TWIGS);
+	return node->num == (node->is_leaf ? NUM_KEYS : NUM_TWIGS);
 }
 
-static BtHead_s *grow (BtHead_s *head)
+static BtNode_s *grow (BtNode_s *node)
 {
-	Branch_s *branch = branch_new();
-	branch->first = head;
+	BtNode_s *branch = new_branch();
+	branch->first = node;
 	return branch;
 }
 
-static BtHead_s *lookup (Head_s *head, u64 key)
+static BtNode_s *lookup (BtNode_s *branch, u64 key)
 {
+	BtNode_s *node = branch->first;
+	Twig_s	*end = &branch->twig[branch->num];
+	Twig_s	*twig;
+
+	for (twig = branch->twig; twig < end; twig++) {
+		if (key < twig->key) {
+			return node;
+		}
+		node = twig->node;
+	}
+	return node;
 }
 
 int bt_insert (BtTree_s *tree, u64 key)
 {
-	BtHead_s *head;
+	BtNode_s *node;
+	BtNode_s *parent;
 
-	if (!tree->root) {
-		tree->root = leaf = leaf_new;
-		leaf_insert(leaf, key);
+	node = tree->root;
+	if (!node) {
+		tree->root = new_leaf();
+		leaf_insert(tree->root, key);
 		return 0;
 	}
-	head = tree->root;
-	if (is_full(head)) {
-		head = tree->root = grow(head);
+	if (is_full(node)) {
+		node = tree->root = grow(node);
 	}
 	for (;;) {
-		if (head->is_leaf) {
-			leaf_insert((Leaf_s *)head, key);
+		if (node->is_leaf) {
+			leaf_insert(node, key);
 			return 0;
 		}
-		parent = head;
-		head = lookup((Branch_s *)head, key);
-		if (is_full(head)) {
-			split
+		parent = node;
+		node = lookup(node, key);
+		if (is_full(node)) {
+			node = split(parent, node, key);
+		}
 	}
-	*np = bt_new(key);
-	return 0;
 }
 
 static void delete_node (BtNode_s **dp)

@@ -6,7 +6,7 @@
 #ifndef _BTREE_H_
 #define _BTREE_H_ 1
 
-typedef struct BtHead_s BtHead_s;
+typedef struct BtNode_s BtNode_s;
 
 typedef struct BtAudit_s {
 	u64 num_nodes;
@@ -24,7 +24,7 @@ typedef struct BtStat_s {
 } BtStat_s;
 
 typedef struct BtTree_s {
-	BtHead_s *root;
+	BtNode_s *root;
 	BtStat_s stat;
 } BtTree_s;
 
