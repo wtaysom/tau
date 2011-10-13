@@ -4,7 +4,8 @@
 
 int main (int argc, char *argv[])
 {
-#if 0 /* Not all targets support 128 bits */
+//#if 1 /* Not all targets support 128 bits */
+#if __x86_64__ == 1
 	__int128_t	x;
 	__uint128_t	y = -1;
 

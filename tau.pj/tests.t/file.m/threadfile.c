@@ -1,15 +1,7 @@
-/****************************************************************************
- |  (C) Copyright 2008 Novell, Inc. All Rights Reserved.
- |
- |  GPLv2: This program is free software; you can redistribute it
- |  and/or modify it under the terms of version 2 of the GNU General
- |  Public License as published by the Free Software Foundation.
- |
- |  This program is distributed in the hope that it will be useful,
- |  but WITHOUT ANY WARRANTY; without even the implied warranty of
- |  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- |  GNU General Public License for more details.
- +-------------------------------------------------------------------------*/
+/* Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
 
 #include <sys/types.h>
 #include <sys/stat.h>
