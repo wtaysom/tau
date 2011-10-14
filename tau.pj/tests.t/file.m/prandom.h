@@ -84,62 +84,6 @@ unsigned int prandom_r (PrandomSeed_s *seed)
 
 PrandomSeed_s 
 
-/*
- * http://locklessinc.com/articles/prng/
- */
-
-#if __x86_64__ == 1
-
-typedef unsigned long long u64b;
-
-static u64b rng64(u64b *s)
-{
-	u64b c = 7319936632422683419ULL;
-	u64b x = s[1];
-
-	typedef __uint128_t u128b;
-	union u128_64
-	{
-		u64b seed[2];
-		u128b val;
-	};
-	
-	/* Increment 128bit counter */
-	((union u128_64 *)s)->val += c + ((u128b) c << 64); 
-
-	/* Two h iterations */
-	x ^= (x >> 32) ^ (u64b) s;
-	x *= c;
-	x ^= x >> 32;
-	x *= c;
-
-	/* Perturb result */
-	return x + s[0];
-}
-
-#else
-typedef unsigned long long u64b;
-
-static u64b rng64(u64b *s)
-{
-	u64b c = 7319936632422683419ULL;
-	u64b x = s[1];
-
-	/* Increment 128bit counter */
-	s[0] += c;
-	s[1] += c + (s[0] < c);
-
-	/* Two h iterations */
-	x ^= (x >> 32) ^ (u64b) s;
-	x *= c;
-	x ^= x >> 32;
-	x *= c;
-
-	/* Perturb result */
-	return x + s[0];
-}
-
-#endif
 
 void init_random_seed (void *seed, int numbytes)
 {
