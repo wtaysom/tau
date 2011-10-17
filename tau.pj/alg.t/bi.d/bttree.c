@@ -67,12 +67,6 @@ static void pr_indent (int indent)
 	}
 }
 
-static void pr_key (u64 key, int indent)
-{
-	pr_indent(indent);
-	printf("%llu\n", key);
-}
-
 static void pr_leaf (BtNode_s *leaf, int indent)
 {
 	int i;
@@ -125,7 +119,7 @@ void bt_pr_path (BtTree_s *tree, u64 key)
 		}
 		printf(" ");
 		if (key < node->key) {
-			node = node->left;
+	
 		} else {
 			node = node->right;
 		}
@@ -150,7 +144,7 @@ static void node_audit (BtNode_s *node, BtAudit_s *audit, int depth)
 		node_audit(node->right, audit, depth + 1);
 	}
 }
-	
+
 BtAudit_s bt_audit (BtTree_s *tree)
 {
 	BtAudit_s audit = { 0 };
@@ -350,6 +344,7 @@ int bt_insert (BtTree_s *tree, u64 key)
 	}
 }
 
+#if 0
 static void delete_node (BtNode_s **dp)
 {
 	BtNode_s **np = dp;
@@ -399,3 +394,13 @@ int bt_delete (BtTree_s *tree, u64 key)
 	delete_node(np);
 	return 0;
 }
+#else 
+int bt_delete (BtTree_s *tree, u64 key) { fatal("Not implemeted"); return 0; }
+u64 bt_next (BtTree_s *tree, u64 key) { fatal("Not implemeted"); return 0; }
+BtAudit_s bt_audit (BtTree_s *tree)
+{
+	BtAudit_s audit = { 0 };
+	fatal("Not implemented");
+	return audit;
+}
+#endif

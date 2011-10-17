@@ -79,10 +79,10 @@ void test_bt (int n)
 		key = k_rand_key();
 		bt_insert(&tree, key);
 	}
-	bt_audit(&tree);
+//	bt_audit(&tree);
 	bt_print(&tree);
-	pr_next(&tree);
-	pr_audit(&tree);
+//	pr_next(&tree);
+//	pr_audit(&tree);
 }
 
 void test_bt_level (int n, int level)

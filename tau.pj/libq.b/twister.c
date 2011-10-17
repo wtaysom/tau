@@ -116,7 +116,7 @@ void init_by_array64(unsigned long long init_key[],
 }
 
 /* generates a random number on [0, 2^64-1]-interval */
-unsigned long long genrand64_int64(void)
+unsigned long long prandom(void)
 {
 	int i;
 	unsigned long long x;
@@ -156,25 +156,25 @@ unsigned long long genrand64_int64(void)
 /* generates a random number on [0, 2^63-1]-interval */
 long long genrand64_int63(void)
 {
-	return (long long)(genrand64_int64() >> 1);
+	return (long long)(prandom() >> 1);
 }
 
 /* generates a random number on [0,1]-real-interval */
 double genrand64_real1(void)
 {
-	return (genrand64_int64() >> 11) * (1.0/9007199254740991.0);
+	return (prandom() >> 11) * (1.0/9007199254740991.0);
 }
 
 /* generates a random number on [0,1)-real-interval */
 double genrand64_real2(void)
 {
-	return (genrand64_int64() >> 11) * (1.0/9007199254740992.0);
+	return (prandom() >> 11) * (1.0/9007199254740992.0);
 }
 
 /* generates a random number on (0,1)-real-interval */
 double genrand64_real3(void)
 {
-	return ((genrand64_int64() >> 12) + 0.5) * (1.0/4503599627370496.0);
+	return ((prandom() >> 12) + 0.5) * (1.0/4503599627370496.0);
 }
 
 
@@ -201,7 +201,7 @@ void init_prandom_by_array (u64 init_key[],
 	u64 i, j, k;
 	u64 *mt = twister->mt;
 
-	init_genrand64(19650218ULL);
+	init_prandom(19650218ULL, twister);
 	i = 1; j = 0;
 	k = (NN>key_length ? NN : key_length);
 	for (; k; k--) {
@@ -236,8 +236,8 @@ u64 prandom_r (Twister_s *twister)
 
 		/* if init_genrand64() has not been called, */
 		/* a default initial seed is used	 */
-		if (mti == NN+1) {
-			init_genrand64(5489ULL, twister); 
+		if (twister->mti == NN+1) {
+			init_prandom(5489ULL, twister); 
 		}
 		for (i = 0; i < NN-MM; i++) {
 			x = (mt[i] & UM)|(mt[i+1]&LM);
@@ -250,7 +250,7 @@ u64 prandom_r (Twister_s *twister)
 		x = (mt[NN-1]&UM)|(mt[0]&LM);
 		mt[NN-1] = mt[MM-1] ^ (x>>1) ^ mag01[(int)(x&1ULL)];
 
-		mti = 0;
+		twister->mti = 0;
 	}
   
 	x = mt[twister->mti++];

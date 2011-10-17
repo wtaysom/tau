@@ -11,13 +11,15 @@
 enum { SIZE = 1<<24 };
 
 int main (int argc, char *argv[]) {
-  void *m;
-  m = mmap(NULL, SIZE, PROT_WRITE | PROT_READ,
-           MAP_ANONYMOUS | MAP_PRIVATE /*| MAP_HUGETLB*/,
-           -1, 0);
+#ifdef __linux__
+	void *m;
+	m = mmap(NULL, SIZE, PROT_WRITE | PROT_READ,
+		MAP_ANONYMOUS | MAP_PRIVATE /*| MAP_HUGETLB*/,
+		-1, 0);
 PRp(m);
-  if (m == MAP_FAILED) fatal("mmap:");
-  int rc = munmap(m, SIZE);
-  if (rc) fatal("munmap:");
-  return 0;
+	if (m == MAP_FAILED) fatal("mmap:");
+	int rc = munmap(m, SIZE);
+	if (rc) fatal("munmap:");
+#endif
+	return 0;
 }

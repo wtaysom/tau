@@ -34,6 +34,24 @@ static void timer (char *name, rnd_f rnd)
 		sum);
 }
 
+#define TIMER(_rng)	{						\
+	u64 start;							\
+	u64 finish;							\
+	u64 sum = 0;							\
+	unint i = Option.iterations;					\
+									\
+	start = nsecs();						\
+	while (i--) {							\
+		sum += _rng;						\
+	}								\
+	finish = nsecs();						\
+	printf("%-20s: %g nsecs/rnd sum=%lld\n",			\
+		# _rng,							\
+		(double)(finish - start) / (double)Option.iterations,	\
+		sum);							\
+}
+
+
 int main (int argc, char *argv[])
 {
 	unsigned long long init[4]={0x12345ULL, 0x23456ULL,
@@ -43,6 +61,7 @@ int main (int argc, char *argv[])
 	punyopt(argc, argv, NULL, NULL);
 	timer("random", (rnd_f)random);
 	timer("rand", (rnd_f)rand);
-	timer("twister", (rnd_f)genrand64_int64);
+	timer("twister", (rnd_f)prandom);
+	TIMER(prandom());
 	return 0;
 }
