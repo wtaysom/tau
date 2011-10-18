@@ -69,7 +69,7 @@ void init_by_array64(unsigned long long init_key[],
 
 /* generates a random number on [0, 2^64-1]-interval */
 /* Original name genrand64_int64 */
-u64 prandom(void);
+u64 twister_random(void);
 
 /* generates a random number on [0, 2^63-1]-interval */
 long long genrand64_int63(void);
@@ -82,10 +82,28 @@ double genrand64_real2(void);
 
 /* generates a random number on (0,1)-real-interval */
 double genrand64_real3(void);
-
+	
 /*
- * Interfaces for thread friendly version of the Mersenne Twister
- * Have include non-thread friendly to complement them.
+ * Interfaces to Mersenne Twister pseudorandom number generator.
+ * The global code is not thread safe. For threaded code, use the
+ * *_r interfaces. Each thread should generates its own twister seed.
+ *
+ * Uses global, shared tables:
+ *
+ * twister_random - Returns a 64 bit pseudorandom number
+ * twister_seed - Pass in a Twister_s structure where the mt array
+ *	has been filled with your chosen seed volues.
+ * twister_random_seed - Seed twister with /dev/urandom.
+ *
+ *
+ * The *_r versions let eash task has its own independent random
+ * number generator.
+ *
+ * twister_random_r - returns
+ * twister_seed_r - generates a seed from the supplied twister structure
+ * twister_task_seed_r - generate deterministic seed per task - should be
+ *	used by procedure creating the tasks not by the tasks themselves.
+ * twister_random_seed_r - returns a structure based on /dev/urandom
  */
 
 enum { SIZE_TWISTER = 312 };	/* Must match NN in twister.c */	
@@ -94,22 +112,15 @@ typedef struct Twister_s {
 	snint	mti;	/* Next entry to use from seed table */
 	u64	mt[SIZE_TWISTER];
 } Twister_s;
-	
 
-/* Returns a 64 bit random number */
-u64 prandom_r(Twister_s *twister);
+u64 twister_random(void);
+void twister_seed(Twister_s *initial);
+void twister_random_seed(void);
+u64 twister_random_2(void);
 
-/* Deterministic initialization or random number generator
- * Each call is a different sequence - useful for initializing
- * a set of tasks.
- */
-void prandom_seed_task_r(Twister_s *twister);
-
-/* Random initializtion of seed based on /dev/urandom */
-void prandom_seed_random_r(Twister_s *twister);
-
-u64 prandom(void);
-void prandom_seed(void);
-void prandom_seed_random(void);
+u64 twister_random_r(Twister_s *twister);
+Twister_s twister_seed_r(Twister_s *initial);
+Twister_s twister_task_seed_r(void);
+Twister_s twister_random_seed_r(void);
 
 #endif

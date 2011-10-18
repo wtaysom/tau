@@ -177,7 +177,7 @@ int main(void)
     init_by_array64(init, length);
     printf("1000 outputs of genrand64_int64()\n");
     for (i=0; i<1000; i++) {
-      printf("%20llu ", prandom());
+      printf("%20llu ", twister_random());
       if (i%5==4) printf("\n");
     }
     printf("\n1000 outputs of genrand64_real2()\n");

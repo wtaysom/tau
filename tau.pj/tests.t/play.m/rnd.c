@@ -28,7 +28,7 @@ static void timer (char *name, rnd_f rnd)
 		sum += rnd();
 	}
 	finish = nsecs();
-	printf("%-10s: %g nsecs/rnd sum=%lld\n",
+	printf("%-20s: %g nsecs/rnd sum=%lld\n",
 		name,
 		(double)(finish - start) / (double)Option.iterations,
 		sum);
@@ -54,14 +54,32 @@ static void timer (char *name, rnd_f rnd)
 
 int main (int argc, char *argv[])
 {
+#if 0	
 	unsigned long long init[4]={0x12345ULL, 0x23456ULL,
 					0x34567ULL, 0x45678ULL}, length=4;
 	init_by_array64(init, length);
+#endif
+	Twister_s twister;
+	int i;
 
 	punyopt(argc, argv, NULL, NULL);
-	timer("random", (rnd_f)random);
+	TIMER(rand());
+	TIMER(random());
+	TIMER(twister_random());
+	TIMER(twister_random());
+	TIMER(twister_random_2());
+	TIMER(twister_random_2());
 	timer("rand", (rnd_f)rand);
-	timer("twister", (rnd_f)prandom);
-	TIMER(prandom());
+	timer("random", (rnd_f)random);
+	timer("twister_random", (rnd_f)twister_random);
+	TIMER(rand());
+	TIMER(random());
+	TIMER(twister_random());
+	for (i = 0; i < Option.numthreads; i++) {
+		twister = twister_task_seed_r();
+		TIMER(twister_random_r(&twister));
+	}
+	twister = twister_random_seed_r();
+	TIMER(twister_random_r(&twister));
 	return 0;
 }
