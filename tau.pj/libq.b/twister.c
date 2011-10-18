@@ -77,11 +77,20 @@
 #define UM 0xFFFFFFFF80000000ULL /* Most significant 33 bits */
 #define LM 0x7FFFFFFFULL /* Least significant 31 bits */
 
+static void init_random_seed (void *seed, int numbytes)
+{
+	int fd = open("/dev/urandom", O_RDONLY);
+	if (fd == -1) fatal("open /dev/urandom:");
+	ssize_t rc = read(fd, seed, numbytes);
+	if (rc != numbytes) fatal("read /dev/urandom:");
+	close(fd);
+}
 
 /* The array for the state vector */
-static unsigned long long Mt[NN]; 
+static unsigned long long Mt[NN];
+
 /* Mti==NN+1 means Mt[NN] is not initialized */
-static int Mti=NN+1; 
+static int Mti = NN + 1; 
 
 /* initializes Mt[NN] with a seed */
 void init_genrand64(unsigned long long seed)
@@ -118,6 +127,19 @@ void init_by_array64(unsigned long long init_key[],
 	}
 
 	Mt[0] = 1ULL << 63; /* MSB is 1; assuring non-zero initial array */ 
+}
+
+void twister_seed(Twister_s *initial)
+{
+	init_by_array64(initial->mt, SIZE_TWISTER);
+}
+
+void twister_random_seed(void)
+{
+	Twister_s twister;
+
+	init_random_seed(twister.mt, sizeof(twister.mt));
+	twister_seed(&twister);
 }
 
 /* generates a random number on [0, 2^64-1]-interval */
@@ -207,15 +229,6 @@ static void init_twister_by_array (
 	mt[0] = 1ULL << 63; /* MSB is 1; assuring non-zero initial array */ 
 }
 
-static void init_random_seed (void *seed, int numbytes)
-{
-	int fd = open("/dev/urandom", O_RDONLY);
-	if (fd == -1) fatal("open /dev/urandom:");
-	ssize_t rc = read(fd, seed, numbytes);
-	if (rc != numbytes) fatal("read /dev/urandom:");
-	close(fd);
-}
-
 /* generates a random number on [0, 2^64-1]-interval */
 u64 twister_random_r (Twister_s *twister)
 {
@@ -276,11 +289,10 @@ Twister_s twister_random_seed_r (void)
 Twister_s twister_task_seed_r (void)
 {
 	enum { BIG_PRIME = 824633720837ULL };
-	static u64 seed = 0;
+	static u64 seed = BIG_PRIME;
 	Twister_s twister;
 
-	
-	seed += BIG_PRIME;
+	seed *= BIG_PRIME;
 	init_twister(seed, &twister);
 	return twister;
 }

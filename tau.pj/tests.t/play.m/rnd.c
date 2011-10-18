@@ -16,6 +16,15 @@
 
 typedef u64 (*rnd_f)(void);
 
+u64 prand (void)
+{
+	enum { BIG_PRIME = 824633720837ULL };
+	static u64 seed = BIG_PRIME;
+
+	seed *= BIG_PRIME;
+	return seed;
+}
+
 static void timer (char *name, rnd_f rnd)
 {
 	u64 start;
@@ -64,6 +73,7 @@ int main (int argc, char *argv[])
 
 	punyopt(argc, argv, NULL, NULL);
 	TIMER(rand());
+	TIMER(prand());
 	TIMER(random());
 	TIMER(twister_random());
 	TIMER(twister_random());
