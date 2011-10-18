@@ -158,31 +158,6 @@ unsigned long long twister_random(void)
 	return x;
 }
 
-/* generates a random number on [0, 2^63-1]-interval */
-long long genrand64_int63(void)
-{
-	return (long long)(twister_random() >> 1);
-}
-
-/* generates a random number on [0,1]-real-interval */
-double genrand64_real1(void)
-{
-	return (twister_random() >> 11) * (1.0/9007199254740991.0);
-}
-
-/* generates a random number on [0,1)-real-interval */
-double genrand64_real2(void)
-{
-	return (twister_random() >> 11) * (1.0/9007199254740992.0);
-}
-
-/* generates a random number on (0,1)-real-interval */
-double genrand64_real3(void)
-{
-	return ((twister_random() >> 12) + 0.5) * (1.0/4503599627370496.0);
-}
-
-
 /* initializes mt[NN] with a seed */
 void init_twister (u64 seed, Twister_s *twister)
 {
@@ -315,4 +290,85 @@ u64 twister_random_2 (void)
 	static Twister_s twister = { NN+1, { 0 }};
 	
 	return twister_random_r( &twister);
+}
+
+/* generates a random number on [0, 2^63-1]-interval */
+s64 twister_int63 (void)
+{
+	return (s64)(twister_random() >> 1);
+}
+
+s64 twister_int63_r (Twister_s *twister)
+{
+	return (s64)(twister_random() >> 1);
+}
+
+/* generates a random number on [0,1]-real-interval */
+double twister_real1 (void)
+{
+	return (twister_random() >> 11) * (1.0/9007199254740991.0);
+}
+
+double twister_real1_r (Twister_s *twister)
+{
+	return (twister_random_r(twister) >> 11) * (1.0/9007199254740991.0);
+}
+
+/* generates a random number on [0,1)-real-interval */
+double twister_real2 (void)
+{
+	return (twister_random() >> 11) * (1.0/9007199254740992.0);
+}
+
+double twister_real2_r (Twister_s *twister)
+{
+	return (twister_random_r(twister) >> 11) * (1.0/9007199254740992.0);
+}
+
+/* generates a random number on (0,1)-real-interval */
+double twister_real3 (void)
+{
+	return ((twister_random() >> 12) + 0.5) * (1.0/4503599627370496.0);
+}
+
+double twister_real3_r (Twister_s *twister)
+{
+	return ((twister_random_r(twister) >> 12) + 0.5) *
+		(1.0/4503599627370496.0);
+}
+
+/* generates a random, null terminated name using [a-z][A_F] */
+enum { CHAR_SHIFT = 5, CHAR_MASK = (1 << CHAR_SHIFT) - 1 };
+static const char Char_set[] = "abcdefghijklmnopqrstuvwxyzABCDEF";
+
+char *twister_name (char *name, size_t length)
+{
+	char *c = name;
+	ssize_t i = length - 1;
+	u64 x;
+	
+	x = twister_random();
+	while (i-- > 0) {
+		*c++ = Char_set[x & CHAR_MASK];
+		x >>= CHAR_SHIFT;
+		if (!x) x = twister_random();
+	}
+	*c = '\0';
+	return name;
+}
+
+char *twister_name_r (char *name, size_t length, Twister_s *twister)
+{
+	char *c = name;
+	ssize_t i = length - 1;
+	u64 x;
+	
+	x = twister_random_r(twister);
+	while (i-- > 0) {
+		*c++ = Char_set[x & CHAR_MASK];
+		x >>= CHAR_SHIFT;
+		if (!x) x = twister_random_r(twister);
+	}
+	*c = '\0';
+	return name;
 }

@@ -67,22 +67,6 @@ void init_genrand64(unsigned long long seed);
 void init_by_array64(unsigned long long init_key[],
 			unsigned long long key_length);
 
-/* generates a random number on [0, 2^64-1]-interval */
-/* Original name genrand64_int64 */
-u64 twister_random(void);
-
-/* generates a random number on [0, 2^63-1]-interval */
-long long genrand64_int63(void);
-
-/* generates a random number on [0,1]-real-interval */
-double genrand64_real1(void);
-
-/* generates a random number on [0,1)-real-interval */
-double genrand64_real2(void);
-
-/* generates a random number on (0,1)-real-interval */
-double genrand64_real3(void);
-	
 /*
  * Interfaces to Mersenne Twister pseudorandom number generator.
  * The global code is not thread safe. For threaded code, use the
@@ -122,5 +106,25 @@ u64 twister_random_r(Twister_s *twister);
 Twister_s twister_seed_r(Twister_s *initial);
 Twister_s twister_task_seed_r(void);
 Twister_s twister_random_seed_r(void);
+
+/* generates a random number on [0, 2^63-1]-interval */
+s64 twister_int63(void);
+s64 twister_int63_r(Twister_s *twister);
+
+/* generates a random number on [0,1]-real-interval */
+double twister_real1(void);
+double twister_real1_r(Twister_s *twister);
+
+/* generates a random number on [0,1)-real-interval */
+double twister_real2(void);
+double twister_real2_r(Twister_s *twister);
+
+/* generates a random number on (0,1)-real-interval */
+double twister_real3(void);
+double twister_real3_r(Twister_s *twister);
+
+/* generates a random, null terminated name using [a-z][A_F] */
+char *twister_name(char *name, size_t length);
+char *twister_name_r(char *name, size_t length, Twister_s *twister);
 
 #endif
