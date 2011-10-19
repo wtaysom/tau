@@ -15,6 +15,11 @@ typedef struct Lump_s {
 	u8 *d;
 } Lump_s;
 
+typedef struct Rec_s {
+	Lump_s key;
+	Lump_s val;
+} Rec_s;
+
 extern const Lump_s Nil;
 
 int    cmplump(Lump_s a, Lump_s b);

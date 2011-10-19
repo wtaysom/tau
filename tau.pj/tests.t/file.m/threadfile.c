@@ -18,9 +18,10 @@
 #include <mystdlib.h>
 #include <puny.h>
 #include <style.h>
+#include <twister.h>
 
 
-enum { MAX_NAME = 15 };
+enum { MAX_NAME = 20 };
 
 typedef struct inst_s {
 	u64	num_created;
@@ -30,7 +31,7 @@ typedef struct inst_s {
 } inst_s;
 
 typedef struct arg_s {
-	unsigned	seed;
+	Twister_s	twister;
 } arg_s;
 
 struct {
@@ -61,18 +62,9 @@ void clear_inst (void)
 	zero(Inst);
 }
 
-void gen_name (char *c, arg_s *arg)
+static void gen_name (char *c, arg_s *arg)
 {
-	unsigned	i;
-	static char file_name_char[] =  "abcdefghijklmnopqrstuvwxyz"
-					"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-					"_0123456789";
-
-	for (i = 0; i < MAX_NAME - 1; i++) {
-		*c++ = file_name_char[urand_r(sizeof(file_name_char)-1,
-					&arg->seed)];
-	}
-	*c = '\0';
+	twister_name_r(c, MAX_NAME, &arg->twister);
 }
 
 void cd (char *dir)
@@ -92,19 +84,35 @@ void cleanup (char *dir)
 	if (rc) fatal("rmdir %s:", dir);
 }
 
-void fill (int fd, arg_s *arg)
+static u64 rand_num_pages (arg_s *arg)
+{
+	enum { UPPER = 10 };
+
+	return	(twister_urand_r(UPPER, &arg->twister) + 1) *
+		(twister_urand_r(UPPER, &arg->twister) + 1) *
+		(twister_urand_r(UPPER, &arg->twister) + 1);
+}
+
+static void rand_fill (char *buf, int n, arg_s *arg)
 {
 	static char	rnd_char[] = "abcdefghijklmnopqrstuvwxyz\n";
+	char *b;
+	u64 x;
+
+	for (b = buf; b < &buf[n]; b++) {
+		x = twister_urand_r(sizeof(rnd_char) - 1, &arg->twister);
+		*b = rnd_char[x];
+	}	
+}
+
+void fill (int fd, arg_s *arg)
+{
 	char		buf[4096];
 	unsigned long	i, n;
 
-	n = (urand_r(10, &arg->seed)+1)
-	  * (urand_r(10, &arg->seed)+1)
-	  * (urand_r(10, &arg->seed)+1);
+	n = rand_num_pages(arg);
 
-	for (i = 0; i <  sizeof(buf); i++) {
-		buf[i] = rnd_char[urand_r(sizeof(rnd_char)-1, &arg->seed)];
-	}
+	rand_fill(buf, sizeof(buf), arg);
 	for (i = 0; i < n; i++) {
 		if (write(fd, buf, sizeof(buf)) != sizeof(buf)) {
 			fatal("write:");
@@ -198,7 +206,7 @@ char *rand_remove_name (arg_s *arg)
 
 	lock();
 	if (Next) {
-		x = urand_r(Next, &arg->seed);
+		x = twister_urand_r(Next, &arg->twister);
 		name = Name[x];
 		Name[x] = Name[--Next];
 	} else {
@@ -247,7 +255,7 @@ void cleanup_files (void)
 bool should_delete (arg_s *arg)
 {
 	enum { RANGE = 1<<10, MASK = (2*RANGE) - 1 };
-	return (rand_r(&arg->seed) & MASK) * Next / Level / RANGE;
+	return (twister_random_r(&arg->twister) & MASK) * Next / Level / RANGE;
 }
 
 void *crfiles (void *arg)
@@ -308,7 +316,7 @@ void start_threads (unsigned threads)
 	thread = ezalloc(threads * sizeof(pthread_t));
 	arg    = ezalloc(threads * sizeof(arg_s));
 	for (i = 0, a = arg; i < threads; i++, a++) {
-		a->seed  = random();
+		a->twister  = twister_task_seed_r();
 		rc = pthread_create( &thread[i], NULL, crfiles, a);
 		if (rc) {
 			eprintf("pthread_create %d\n", rc);
@@ -363,7 +371,7 @@ int main (int argc, char *argv[])
 	init(dir);
 
 	for (i = 0; i < Option.loops; i++) {
-		srandom(137);
+		srandom(137);	/* What do I do about this?? */
 
 		startTimer();
 		start_threads(threads);

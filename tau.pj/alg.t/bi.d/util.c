@@ -9,6 +9,7 @@
 #include <eprintf.h>
 #include <lump.h>
 #include <mystdlib.h>
+#include <twister.h>
 
 #include "util.h"
 
@@ -27,7 +28,7 @@ char *rndstring(unint n)
 
 	s = malloc(n);
 	for (j = 0; j < n-1; j++) {
-		s[j] = 'a' + urand(26);
+		s[j] = 'a' + twister_urand(26);
 	}
 	s[j] = 0;
 	return s;
@@ -37,7 +38,7 @@ Lump_s rnd_lump(void)
 {
 	unint n;
 
-	n = urand(7) + 5;
+	n = twister_urand(7) + 5;
 	return lumpmk(n, rndstring(n));
 }
 
@@ -119,7 +120,7 @@ snint k_rand_index (void)
 
 	if (!K) return -1;
 	if (x == 0) return -1;
-	return urand(x);
+	return twister_urand(x);
 }
 
 u64 k_get_rand (void) {
@@ -145,7 +146,7 @@ u64 k_delete_rand (void)
 int k_should_delete(s64 count, s64 level)
 {
 	enum { RANGE = 1<<20, MASK = (2*RANGE) - 1 };
-	return (random() & MASK) * count / level / RANGE;
+	return (twister_random() & MASK) * count / level / RANGE;
 }
 
 static u64 Key = 1;
@@ -158,10 +159,77 @@ void k_seed (u64 seed)
 
 u64 k_rand_key (void)
 {
-	return (u64)random() * (u64)random();
+	return twister_random();
 #if 0
 	return Key++;
-	return urand(100);
-	return (u64)random() * (u64)random();
+	return twister_urand(100);
+	return twister_random();
 #endif
+}
+
+static Rec_s *R;
+static Rec_s *Next_rec;
+static unint Size;
+
+void r_add (Rec_s rec)
+{
+	Rec_s *r;
+
+	if (!R) {
+		Size = DYNA_START;
+		Next_rec = R = emalloc(Size * sizeof(*R));
+	}
+	if (Next_rec == &R[Size]) {
+		unint  newsize;
+
+		if (Size >= DYNA_MAX) {
+			fatal("Size %ld > %d", Size, DYNA_MAX);
+		}
+		newsize = Size << 2;
+		R = erealloc(R, newsize * sizeof(*R));
+		Next_rec = &R[Size];
+		Size = newsize;
+	}
+	r = Next_rec++;
+	*r = rec;
+}
+
+snint r_rand_index (void)
+{
+	snint x = Next_rec - R;
+
+	if (!R) return -1;
+	if (x == 0) return -1;
+	return twister_urand(x);
+}
+
+void r_for_each (recFunc f, void *user)
+{
+	Rec_s *r;
+
+	for (r = R; r < Next_rec; r++) {
+		f(r->key, r->val, user);
+	}
+}
+
+Rec_s r_get_rand (void)
+{
+	snint x = r_rand_index();
+
+	if (x == -1) {
+		Rec_s r = { Nil, Nil };
+		return r;
+	}
+	return R[x];
+}
+
+Lump_s r_delete_rand (void)
+{
+	snint x = r_rand_index();
+	Lump_s key;
+
+	if (x == -1) return Nil;
+	key = R[x].key;
+	R[x] = *--Next_rec;
+	return key;
 }

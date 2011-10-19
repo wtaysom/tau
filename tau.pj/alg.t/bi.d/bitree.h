@@ -8,11 +8,6 @@
 
 #include <lump.h>
 
-typedef struct Rec_s {
-	Lump_s key;
-	Lump_s val;
-} Rec_s;
-
 typedef struct BiNode_s BiNode_s;
 
 typedef struct BiAudit_s {

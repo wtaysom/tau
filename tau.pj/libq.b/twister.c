@@ -57,7 +57,7 @@
  * Changes made in this instance of the code:
  * 1. Global variables capatalized
  * 2. Names of functions changed.
- * 3. Task friendly instances added
+ * 3. Task friendly interfaces added
  * 4. Kernel indentation rules
  * 5. unsigned long long -> u64
  */
@@ -65,6 +65,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <unistd.h>
 
@@ -290,9 +291,12 @@ Twister_s twister_task_seed_r (void)
 {
 	enum { BIG_PRIME = 824633720837ULL };
 	static u64 seed = BIG_PRIME;
+	static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 	Twister_s twister;
 
+	pthread_mutex_lock(&lock);
 	seed *= BIG_PRIME;
+	pthread_mutex_unlock(&lock);
 	init_twister(seed, &twister);
 	return twister;
 }

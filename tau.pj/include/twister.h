@@ -75,6 +75,7 @@ void init_by_array64(unsigned long long init_key[],
  * Uses global, shared tables:
  *
  * twister_random - Returns a 64 bit pseudorandom number
+ * twister_urand - Returns pseudorandom number in range [0, upper)
  * twister_seed - Pass in a Twister_s structure where the mt array
  *	has been filled with your chosen seed volues.
  * twister_random_seed - Seed twister with /dev/urandom.
@@ -83,10 +84,11 @@ void init_by_array64(unsigned long long init_key[],
  * The *_r versions let eash task has its own independent random
  * number generator.
  *
- * twister_random_r - returns
- * twister_seed_r - generates a seed from the supplied twister structure
- * twister_task_seed_r - generate deterministic seed per task - should be
- *	used by procedure creating the tasks not by the tasks themselves.
+ * twister_random_r - Returns a 64 bit pseudorandom number
+ * twister_urand - Returns pseudorandom number in range [0, upper)
+ * twister_seed_r - Generates a seed from the supplied twister structure
+ *	The field mt needs to set with 312 64 bit values.
+ * twister_task_seed_r - generate deterministic seed per task
  * twister_random_seed_r - returns a structure based on /dev/urandom
  */
 
@@ -126,5 +128,17 @@ double twister_real3_r(Twister_s *twister);
 /* generates a random, null terminated name using [a-z][A_F] */
 char *twister_name(char *name, size_t length);
 char *twister_name_r(char *name, size_t length, Twister_s *twister);
+
+
+static inline u64 twister_urand_r (u64 upper, Twister_s *twister)
+{
+	return twister_random_r(twister) % upper;
+}
+
+static inline u64 twister_urand (u64 upper)
+{
+	return twister_random() % upper;
+}
+
 
 #endif

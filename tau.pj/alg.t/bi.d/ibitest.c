@@ -120,8 +120,8 @@ void test_ibi_level (int n, int level)
 	total = finish - start;
 	printf("%lld nsecs  %g nsecs/op\n", total, (double)total/(double)n);
 	ibi_audit(&tree);
-ibi_print(&tree);
-	pr_next(&tree);
+//ibi_print(&tree);
+//	pr_next(&tree);
 //printf("\n");
 //  ibi_audit(&tree);
 //  if (Option.print) ibi_print(&tree);

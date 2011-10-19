@@ -14,7 +14,7 @@
 
 #include "bttree.h"
 
-enum {	NUM_KEYS = 15,
+enum {	NUM_KEYS = 7,
 	KEYS_LOWER_HALF = NUM_KEYS / 2,
 	KEYS_UPPER_HALF = NUM_KEYS - KEYS_LOWER_HALF,
 	NUM_TWIGS = NUM_KEYS * sizeof(u64) / (sizeof(void *) + sizeof(u64)),
@@ -94,10 +94,11 @@ static void pr_branch (BtNode_s *branch, int indent)
 static void pr_node (BtNode_s *node, int indent)
 {
 	if (!node) return;
+	pr_indent(indent); printf("%p\n", node);
 	if (node->is_leaf) {
-		pr_leaf(node, indent);
+		pr_leaf(node, indent + 1);
 	} else {
-		pr_branch(node, indent);
+		pr_branch(node, indent + 1);
 	}
 }
 
@@ -288,11 +289,12 @@ static BtNode_s *split_leaf (BtNode_s *parent, BtNode_s *node)
 {
 	BtNode_s *sibling = new_leaf();
 
+PRp(sibling);
 	memmove(sibling->key, &node->key[KEYS_LOWER_HALF],
 		sizeof(u64) * KEYS_UPPER_HALF);
 	node->num = KEYS_LOWER_HALF;
 	sibling->num = KEYS_UPPER_HALF;
-	branch_insert(parent, sibling->key[0], node);
+	branch_insert(parent, sibling->key[0], sibling);
 	return parent;	
 }
 

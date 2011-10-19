@@ -38,7 +38,8 @@ static void pr_lump (Lump_s a)
 	}
 }
 
-/*static*/ int pr_rec (Rec_s rec, BiNode_s *root, void *user) {
+/*static*/ int pr_rec (Rec_s rec, BiNode_s *root, void *user)
+{
 	u64 *recnum = user;
 
 	printf("%4lld. ", ++*recnum);
@@ -63,77 +64,6 @@ static void pr_audit (BiTree_s *tree)
 		a.num_left,
 		a.num_right);
 	bi_pr_path(tree, a.deepest);
-}
-
-enum {	DYNA_START = 1,
-	DYNA_MAX   = 1 << 27 };
-
-typedef void (*recFunc)(Lump_s key, Lump_s val, void *user);
-
-static Rec_s *R;
-static Rec_s *Next;
-static unint Size;
-
-static void r_add (Rec_s rec)
-{
-	Rec_s *r;
-
-	if (!R) {
-		Size = DYNA_START;
-		Next = R = emalloc(Size * sizeof(*R));
-	}
-	if (Next == &R[Size]) {
-		unint  newsize;
-
-		if (Size >= DYNA_MAX) {
-			fatal("Size %ld > %d", Size, DYNA_MAX);
-		}
-		newsize = Size << 2;
-		R = erealloc(R, newsize * sizeof(*R));
-		Next = &R[Size];
-		Size = newsize;
-	}
-	r = Next++;
-	*r = rec;
-}
-
-static void r_for_each (recFunc f, void *user)
-{
-	Rec_s *r;
-
-	for (r = R; r < Next; r++) {
-		f(r->key, r->val, user);
-	}
-}
-
-static snint r_rand_index (void)
-{
-	snint x = Next - R;
-
-	if (!R) return -1;
-	if (x == 0) return -1;
-	return urand(x);
-}
-
-/*static*/ Rec_s r_get_rand (void) {
-	snint x = r_rand_index();
-
-	if (x == -1) {
-		Rec_s r = { Nil, Nil };
-		return r;
-	}
-	return R[x];
-}
-
-static Lump_s r_delete_rand (void)
-{
-	snint x = r_rand_index();
-	Lump_s key;
-
-	if (x == -1) return Nil;
-	key = R[x].key;
-	R[x] = *--Next;
-	return key;
 }
 
 void test1(int n)

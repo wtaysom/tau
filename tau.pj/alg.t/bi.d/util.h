@@ -10,6 +10,8 @@
 
 typedef void (*krecFunc)(u64 key, void *user);
 
+typedef void (*recFunc)(Lump_s key, Lump_s val, void *user);
+
 void Pause(void);
 
 char *rndstring(unint n);
@@ -26,5 +28,11 @@ u64 k_get_rand(void);
 u64 k_delete_rand(void);
 int k_should_delete(s64 count, s64 level);
 u64 k_rand_key(void);
+
+void r_add(Rec_s rec);
+snint r_rand_index(void);
+void r_for_each(recFunc f, void *user);
+Rec_s r_get_rand(void);
+Lump_s r_delete_rand(void);
 
 #endif
