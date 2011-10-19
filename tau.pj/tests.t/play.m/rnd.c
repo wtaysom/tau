@@ -77,8 +77,6 @@ int main (int argc, char *argv[])
 	TIMER(random());
 	TIMER(twister_random());
 	TIMER(twister_random());
-	TIMER(twister_random_2());
-	TIMER(twister_random_2());
 	timer("rand", (rnd_f)rand);
 	timer("random", (rnd_f)random);
 	timer("twister_random", (rnd_f)twister_random);
@@ -86,10 +84,10 @@ int main (int argc, char *argv[])
 	TIMER(random());
 	TIMER(twister_random());
 	for (i = 0; i < Option.numthreads; i++) {
-		twister = twister_task_seed_r();
+		init_twister_r(17, &twister);
 		TIMER(twister_random_r(&twister));
 	}
-	twister = twister_random_seed_r();
+	init_twister_r(17, &twister);
 	TIMER(twister_random_r(&twister));
 	return 0;
 }

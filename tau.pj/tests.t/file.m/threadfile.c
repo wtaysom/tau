@@ -27,7 +27,6 @@ typedef struct inst_s {
 	u64	num_created;
 	u64	num_deleted;
 	u64	num_written;
-	u64	num_read;
 } inst_s;
 
 typedef struct arg_s {
@@ -36,30 +35,41 @@ typedef struct arg_s {
 
 struct {
 	bool	rate;
+	bool	fill;
+	unint	level;
 } Myopt = {
-	.rate  = FALSE };
+	.rate  = FALSE,
+	.fill  = FALSE,
+	.level = 100 };
 
 inst_s Inst;
+
+unint Max_name = 200;
+unint Next_name = 0;
+char **Name;
 
 bool Stop = FALSE;
 
 void pr_inst (inst_s *inst)
 {
-	printf("created = %10llu\n", inst->num_created);
-	printf("deleted = %10llu\n", inst->num_deleted);
-	printf("written = %10llu\n", inst->num_written);
-	printf("read    = %10llu\n", inst->num_read);
+	printf("created = %llu\n", inst->num_created);
+	printf("deleted = %llu\n", inst->num_deleted);
+	if (inst->num_written) {
+		printf("written = ~%llu\n", inst->num_written);
+	}
+	printf("created - deleted = %llu\n",
+		inst->num_created - inst->num_deleted);
 }
 
 void pr_delta (inst_s *d)
 {
-	printf("%10llu %10llu %10llu %10llu\n",
-		d->num_created, d->num_deleted, d->num_written, d->num_read);
-}
-
-void clear_inst (void)
-{
-	zero(Inst);
+	printf("%10llu %10llu",
+		d->num_created, d->num_deleted);
+	if (d->num_written) {
+		printf(" %10llu\n", d->num_written);
+	} else {
+		printf("\n");
+	}
 }
 
 static void gen_name (char *c, arg_s *arg)
@@ -112,7 +122,7 @@ void fill (int fd, arg_s *arg)
 
 	n = rand_num_pages(arg);
 
-	rand_fill(buf, sizeof(buf), arg);
+	if (Myopt.fill) rand_fill(buf, sizeof(buf), arg);
 	for (i = 0; i < n; i++) {
 		if (write(fd, buf, sizeof(buf)) != sizeof(buf)) {
 			fatal("write:");
@@ -130,8 +140,7 @@ int cr_file (char *name, arg_s *arg)
 		eprintf("cr_file \"%s\" :", name);
 		return -1;
 	}
-	++Inst.num_created;
-//	fill(fd, arg);
+	if (Myopt.fill) fill(fd, arg);
 	close(fd);
 	return 0;
 }
@@ -145,13 +154,7 @@ void del_file (char *name)
 		eprintf("unlink \"%s\" :", name);
 		return;
 	}
-	++Inst.num_deleted;
 }
-
-unint Level = 100;
-unint Max = 200;
-unint Next = 0;
-char **Name;
 
 #ifdef __APPLE__
 
@@ -195,7 +198,7 @@ void unlock (void)
 
 void init_name (void)
 {
-	Name = emalloc(Max * sizeof(char *));
+	Name = emalloc(Max_name * sizeof(char *));
 	init_lock();
 }
 
@@ -205,12 +208,13 @@ char *rand_remove_name (arg_s *arg)
 	char *name;
 
 	lock();
-	if (Next) {
-		x = twister_urand_r(Next, &arg->twister);
+	if (Next_name) {
+		x = twister_urand_r(Next_name, &arg->twister);
 		name = Name[x];
-		Name[x] = Name[--Next];
+		Name[x] = Name[--Next_name];
+		++Inst.num_deleted;
 	} else {
-		return NULL;
+		name = NULL;
 	}
 	unlock();
 	return name;
@@ -221,8 +225,8 @@ char *remove_name (void)
 	char *name;
 
 	lock();
-	if (Next) {
-		name = Name[--Next];
+	if (Next_name) {
+		name = Name[--Next_name];
 	} else {
 		name = NULL;
 	}
@@ -234,9 +238,10 @@ void add_name (char *name)
 {
 	lock();
 
-	if (Next == Max) fatal("Next %ld = Max %ld Level = %ldfor %s",
-				Next, Max, Level, name);
-	Name[Next++] = name;
+	if (Next_name == Max_name) fatal("Next %ld = Max %ld Level = %ld for %s",
+				Next_name, Max_name, Myopt.level, name);
+	Name[Next_name++] = name;
+	++Inst.num_created;
 
 	unlock();
 }
@@ -255,7 +260,8 @@ void cleanup_files (void)
 bool should_delete (arg_s *arg)
 {
 	enum { RANGE = 1<<10, MASK = (2*RANGE) - 1 };
-	return (twister_random_r(&arg->twister) & MASK) * Next / Level / RANGE;
+	return (twister_random_r(&arg->twister) & MASK) *
+		Next_name / Myopt.level / RANGE;
 }
 
 void *crfiles (void *arg)
@@ -294,7 +300,6 @@ void rate (void)
 		SET_DELTA(num_created);
 		SET_DELTA(num_deleted);
 		SET_DELTA(num_written);
-		SET_DELTA(num_read);
 		pr_delta( &delta);
 		if (Stop) {
 			zero(old);
@@ -316,7 +321,7 @@ void start_threads (unsigned threads)
 	thread = ezalloc(threads * sizeof(pthread_t));
 	arg    = ezalloc(threads * sizeof(arg_s));
 	for (i = 0, a = arg; i < threads; i++, a++) {
-		a->twister  = twister_task_seed_r();
+		twister_task_seed_r( &a->twister);
 		rc = pthread_create( &thread[i], NULL, crfiles, a);
 		if (rc) {
 			eprintf("pthread_create %d\n", rc);
@@ -339,8 +344,17 @@ void init (char *dir)
 
 void usage (void)
 {
-	pr_usage("-r -i<iterations> -t<threads> -w<width> -k<depth>"
-		" -d<start> -f<from> -o<to>");
+	pr_usage("-rfh -i<iterations> -l<loops> -t<threads> -v<level>\n"
+		"\tCreates and deletes files in the same directory\n"
+		"\tr measure rate of operations [off]"
+		"\tf fill files [off]"
+		"\th help"
+		"\ti iterations [%lld]"
+		"\tl number of times to run the tests [%lld]"
+		"\tt number of threads to start [%lld]"
+		"\tv approximate level of files to keep [%ld]",
+		Option.iterations, Option.loops, Option.numthreads,
+		Myopt.level);
 }
 
 bool myopt (int c)
@@ -348,6 +362,13 @@ bool myopt (int c)
 	switch (c) {
 	case 'r':
 		Myopt.rate = TRUE;
+		break;
+	case 'f':
+		Myopt.fill = TRUE;
+		break;
+	case 'v':
+		Myopt.level = strtoll(optarg, NULL, 0);
+		Max_name = Myopt.level + 100;
 		break;
 	default:
 		return FALSE;
@@ -364,14 +385,15 @@ int main (int argc, char *argv[])
 	Option.iterations = 2000;
 	Option.loops = 3;
 	Option.numthreads = 4;
-	punyopt(argc, argv, myopt, "r");
+	punyopt(argc, argv, myopt, "rfv:");
 	threads = Option.numthreads;
 	dir = Option.dir;
 
 	init(dir);
 
 	for (i = 0; i < Option.loops; i++) {
-		srandom(137);	/* What do I do about this?? */
+		twister_reset_task_seed_r();
+		zero(Inst);
 
 		startTimer();
 		start_threads(threads);
@@ -380,7 +402,6 @@ int main (int argc, char *argv[])
 		pr_inst( &Inst);
 		prTimer();
 		printf("\n");
-		clear_inst();
 	}
 	cleanup(dir);
 	return 0;

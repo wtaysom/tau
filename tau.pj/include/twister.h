@@ -58,38 +58,10 @@
 
 #include <style.h>
 
-/* initializes mt[NN] with a seed */
-void init_genrand64(unsigned long long seed);
-
-/* initialize by an array with array-length */
-/* init_key is the array for initializing keys */
-/* key_length is its length */
-void init_by_array64(unsigned long long init_key[],
-			unsigned long long key_length);
-
 /*
  * Interfaces to Mersenne Twister pseudorandom number generator.
  * The global code is not thread safe. For threaded code, use the
  * *_r interfaces. Each thread should generates its own twister seed.
- *
- * Uses global, shared tables:
- *
- * twister_random - Returns a 64 bit pseudorandom number
- * twister_urand - Returns pseudorandom number in range [0, upper)
- * twister_seed - Pass in a Twister_s structure where the mt array
- *	has been filled with your chosen seed volues.
- * twister_random_seed - Seed twister with /dev/urandom.
- *
- *
- * The *_r versions let eash task has its own independent random
- * number generator.
- *
- * twister_random_r - Returns a 64 bit pseudorandom number
- * twister_urand - Returns pseudorandom number in range [0, upper)
- * twister_seed_r - Generates a seed from the supplied twister structure
- *	The field mt needs to set with 312 64 bit values.
- * twister_task_seed_r - generate deterministic seed per task
- * twister_random_seed_r - returns a structure based on /dev/urandom
  */
 
 enum { SIZE_TWISTER = 312 };	/* Must match NN in twister.c */	
@@ -99,37 +71,49 @@ typedef struct Twister_s {
 	u64	mt[SIZE_TWISTER];
 } Twister_s;
 
-u64 twister_random(void);
-void twister_seed(Twister_s *initial);
-void twister_random_seed(void);
-u64 twister_random_2(void);
+/* initializes twister with a seed */
+void init_twister_r(u64 seed, Twister_s *twister);
+void init_twister(u64 seed);
+
+/* initialize by an array with array-length
+ * init_key is the array for initializing keys
+ * key_length is its length
+ */
+void init_twister_by_array_r(u64 init_key[], u64 key_length,
+				Twister_s *twister);
+void init_twister_by_array(u64 init_key[], u64 key_length);
 
 u64 twister_random_r(Twister_s *twister);
-Twister_s twister_seed_r(Twister_s *initial);
-Twister_s twister_task_seed_r(void);
-Twister_s twister_random_seed_r(void);
+u64 twister_random(void);
+
+void twister_random_seed_r(Twister_s *twister);
+void twister_random_seed(void);
 
 /* generates a random number on [0, 2^63-1]-interval */
-s64 twister_int63(void);
-s64 twister_int63_r(Twister_s *twister);
+s64 twister_srandom_r(Twister_s *twister);
+s64 twister_srandom(void);
 
 /* generates a random number on [0,1]-real-interval */
-double twister_real1(void);
 double twister_real1_r(Twister_s *twister);
+double twister_real1(void);
 
 /* generates a random number on [0,1)-real-interval */
-double twister_real2(void);
 double twister_real2_r(Twister_s *twister);
+double twister_real2(void);
 
-/* generates a random number on (0,1)-real-interval */
-double twister_real3(void);
+/* generates a random number on (0,1);-real-interval */
 double twister_real3_r(Twister_s *twister);
+double twister_real3(void);
 
-/* generates a random, null terminated name using [a-z][A_F] */
-char *twister_name(char *name, size_t length);
+/* Random number generator for a set of tasks */
+void twister_reset_task_seed_r(void);
+void twister_task_seed_r(Twister_s *twister);
+
+/* generates a random, null terminated name using [a-z][A-F] */
 char *twister_name_r(char *name, size_t length, Twister_s *twister);
+char *twister_name(char *name, size_t length);
 
-
+/* generates a random number on [0,uppper)-integer-interval */
 static inline u64 twister_urand_r (u64 upper, Twister_s *twister)
 {
 	return twister_random_r(twister) % upper;

@@ -22,6 +22,9 @@ enum {	NUM_KEYS = 7,
 	TWIGS_UPPER_HALF = NUM_TWIGS - TWIGS_LOWER_HALF };
 
 
+void bt_pr_enum (void)
+{
+}
 #if 0
 typedef struct Twig_s {
 	union {
