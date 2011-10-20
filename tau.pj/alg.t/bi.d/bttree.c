@@ -56,6 +56,30 @@ struct BtNode_s {
 };
 
 CHECK_CONST(sizeof(BtNode_s) == (NUM_KEYS + 1) * sizeof(u64));
+
+static char *pr_is_leaf (BtNode_s *node)
+{
+	return node->is_leaf ? "LEAF" : "BRANCH";
+}
+
+static void dump_node (BtNode_s *node)
+{
+	int i;
+
+	printf("%p:::%s %d:::\n",
+		node, pr_is_leaf(node), node->num);
+	if (node->is_leaf) {
+		for (i = 0; i < NUM_KEYS; i++) {
+			printf("%16llx\n", node->key[i]);
+		}
+	} else {
+		printf("                 %p\n", node->first);
+		for (i = 0; i < NUM_TWIGS; i++) {
+			printf("%16llx %p\n", node->twig[i].key,
+				node->twig[i].node);
+		}
+	}
+}
 	
 
 BtStat_s bt_stat (BtTree_s *tree)
@@ -97,7 +121,7 @@ static void pr_branch (BtNode_s *branch, int indent)
 static void pr_node (BtNode_s *node, int indent)
 {
 	if (!node) return;
-	pr_indent(indent); printf("%p\n", node);
+	pr_indent(indent); printf("%p %s\n", node, pr_is_leaf(node));
 	if (node->is_leaf) {
 		pr_leaf(node, indent + 1);
 	} else {
@@ -212,6 +236,7 @@ u64 bt_next (BtTree_s *tree, u64 key)
 
 static BtNode_s *new_leaf (void)
 {
+FN;
 	BtNode_s *node = ezalloc(sizeof(*node));
 	node->is_leaf = TRUE;
 	return node;
@@ -219,6 +244,7 @@ static BtNode_s *new_leaf (void)
 
 static BtNode_s *new_branch (void)
 {
+FN;
 	BtNode_s *node = ezalloc(sizeof(*node));
 	node->is_leaf = FALSE;
 	return node;
@@ -226,6 +252,7 @@ static BtNode_s *new_branch (void)
 
 static void leaf_insert (BtNode_s *leaf, u64 key)
 {
+FN;
 	int i;
 
 	assert(leaf->num < NUM_KEYS);
@@ -243,12 +270,14 @@ static void leaf_insert (BtNode_s *leaf, u64 key)
 
 static void branch_insert (BtNode_s *parent, u64 key, BtNode_s *node)
 {
+FN;
 	int i;
 
-	assert(parent->num < NUM_KEYS);
+dump_node(parent);
+	assert(parent->num < NUM_TWIGS);
 	for (i = 0; i < parent->num; i++) {
-		if (key < parent->key[i]) {
-			memmove(&parent->key[i+1], &parent->key[i],
+		if (key < parent->twig[i].key) {
+			memmove(&parent->twig[i+1], &parent->twig[i],
 				sizeof(Twig_s) * (parent->num - i));
 			parent->twig[i].key = key;
 			parent->twig[i].node = node;
@@ -259,6 +288,7 @@ static void branch_insert (BtNode_s *parent, u64 key, BtNode_s *node)
 	parent->twig[parent->num].key = key;
 	parent->twig[parent->num].node = node;
 	++parent->num;
+dump_node(parent);
 }
 
 static bool is_full (BtNode_s *node)
@@ -268,6 +298,7 @@ static bool is_full (BtNode_s *node)
 
 static BtNode_s *grow (BtNode_s *node)
 {
+FN;
 	BtNode_s *branch = new_branch();
 	branch->first = node;
 	return branch;
@@ -275,6 +306,7 @@ static BtNode_s *grow (BtNode_s *node)
 
 static BtNode_s *lookup (BtNode_s *branch, u64 key)
 {
+FN;
 	BtNode_s *node = branch->first;
 	Twig_s	*end = &branch->twig[branch->num];
 	Twig_s	*twig;
@@ -290,9 +322,9 @@ static BtNode_s *lookup (BtNode_s *branch, u64 key)
 
 static BtNode_s *split_leaf (BtNode_s *parent, BtNode_s *node)
 {
+FN;
 	BtNode_s *sibling = new_leaf();
 
-PRp(sibling);
 	memmove(sibling->key, &node->key[KEYS_LOWER_HALF],
 		sizeof(u64) * KEYS_UPPER_HALF);
 	node->num = KEYS_LOWER_HALF;
@@ -303,6 +335,7 @@ PRp(sibling);
 
 static BtNode_s *split_branch (BtNode_s *parent, BtNode_s *node)
 {
+FN;
 	BtNode_s *sibling = new_branch();
 
 	memmove(sibling->twig, &node->twig[TWIGS_LOWER_HALF],
@@ -315,6 +348,7 @@ static BtNode_s *split_branch (BtNode_s *parent, BtNode_s *node)
 
 static BtNode_s *split (BtNode_s *parent, BtNode_s *node)
 {
+FN;
 	if (node->is_leaf) {
 		return split_leaf(parent, node);
 	} else {
@@ -324,6 +358,7 @@ static BtNode_s *split (BtNode_s *parent, BtNode_s *node)
 
 int bt_insert (BtTree_s *tree, u64 key)
 {
+FN;
 	BtNode_s *node;
 	BtNode_s *parent;
 
