@@ -62,20 +62,20 @@ static char *pr_is_leaf (BtNode_s *node)
 	return node->is_leaf ? "LEAF" : "BRANCH";
 }
 
-static void dump_node (BtNode_s *node)
+static void dump_node (char *label, BtNode_s *node)
 {
 	int i;
 
-	printf("%p:::%s %d:::\n",
-		node, pr_is_leaf(node), node->num);
+	printf("%s %p:::%s %d:::\n",
+		label, node, pr_is_leaf(node), node->num);
 	if (node->is_leaf) {
 		for (i = 0; i < NUM_KEYS; i++) {
-			printf("%16llx\n", node->key[i]);
+			printf("\t%16llx\n", node->key[i]);
 		}
 	} else {
-		printf("                 %p\n", node->first);
+		printf("\t                 %p\n", node->first);
 		for (i = 0; i < NUM_TWIGS; i++) {
-			printf("%16llx %p\n", node->twig[i].key,
+			printf("\t%16llx %p\n", node->twig[i].key,
 				node->twig[i].node);
 		}
 	}
@@ -273,7 +273,7 @@ static void branch_insert (BtNode_s *parent, u64 key, BtNode_s *node)
 FN;
 	int i;
 
-dump_node(parent);
+dump_node("IN :", parent);
 	assert(parent->num < NUM_TWIGS);
 	for (i = 0; i < parent->num; i++) {
 		if (key < parent->twig[i].key) {
@@ -288,7 +288,7 @@ dump_node(parent);
 	parent->twig[parent->num].key = key;
 	parent->twig[parent->num].node = node;
 	++parent->num;
-dump_node(parent);
+dump_node("OUT", parent);
 }
 
 static bool is_full (BtNode_s *node)

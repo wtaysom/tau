@@ -1,15 +1,15 @@
-/* 
+/*
    A C-program for MT19937-64 (2004/9/29 version).
    Coded by Takuji Nishimura and Makoto Matsumoto.
 
    This is a 64-bit version of Mersenne Twister pseudorandom number
    generator.
 
-   Before using, initialize the state by using init_genrand64(seed)  
+   Before using, initialize the state by using init_genrand64(seed)
    or init_by_array64(init_key, key_length).
 
    Copyright (C) 2004, Makoto Matsumoto and Takuji Nishimura,
-   All rights reserved.                          
+   All rights reserved.
 
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
@@ -22,15 +22,15 @@
         notice, this list of conditions and the following disclaimer in the
         documentation and/or other materials provided with the distribution.
 
-     3. The names of its contributors may not be used to endorse or promote 
-        products derived from this software without specific prior written 
+     3. The names of its contributors may not be used to endorse or promote
+        products derived from this software without specific prior written
         permission.
 
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
-   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
+   OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
    EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
    PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
    PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
@@ -40,12 +40,12 @@
 
    References:
    T. Nishimura, ``Tables of 64-bit Mersenne Twisters''
-     ACM Transactions on Modeling and 
+     ACM Transactions on Modeling and
      Computer Simulation 10. (2000) 348--357.
    M. Matsumoto and T. Nishimura,
      ``Mersenne Twister: a 623-dimensionally equidistributed
        uniform pseudorandom number generator''
-     ACM Transactions on Modeling and 
+     ACM Transactions on Modeling and
      Computer Simulation 8. (Jan. 1998) 3--30.
 
    Any feedback is very welcome.
@@ -142,7 +142,7 @@ void init_twister_by_array_r (u64 init_key[], u64 key_length,
 			i = 1;
 		}
 	}
-	mt[0] = 1ULL << 63; /* MSB is 1; assuring non-zero initial array */ 
+	mt[0] = 1ULL << 63; /* MSB is 1; assuring non-zero initial array */
 }
 
 void init_twister_by_array (u64 init_key[], u64 key_length)
@@ -163,7 +163,7 @@ u64 twister_random_r (Twister_s *twister)
 		/* if init_genrand64() has not been called, */
 		/* a default initial seed is used	 */
 		if (twister->mti == NN + 1) {
-			init_twister_r(5489ULL, twister); 
+			init_twister_r(5489ULL, twister);
 		}
 		for (i = 0; i < NN - MM; i++) {
 			x = (mt[i] & UM) | (mt[i + 1] & LM);
@@ -178,7 +178,7 @@ u64 twister_random_r (Twister_s *twister)
 
 		twister->mti = 0;
 	}
-  
+
 	x = mt[twister->mti++];
 
 	x ^= (x >> 29) & 0x5555555555555555ULL;
@@ -286,7 +286,7 @@ char *twister_name_r (char *name, size_t length, Twister_s *twister)
 	char *c = name;
 	ssize_t i = length - 1;
 	u64 x;
-	
+
 	x = twister_random_r(twister);
 	while (i-- > 0) {
 		*c++ = Char_set[x & CHAR_MASK];

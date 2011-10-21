@@ -3,6 +3,13 @@
  * found in the LICENSE file.
  */
 
+/* Threadfile test creates multiple threads that then create/unlink
+ * files in the same directory. A "level" is kept of about how many
+ * files should be in the directory. When the number of files is less
+ * than the level, the thread is more likely to create a file and when
+ * the number of files goes above the level, an unlink is more likely
+ * to be done.
+ */
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <dirent.h>
@@ -55,7 +62,8 @@ void pr_inst (inst_s *inst)
 	printf("created = %llu\n", inst->num_created);
 	printf("deleted = %llu\n", inst->num_deleted);
 	if (inst->num_written) {
-		printf("written = ~%llu\n", inst->num_written);
+		printf("written = %llu (approximately)\n",
+			inst->num_written);
 	}
 	printf("created - deleted = %llu\n",
 		inst->num_created - inst->num_deleted);
@@ -105,20 +113,21 @@ static u64 rand_num_pages (arg_s *arg)
 
 static void rand_fill (char *buf, int n, arg_s *arg)
 {
-	static char	rnd_char[] = "abcdefghijklmnopqrstuvwxyz\n";
-	char *b;
-	u64 x;
+	static char	alphabet[] = "abcdefghijklmnopqrstuvwxyz\n";
+	char		*b;
+	u64		x;
 
 	for (b = buf; b < &buf[n]; b++) {
-		x = twister_urand_r(sizeof(rnd_char) - 1, &arg->twister);
-		*b = rnd_char[x];
-	}	
+		x = twister_urand_r(sizeof(alphabet) - 1, &arg->twister);
+		*b = alphabet[x];
+	}
 }
 
 void fill (int fd, arg_s *arg)
 {
-	char		buf[4096];
-	unsigned long	i, n;
+	char	buf[4096];
+	unint	i;
+	unint	n;
 
 	n = rand_num_pages(arg);
 
@@ -162,7 +171,7 @@ pthread_mutex_t Name_lock;
 
 static void init_lock (void)
 {
-	pthread_mutext_init( &Name_lock, NULL)
+	pthread_mutex_init(&Name_lock, NULL);
 }
 
 static void lock (void)
@@ -172,7 +181,7 @@ static void lock (void)
 
 void unlock (void)
 {
-	pthread_unmutex_lock(&Name_lock);
+	pthread_mutex_unlock(&Name_lock);
 }
 
 #else
@@ -181,7 +190,7 @@ pthread_spinlock_t Name_lock;
 
 void init_lock (void)
 {
-	pthread_spin_init( &Name_lock, PTHREAD_PROCESS_PRIVATE);
+	pthread_spin_init(&Name_lock, PTHREAD_PROCESS_PRIVATE);
 }
 
 void lock (void)
@@ -204,8 +213,8 @@ void init_name (void)
 
 char *rand_remove_name (arg_s *arg)
 {
-	unint x;
-	char *name;
+	unint	x;
+	char	*name;
 
 	lock();
 	if (Next_name) {
@@ -222,7 +231,7 @@ char *rand_remove_name (arg_s *arg)
 
 char *remove_name (void)
 {
-	char *name;
+	char	*name;
 
 	lock();
 	if (Next_name) {
@@ -248,7 +257,8 @@ void add_name (char *name)
 
 void cleanup_files (void)
 {
-	char *name;
+	char	*name;
+
 	for (;;) {
 		name = remove_name();
 		if (!name) break;
@@ -257,6 +267,11 @@ void cleanup_files (void)
 	}
 }
 
+/* should_delete keeps the number of files at the same level.
+ * Basic equation: 
+ *	random[0,1) * current_number_files / level < 0.5
+ * Rearranged for integer arithmetic.
+ */
 bool should_delete (arg_s *arg)
 {
 	enum { RANGE = 1<<10, MASK = (2*RANGE) - 1 };
@@ -300,7 +315,7 @@ void rate (void)
 		SET_DELTA(num_created);
 		SET_DELTA(num_deleted);
 		SET_DELTA(num_written);
-		pr_delta( &delta);
+		pr_delta(&delta);
 		if (Stop) {
 			zero(old);
 			return;
@@ -309,7 +324,7 @@ void rate (void)
 	}
 }
 
-void start_threads (unsigned threads)
+void start_threads (unsigned n_threads)
 {
 	pthread_t	*thread;
 	unsigned	i;
@@ -318,11 +333,11 @@ void start_threads (unsigned threads)
 	arg_s		*a;
 
 	Stop = FALSE;
-	thread = ezalloc(threads * sizeof(pthread_t));
-	arg    = ezalloc(threads * sizeof(arg_s));
-	for (i = 0, a = arg; i < threads; i++, a++) {
-		twister_task_seed_r( &a->twister);
-		rc = pthread_create( &thread[i], NULL, crfiles, a);
+	thread = ezalloc(n_threads * sizeof(pthread_t));
+	arg    = ezalloc(n_threads * sizeof(arg_s));
+	for (i = 0, a = arg; i < n_threads; i++, a++) {
+		twister_task_seed_r(&a->twister);
+		rc = pthread_create(&thread[i], NULL, crfiles, a);
 		if (rc) {
 			eprintf("pthread_create %d\n", rc);
 			break;
@@ -344,15 +359,18 @@ void init (char *dir)
 
 void usage (void)
 {
-	pr_usage("-rfh -i<iterations> -l<loops> -t<threads> -v<level>\n"
+	pr_usage("-rfh -d<direcotyr> -i<iterations> -l<loops>"
+		" -t<threads> -v<level>\n"
 		"\tCreates and deletes files in the same directory\n"
-		"\tr measure rate of operations [off]"
-		"\tf fill files [off]"
-		"\th help"
-		"\ti iterations [%lld]"
-		"\tl number of times to run the tests [%lld]"
-		"\tt number of threads to start [%lld]"
+		"\td directory where files will be created [%s]\n"
+		"\tr measure rate of operations [off]\n"
+		"\tf fill files [off]\n"
+		"\th help\n"
+		"\ti iterations [%lld]\n"
+		"\tl number of times to run the tests [%lld]\n"
+		"\tt number of threads to start [%lld]\n"
 		"\tv approximate level of files to keep [%ld]",
+		Option.dir,
 		Option.iterations, Option.loops, Option.numthreads,
 		Myopt.level);
 }
@@ -378,15 +396,15 @@ bool myopt (int c)
 
 int main (int argc, char *argv[])
 {
-	char		*dir;
-	unsigned	threads;
-	unsigned	i;
+	char	*dir;
+	unint	n_threads;
+	unint	i;
 
 	Option.iterations = 2000;
 	Option.loops = 3;
 	Option.numthreads = 4;
 	punyopt(argc, argv, myopt, "rfv:");
-	threads = Option.numthreads;
+	n_threads = Option.numthreads;
 	dir = Option.dir;
 
 	init(dir);
@@ -396,10 +414,10 @@ int main (int argc, char *argv[])
 		zero(Inst);
 
 		startTimer();
-		start_threads(threads);
+		start_threads(n_threads);
 		stopTimer();
 
-		pr_inst( &Inst);
+		pr_inst(&Inst);
 		prTimer();
 		printf("\n");
 	}
