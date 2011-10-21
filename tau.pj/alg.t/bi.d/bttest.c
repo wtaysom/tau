@@ -19,6 +19,7 @@
 #include "bttree.h"
 #include "util.h"
 
+#if 0
 static void pr_audit (BtTree_s *tree)
 {
 	BtAudit_s a = bt_audit(tree);
@@ -34,6 +35,7 @@ static void pr_audit (BtTree_s *tree)
 		a.num_right);
 //  bt_pr_path(tree, s.deepest);
 }
+#endif
 
 #if 0
 if (i >= 595)
@@ -57,6 +59,7 @@ if (Option.print)
 }
 #endif
 
+#if 0
 static void pr_next (BtTree_s *tree)
 {
 	u64 key = 0;
@@ -67,6 +70,7 @@ static void pr_next (BtTree_s *tree)
 		printf("%llu\n", key);
 	}
 }
+#endif
 
 void test_bt (int n)
 {
@@ -119,13 +123,13 @@ void test_bt_level (int n, int level)
 	finish = nsecs();
 	total = finish - start;
 	printf("%lld nsecs  %g nsecs/op\n", total, (double)total/(double)n);
-	bt_audit(&tree);
+//	bt_audit(&tree);
 bt_print(&tree);
-	pr_next(&tree);
+//	pr_next(&tree);
 //printf("\n");
 //  bt_audit(&tree);
 //  if (Option.print) bt_print(&tree);
-	pr_audit(&tree);
+//	pr_audit(&tree);
 }
 
 /*

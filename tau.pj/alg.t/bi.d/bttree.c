@@ -62,7 +62,7 @@ static char *pr_is_leaf (BtNode_s *node)
 	return node->is_leaf ? "LEAF" : "BRANCH";
 }
 
-static void dump_node (char *label, BtNode_s *node)
+void bt_dump_node (char *label, BtNode_s *node)
 {
 	int i;
 
@@ -273,7 +273,6 @@ static void branch_insert (BtNode_s *parent, u64 key, BtNode_s *node)
 FN;
 	int i;
 
-dump_node("IN :", parent);
 	assert(parent->num < NUM_TWIGS);
 	for (i = 0; i < parent->num; i++) {
 		if (key < parent->twig[i].key) {
@@ -288,7 +287,6 @@ dump_node("IN :", parent);
 	parent->twig[parent->num].key = key;
 	parent->twig[parent->num].node = node;
 	++parent->num;
-dump_node("OUT", parent);
 }
 
 static bool is_full (BtNode_s *node)
@@ -336,13 +334,14 @@ FN;
 static BtNode_s *split_branch (BtNode_s *parent, BtNode_s *node)
 {
 FN;
-	BtNode_s *sibling = new_branch();
-
-	memmove(sibling->twig, &node->twig[TWIGS_LOWER_HALF],
-		sizeof(Twig_s) * TWIGS_UPPER_HALF);
+	BtNode_s	*sibling = new_branch();
+	u64		key = node->twig[TWIGS_LOWER_HALF].key;
+	sibling->first = node->twig[TWIGS_LOWER_HALF].node;
+	memmove(sibling->twig, &node->twig[TWIGS_LOWER_HALF+1],
+		sizeof(Twig_s) * (TWIGS_UPPER_HALF - 1));
 	node->num = TWIGS_LOWER_HALF;
-	sibling->num = TWIGS_UPPER_HALF;
-	branch_insert(parent, sibling->twig[0].key, node);
+	sibling->num = TWIGS_UPPER_HALF - 1;
+	branch_insert(parent, key, sibling);
 	return parent;	
 }
 
@@ -417,25 +416,38 @@ static void delete_node (BtNode_s **dp)
 		}
 	}
 }
+#else
+
+static void leaf_delete (BtNode_s *leaf, u64 key)
+{
+FN;
+	int i;
+
+	for (i = 0; i < leaf->num; i++) {
+		if (key == leaf->key[i]) {
+			memmove(&leaf->key[i], &leaf->key[i+1],
+				sizeof(u64) * (leaf->num - i - 1));
+			--leaf->num;
+			return;
+		}
+	}
+	fatal("key %lld not found", key);
+}
 
 int bt_delete (BtTree_s *tree, u64 key)
 {
-	BtNode_s **np = &tree->root;
+	BtNode_s *node = tree->root;
 	for (;;) {
-		BtNode_s *node = *np;
 		if (!node) fatal("Key %llu not found", key);
-		if (key == node->key) break;
-		if (key < node->key) {
-			np = &node->left;
-		} else {
-			np = &node->right;
+		if (node->is_leaf) {
+			leaf_delete(node, key);
+			return 0;
 		}
+		node = lookup(node, key);
 	}
-	delete_node(np);
 	return 0;
 }
-#else 
-int bt_delete (BtTree_s *tree, u64 key) { fatal("Not implemeted"); return 0; }
+
 u64 bt_next (BtTree_s *tree, u64 key) { fatal("Not implemeted"); return 0; }
 BtAudit_s bt_audit (BtTree_s *tree)
 {
