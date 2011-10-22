@@ -9,18 +9,21 @@
 typedef struct BtNode_s BtNode_s;
 
 typedef struct BtAudit_s {
-	u64 num_nodes;
-	u64 max_depth;
-	u64 total_depth;
-	u64 num_left;
-	u64 num_right;
-	u64 deepest;
+	u64 depth;
+	u64 num_lf_keys;
+	u64 num_br_keys;
+	u64 num_branches;
+	u64 num_leaves;
+	u64 max_key;
 } BtAudit_s;
 
 typedef struct BtStat_s {
 	u64 num_inserts;
 	u64 num_deletes;
-	u64 num_rotates;
+	u64 num_grow;
+	u64 num_shrink;
+	u64 num_split;
+	u64 num_joins;
 } BtStat_s;
 
 typedef struct BtTree_s {

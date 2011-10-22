@@ -127,26 +127,3 @@ void test_ibi_level (int n, int level)
 //  if (Option.print) ibi_print(&tree);
 	pr_audit(&tree);
 }
-
-/*
-perf record bi -i10000000 -l 100000
-15799813919 nsecs  1579.98 nsecs/op
-num nodes=100322 sqrt=316.736 log2=16.6143
-max depth=321
-avg depth=155.982
-num left =50090
-num right=50231
-
-bi -i10000000 -l 100000
-13858678464 nsecs  1385.87 nsecs/op
-num nodes=100322 sqrt=316.736 log2=16.6143
-max depth=321
-avg depth=155.982
-num left =50090
-num right=50231
-
-16277381635 nsecs  1627.74 nsecs/op
-15949289161 nsecs  1594.93 nsecs/op
-
-
-*/

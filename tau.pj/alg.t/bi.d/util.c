@@ -159,10 +159,10 @@ void k_seed (u64 seed)
 
 u64 k_rand_key (void)
 {
-	return twister_random();
+	return Key++;
 #if 0
 	return Key++;
-	return twister_urand(100);
+	return twister_urand(10000);
 	return twister_random();
 #endif
 }

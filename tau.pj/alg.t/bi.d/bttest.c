@@ -17,25 +17,32 @@
 #include <timer.h>
 
 #include "bttree.h"
+#include "main.h"
 #include "util.h"
 
-#if 0
 static void pr_audit (BtTree_s *tree)
 {
 	BtAudit_s a = bt_audit(tree);
-	printf("num nodes=%lld sqrt=%g log2=%g\n"
-		"max depth=%lld\n"
-		"avg depth=%g\n"
-		"num left =%lld\n"
-		"num right=%lld\n",
-		a.num_nodes, sqrt(a.num_nodes), log(a.num_nodes)/log(2.0),
-		a.max_depth,
-		(double)a.total_depth / (double)a.num_nodes,
-		a.num_left,
-		a.num_right);
-//  bt_pr_path(tree, s.deepest);
+	printf(	"num recs    =%lld sqrt=%g log2=%g\n"
+		"depth       =%lld\n"
+		"num braches =%lld\n"
+		"num leaves  =%lld\n"
+		"num br keys =%lld\n"
+		"recs/leaf   =%g\n",
+		a.num_lf_keys, sqrt(a.num_lf_keys), log(a.num_lf_keys)/log(2.0),
+		a.depth,
+		a.num_branches,
+		a.num_leaves,
+		a.num_br_keys,
+		(double)a.num_lf_keys / (double)a.num_leaves);
+	printf("stats:\n"
+		"num insertes=%lld\n"
+		"num deletes =%lld\n"
+		"num recs    =%lld\n",
+		tree->stat.num_inserts,
+		tree->stat.num_deletes,
+		tree->stat.num_inserts - tree->stat.num_deletes);
 }
-#endif
 
 #if 0
 if (i >= 595)
@@ -86,7 +93,7 @@ void test_bt (int n)
 //	bt_audit(&tree);
 	bt_print(&tree);
 //	pr_next(&tree);
-//	pr_audit(&tree);
+	pr_audit(&tree);
 }
 
 void test_bt_level (int n, int level)
@@ -104,9 +111,10 @@ void test_bt_level (int n, int level)
 	for (i = 0; i < n; i++) {
 //PRd(i);
 //bt_print(&tree);
+//if (i > 111) bt_print(&tree);
 		if (k_should_delete(count, level)) {
 			key = k_delete_rand();
-//PRd(key);
+//PRu(key);
 			rc = bt_delete(&tree, key);
 //bt_print(&tree);
 //Pause();
@@ -114,6 +122,7 @@ void test_bt_level (int n, int level)
 			--count;
 		} else {
 			key = k_rand_key();
+//PRu(key);
 			k_add(key);
 			rc = bt_insert(&tree, key);
 			if (rc) fatal("bt_insert key=%lld", key);
@@ -124,33 +133,10 @@ void test_bt_level (int n, int level)
 	total = finish - start;
 	printf("%lld nsecs  %g nsecs/op\n", total, (double)total/(double)n);
 //	bt_audit(&tree);
-bt_print(&tree);
+//bt_print(&tree);
 //	pr_next(&tree);
 //printf("\n");
-//  bt_audit(&tree);
-//  if (Option.print) bt_print(&tree);
-//	pr_audit(&tree);
+	//bt_audit(&tree);
+	if (Option.print) bt_print(&tree);
+	pr_audit(&tree);
 }
-
-/*
-perf record bi -i10000000 -l 100000
-15799813919 nsecs  1579.98 nsecs/op
-num nodes=100322 sqrt=316.736 log2=16.6143
-max depth=321
-avg depth=155.982
-num left =50090
-num right=50231
-
-bi -i10000000 -l 100000
-13858678464 nsecs  1385.87 nsecs/op
-num nodes=100322 sqrt=316.736 log2=16.6143
-max depth=321
-avg depth=155.982
-num left =50090
-num right=50231
-
-16277381635 nsecs  1627.74 nsecs/op
-15949289161 nsecs  1594.93 nsecs/op
-
-
-*/

@@ -14,7 +14,7 @@
 
 #include "bttree.h"
 
-enum {	NUM_KEYS = 7,
+enum {	NUM_KEYS = 15,
 	KEYS_LOWER_HALF = NUM_KEYS / 2,
 	KEYS_UPPER_HALF = NUM_KEYS - KEYS_LOWER_HALF,
 	NUM_TWIGS = NUM_KEYS * sizeof(u64) / (sizeof(void *) + sizeof(u64)),
@@ -55,29 +55,41 @@ struct BtNode_s {
 	};
 };
 
-CHECK_CONST(sizeof(BtNode_s) == (NUM_KEYS + 1) * sizeof(u64));
+//CHECK_CONST(sizeof(BtNode_s) == (NUM_KEYS + 1) * sizeof(u64));
 
 static char *pr_is_leaf (BtNode_s *node)
 {
 	return node->is_leaf ? "LEAF" : "BRANCH";
 }
 
-void bt_dump_node (char *label, BtNode_s *node)
+static void dump_leaf (BtNode_s *node)
 {
 	int i;
 
+	for (i = 0; i < NUM_KEYS; i++) {
+		printf("\t%16llx\n", node->key[i]);
+	}
+}
+
+static void dump_branch (BtNode_s *node)
+{
+	int i;
+
+	printf("\t                 %p\n", node->first);
+	for (i = 0; i < NUM_TWIGS; i++) {
+		printf("\t%16llx %p\n", node->twig[i].key,
+			node->twig[i].node);
+	}
+}
+
+void bt_dump_node (char *label, BtNode_s *node)
+{
 	printf("%s %p:::%s %d:::\n",
 		label, node, pr_is_leaf(node), node->num);
 	if (node->is_leaf) {
-		for (i = 0; i < NUM_KEYS; i++) {
-			printf("\t%16llx\n", node->key[i]);
-		}
+		dump_leaf(node);
 	} else {
-		printf("\t                 %p\n", node->first);
-		for (i = 0; i < NUM_TWIGS; i++) {
-			printf("\t%16llx %p\n", node->twig[i].key,
-				node->twig[i].node);
-		}
+		dump_branch(node);
 	}
 }
 	
@@ -121,7 +133,8 @@ static void pr_branch (BtNode_s *branch, int indent)
 static void pr_node (BtNode_s *node, int indent)
 {
 	if (!node) return;
-	pr_indent(indent); printf("%p %s\n", node, pr_is_leaf(node));
+	pr_indent(indent);
+	printf("%p %s %d\n", node, pr_is_leaf(node), node->num);
 	if (node->is_leaf) {
 		pr_leaf(node, indent + 1);
 	} else {
@@ -136,49 +149,6 @@ int bt_print (BtTree_s *tree)
 }
 
 #if 0
-void bt_pr_path (BtTree_s *tree, u64 key)
-{
-	BtNode_s *node = tree->root;
-	while (node) {
-		printf("%llu", node->key);
-		if (key == node->key) {
-			printf("\n");
-			return;
-		}
-		printf(" ");
-		if (key < node->key) {
-	
-		} else {
-			node = node->right;
-		}
-	}
-}
-
-static void node_audit (BtNode_s *node, BtAudit_s *audit, int depth)
-{
-	if (!node) return;
-	++audit->num_nodes;
-	if (depth > audit->max_depth) {
-		audit->max_depth = depth;
-		audit->deepest = node->key;
-	}
-	audit->total_depth += depth;
-	if (node->left) {
-		++audit->num_left;
-		node_audit(node->left, audit, depth + 1);
-	}
-	if (node->right) {
-		++audit->num_right;
-		node_audit(node->right, audit, depth + 1);
-	}
-}
-
-BtAudit_s bt_audit (BtTree_s *tree)
-{
-	BtAudit_s audit = { 0 };
-	node_audit(tree->root, &audit, 1);
-	return audit;
-}
 
 int bt_find (BtTree_s *tree, u64 key)
 {
@@ -365,6 +335,7 @@ FN;
 	if (!node) {
 		tree->root = new_leaf();
 		leaf_insert(tree->root, key);
+		++tree->stat.num_inserts;
 		return 0;
 	}
 	if (is_full(node)) {
@@ -373,6 +344,7 @@ FN;
 	for (;;) {
 		if (node->is_leaf) {
 			leaf_insert(node, key);
+			++tree->stat.num_inserts;
 			return 0;
 		}
 		parent = node;
@@ -434,25 +406,156 @@ FN;
 	fatal("key %lld not found", key);
 }
 
+static bool is_sparse (BtNode_s *node)
+{
+	return node->num <= (node->is_leaf ? NUM_KEYS / 3 : NUM_TWIGS / 3);
+}
+
+static BtNode_s *join (BtNode_s *parent, u64 key)
+{
+FN;
+	BtNode_s *node = parent->first;
+	Twig_s *end = &parent->twig[parent->num];
+	Twig_s *twig;
+	BtNode_s *sibling;
+	unint n;
+
+	for (twig = parent->twig; twig < end; twig++) {
+		if (key < twig->key) {
+			sibling = twig->node;
+			if (node->is_leaf) {
+				if (node->num + sibling->num <= NUM_KEYS) {
+					memmove(&node->key[node->num],
+						sibling->key,
+						sizeof(key) * sibling->num);
+					node->num += sibling->num;
+					free(sibling);
+					memmove(twig, twig+1,
+						sizeof(*twig) *
+						(end - (twig + 1)));
+					--parent->num;
+				} else {
+					n = sibling->num / 2;
+					assert(node->num + n <= NUM_KEYS);
+					memmove(&node->key[node->num],
+						sibling->key,
+						sizeof(key) * n);
+					node->num += n;
+					sibling->num -= n;
+					memmove(sibling->key,
+						&sibling->key[n],
+						sizeof(key) * sibling->num);
+					twig->key = sibling->key[0];
+				}
+			} else {
+				if (node->num + sibling->num < NUM_TWIGS) {
+					n = node->num;
+					node->twig[n].key = twig->key;
+					node->twig[n].node = sibling->first;
+					++n;
+					memmove(&node->twig[n],
+						sibling->twig,
+						sizeof(*twig) * sibling->num);
+					node->num += sibling->num + 1;
+					free(sibling);
+					memmove(twig, twig+1,
+						sizeof(*twig) *
+						(end - (twig + 1)));
+					--parent->num;
+				}
+			}
+			return node;
+		}
+		node = twig->node;
+	}
+	return node;
+}
+
 int bt_delete (BtTree_s *tree, u64 key)
 {
 	BtNode_s *node = tree->root;
+	BtNode_s *parent;
+
+	while (node && node->num == 0) {
+		if (node->is_leaf) {
+			tree->root = NULL;
+		} else {
+			tree->root = node->first;
+		}
+		free(node);
+		node = tree->root;
+		++tree->stat.num_shrink;
+	}
 	for (;;) {
 		if (!node) fatal("Key %llu not found", key);
 		if (node->is_leaf) {
 			leaf_delete(node, key);
+			++tree->stat.num_deletes;
 			return 0;
 		}
+		parent = node;
 		node = lookup(node, key);
+		if (is_sparse(node)) {
+			node = join(parent, key);
+		}
 	}
-	return 0;
+}
+
+static void audit_leaf (BtNode_s *node, BtAudit_s *audit, unint depth)
+{
+	unint i;
+	if (audit->depth == 0) audit->depth = depth;
+	assert(audit->depth == depth);
+	if (node->num > NUM_KEYS) {
+		bt_dump_node("too many keys", node);
+	}
+	assert(node->num <= NUM_KEYS);
+	for (i = 0; i < node->num; i++) {
+		u64 key = node->key[i];
+		assert(key >= audit->max_key);
+		audit->max_key = key;
+	}
+	++audit->num_leaves;
+	audit->num_lf_keys += node->num;
+}
+
+static void audit_tree (BtNode_s *node, BtAudit_s *audit, unint depth);
+
+static void audit_branch (BtNode_s *node, BtAudit_s *audit, unint depth)
+{
+	unint i;
+	audit_tree(node->first, audit, depth + 1);
+	assert(node->num <= NUM_TWIGS);
+	for (i = 0; i < node->num; i++) {
+		u64 key = node->twig[i].key;
+		if (key < audit->max_key) {
+			fatal("key %llu < %llu max", key, audit->max_key);
+		}
+		audit->max_key = key;
+		audit_tree(node->twig[i].node, audit, depth + 1);
+	}
+	++audit->num_branches;
+	audit->num_br_keys += node->num;
+}
+
+static void audit_tree (BtNode_s *node, BtAudit_s *audit, unint depth)
+{
+	assert(node);
+	if (node->is_leaf) {
+		audit_leaf(node, audit, ++depth);
+	} else {
+		audit_branch(node, audit, ++depth);
+	}
 }
 
 u64 bt_next (BtTree_s *tree, u64 key) { fatal("Not implemeted"); return 0; }
 BtAudit_s bt_audit (BtTree_s *tree)
 {
 	BtAudit_s audit = { 0 };
-	fatal("Not implemented");
+	BtNode_s *node = tree->root;
+	printf("NUM_KEYS=%d NUM_TWIGS=%d\n", NUM_KEYS, NUM_TWIGS);
+	if (!node) return audit;
+	audit_tree(node, &audit, 0);
 	return audit;
 }
 #endif
