@@ -83,7 +83,12 @@ void pr_dirent (struct dirent *d)
 	printf("%10llx %10llx %2x %s\n",
 		d->d_ino, d->d_off, d->d_type, d->d_name);
 #endif
+
+#ifdef __APPLE__
+	printf("%10lld\n", (s64)d->d_seekoff);
+#else
 	printf("%10lld\n", (s64)d->d_off);
+#endif
 }
 
 void do_readdir (char *name)

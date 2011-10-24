@@ -80,10 +80,19 @@ void tst_telldir (void)
 		if (!de) break;
 		offset = telldir(dir);
 		if (offset == old_offset) {
+#ifdef __APPLE__
 			printf("%llx %llx %s\n",
-				(u64)old_de.d_off, (u64)offset, old_de.d_name);
+				(u64)old_de.d_seekoff, (u64)offset,
+				old_de.d_name);
+			printf("%llx %llx %s\n\n",
+				(u64)de->d_seekoff, (u64)offset, de->d_name);
+#else
+			printf("%llx %llx %s\n",
+				(u64)old_de.d_off, (u64)offset,
+				old_de.d_name);
 			printf("%llx %llx %s\n\n",
 				(u64)de->d_off, (u64)offset, de->d_name);
+#endif
 		}
 		old_offset = offset;
 		old_de = *de;

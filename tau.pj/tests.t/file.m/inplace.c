@@ -15,6 +15,7 @@
 
 #include <eprintf.h>
 #include <puny.h>
+#include <timer.h>
 
 struct {
 	bool	read;
@@ -22,14 +23,6 @@ struct {
 } Local_option = { TRUE, TRUE };
 
 FILE *Results;
-
-static inline u64 nsecs (void)
-{
-	struct timespec t;
-
-	clock_gettime(CLOCK_REALTIME, &t);
-	return (u64)t.tv_sec * 1000000000ULL + t.tv_nsec;
-}
 
 static void inplace_write(int fd, void *buf, size_t n, int iterations)
 {

@@ -75,6 +75,13 @@ void prDirentries (char *buf, int numBytes)
 	}
 }
 
+#ifdef __APPLE__
+int probe (char *name)
+{
+	fatal("getdirentries not available with 64 bit inodes");
+	return 0;
+}
+#else
 int probe (char *name)
 {
 	int	fd;
@@ -107,6 +114,7 @@ int probe (char *name)
 	close(fd);
 	return 0;
 }
+#endif
 
 void usage (void)
 {

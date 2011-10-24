@@ -24,6 +24,16 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef __APPLE__
+#include <eprintf.h>
+
+int main (int argc, char *argv[])
+{
+	fatal("Extended attributes are different on APPLE");
+	return 0;
+}
+#else
+
 void dumpvalue (int fd, char *name)
 {
 	unsigned char	value[1<<16];
@@ -86,3 +96,4 @@ int main (int argc, char *argv[])
 	}
 	return 0;
 }
+#endif

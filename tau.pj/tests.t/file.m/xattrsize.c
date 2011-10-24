@@ -21,6 +21,14 @@
 #include <style.h>
 #include <eprintf.h>
 
+#ifdef __APPLE__
+int main (int argc, char *argv[])
+{
+	fatal("Extended attributes are different on APPLE");
+	return 0;
+}
+#else
+
 /* dumpmem: dumps an n byte area of memory to screen */
 void dumpmem (const void *mem, unsigned int n)
 {
@@ -114,3 +122,4 @@ int main (int argc, char *argv[])
 
 	return 0;
 }
+#endif

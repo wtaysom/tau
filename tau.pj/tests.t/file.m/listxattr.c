@@ -110,6 +110,14 @@
 #include <eprintf.h>
 #include <puny.h>
 
+#ifdef __APPLE__
+int main (int argc, char *argv[])
+{
+	fatal("Extended attributes are different on APPLE");
+	return 0;
+}
+
+#else
 void dump_list (char *list, ssize_t size)
 {
 	int	c;
@@ -156,3 +164,4 @@ int main (int argc, char *argv[])
 
 	return 0;
 }
+#endif

@@ -477,6 +477,15 @@
 #include <eprintf.h>
 #include <puny.h>
 
+#ifdef __APPLE__
+int main (int argc, char *argv[])
+{
+	fatal("Leases not available on APPLE");
+	return 0;
+}
+
+#else
+
 typedef enum Cmd_t {
 	cEND = 0,
 	cOPEN,
@@ -673,3 +682,4 @@ int main (int argc, char *argv[])
 	}
 	return 0;
 }
+#endif

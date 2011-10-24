@@ -58,8 +58,18 @@
 
 #include <style.h>
 #include <debug.h>
+#include <eprintf.h>
 #include <puny.h>
 
+
+#ifdef __APPLE__
+int main (int argc, char *argv[])
+{
+	fatal("getdirentires not available on APPLE with 64 bit inodes");
+	return 0;
+}
+
+#else
 enum { BUF_SZ = 40 };
 
 void prDirentries (char *buf, int numBytes)
@@ -122,3 +132,4 @@ int main (int argc, char *argv[])
 	}
 	return 0;
 }
+#endif

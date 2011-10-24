@@ -158,7 +158,12 @@ int main (int argc, char *argv[])
 	file = Option.file;
 	xattr = Option.xattr;
 
+#ifdef __APPLE__
+	fatal("getxattr is different on APPLE");
+	size = - 1;
+#else
 	size = getxattr(file, xattr, value, sizeof(value));
+#endif
 	if (size < 0) {
 		eprintf("file=%s xattr=%s returned:", file, xattr);
 	}

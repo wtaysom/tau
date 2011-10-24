@@ -28,6 +28,15 @@
 #include <myio.h>
 #include <puny.h>
 
+
+#ifdef __APPLE__
+int main (int argc, char *argv[])
+{
+	fatal("O_NOATIME not available on APPLE");
+	return 0;
+}
+
+#else
 char FileTypes[] = {	'0', 'p', 'c', '3', 'd', '5', 'b', '7',
 			 '-', '9', 'l', 'B', 's', 'D', 'E', 'F' };
 
@@ -113,3 +122,4 @@ int main (int argc, char *argv[])
 
 	return 0;
 }
+#endif

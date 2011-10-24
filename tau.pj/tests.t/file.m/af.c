@@ -30,7 +30,12 @@ int main (int argc, char *argv[])
 	if (fd == -1) {
 		eprintf("Couldn't create %s:", Option.file);
 	}
+#ifdef __APPLE__
+	fatal("Leases not implemented on APPLE");
+	rc = -1;
+#else
 	rc = fcntl(fd, F_SETLEASE, F_WRLCK);
+#endif
 	if (rc == -1) {
 		eprintf("parent fcntl:");
 	}

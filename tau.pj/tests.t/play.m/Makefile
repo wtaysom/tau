@@ -14,7 +14,7 @@
 
 BLOCKNUM?=32
 
-CFLAGS += -DBLOCKNUM=$(BLOCKNUM) -rdynamic
+CFLAGS += -DBLOCKNUM=$(BLOCKNUM)
 
 system := $(shell uname)
 include ../../mk/multi.mk

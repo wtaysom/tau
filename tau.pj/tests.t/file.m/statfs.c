@@ -10,6 +10,17 @@
  |  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  |  GNU General Public License for more details.
  +-------------------------------------------------------------------------*/
+
+#ifdef __APPLE__
+#include <eprintf.h>
+
+int main (int argc, char *argv[])
+{
+	fatal("statfs is different on APPLE");
+	return 0;
+}
+#else
+
 /*
  * NAME
  *        statfs, fstatfs - get file system statistics
@@ -143,3 +154,4 @@ int main (int argc, char *argv[])
 	if (rc) fatal("doStatfs:");
 	return 0;
 }
+#endif

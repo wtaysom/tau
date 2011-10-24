@@ -12,8 +12,13 @@
 #  GNU General Public License for more details.
 ############################################################################
 
-# So we can run it on ChromeOS
-CFLAGS += -static
 
 include ../../mk/multi.mk
-LIBS += ../../libq.b/$(objdir)/libq -lrt -lm -lpthread
+LIBS += ../../libq.b/$(objdir)/libq -lm
+ifeq ($(system),Linux)
+	# So we can run it on ChromeOS
+	CFLAGS += -static
+	LIBS += -lrt
+endif
+LIBS += -lpthread
+

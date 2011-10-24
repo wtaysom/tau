@@ -82,8 +82,8 @@ static void printTimer (Timer_s *timer)
 {
 	if (timer->key == 0) return;
 	printf("%8p: start=%ld.%.6ld delta=%ld.%.6ld\n", timer->key,
-				timer->start.tv_sec, timer->start.tv_usec,
-				timer->delta.tv_sec, timer->delta.tv_usec);
+				timer->start.tv_sec, (long)timer->start.tv_usec,
+				timer->delta.tv_sec, (long)timer->delta.tv_usec);
 }
 
 void dumpTimersReverse (void)

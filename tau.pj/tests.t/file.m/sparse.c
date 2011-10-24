@@ -72,6 +72,10 @@ void make_sparse (int fd)
 	write_sparse(fd, BIG_FILE);
 }
 
+#ifdef __APPLE__
+int getpagesize (void) { return 4096; }
+#endif
+
 void write_mmap (int fd, off_t seek)
 {
 	void	*buf;

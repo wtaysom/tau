@@ -20,6 +20,14 @@
 
 #include <eprintf.h>
 
+#ifdef __APPLE__
+int main (int argc, char *argv[])
+{
+	fatal("Extended attributes are different on APPLE");
+	return 0;
+}
+#else
+
 char	*FileName;
 
 /* dump_mem: dumps an n byte area of memory to screen */
@@ -135,3 +143,4 @@ int main (int argc, char *argv[])
 	}
 	return 0;
 }
+#endif
