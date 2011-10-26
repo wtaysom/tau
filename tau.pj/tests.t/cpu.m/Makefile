@@ -5,10 +5,10 @@
 # found in the LICENSE file.
 #
 
-CFLAGS += -static
-
 include ../../mk/multi.mk
-LIBS += ../../libq.b/$(objdir)/libq -lm -lpthread
+LIBS += ../../libq.b/$(objdir)/libq -lm
 ifeq ($(os),Linux)
-  LIBS += -lrt
+	CFLAGS += -static
+	LIBS += -lrt
 endif
+LIBS += -lpthread
