@@ -109,20 +109,13 @@ void test_bt_level (int n, int level)
 	k_init();
 	start = nsecs();
 	for (i = 0; i < n; i++) {
-//PRd(i);
-//bt_print(&tree);
-//if (i > 111) bt_print(&tree);
 		if (k_should_delete(count, level)) {
 			key = k_delete_rand();
-//PRu(key);
 			rc = bt_delete(&tree, key);
-//bt_print(&tree);
-//Pause();
 			if (rc) fatal("delete key=%lld", key);
 			--count;
 		} else {
 			key = k_rand_key();
-//PRu(key);
 			k_add(key);
 			rc = bt_insert(&tree, key);
 			if (rc) fatal("bt_insert key=%lld", key);
@@ -132,11 +125,7 @@ void test_bt_level (int n, int level)
 	finish = nsecs();
 	total = finish - start;
 	printf("%lld nsecs  %g nsecs/op\n", total, (double)total/(double)n);
-//	bt_audit(&tree);
-//bt_print(&tree);
 //	pr_next(&tree);
-//printf("\n");
-	//bt_audit(&tree);
 	if (Option.print) bt_print(&tree);
 	pr_audit(&tree);
 }

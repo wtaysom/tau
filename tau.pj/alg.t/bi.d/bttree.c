@@ -355,41 +355,6 @@ FN;
 	}
 }
 
-#if 0
-static void delete_node (BtNode_s **dp)
-{
-	BtNode_s **np = dp;
-	BtNode_s *deletee;
-	BtNode_s *node;
-	deletee = *dp;
-	if (!deletee->right) {
-		*np = deletee->left;
-		free(deletee);
-		return;
-	}
-	np = &deletee->right;
-	node = *np;
-	if (!node->left) {
-		node->left = deletee->left;
-		*dp = node;
-		free(deletee);
-		return;
-	}
-	for (;;) {
-		np = &node->left;
-		node = *np;
-		if (!node->left) {
-			*dp = node;
-			*np = node->right;
-			node->right = deletee->right;
-			node->left = deletee->left;
-			free(deletee);
-			return;
-		}
-	}
-}
-#else
-
 static void leaf_delete (BtNode_s *leaf, u64 key)
 {
 FN;
@@ -558,4 +523,3 @@ BtAudit_s bt_audit (BtTree_s *tree)
 	audit_tree(node, &audit, 0);
 	return audit;
 }
-#endif
