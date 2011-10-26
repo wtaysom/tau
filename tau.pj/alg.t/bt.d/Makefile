@@ -15,9 +15,7 @@
 #LIBS += /usr/local/include/readline
 #LIBS += /Users/taysom/src/readline-6.1/shlib/readline.so
 #LIBS += /usr/lib/libreadline.dylib
-CFLAGS += -rdynamic
 include ../../mk/default.mk
-LIBS += -lq
 ##os := $(system uname)
 ##ifeq ($(os),Linux)
 ##	LIBS += -lreadline

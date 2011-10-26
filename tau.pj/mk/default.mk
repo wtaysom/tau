@@ -45,6 +45,12 @@ CFLAGS +=-g -O -Wall -Wstrict-prototypes -Werror \
 	-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 \
 	$(.INCLUDES) $(INC) \
 
+LIBS   += $(makedir)../libq.b/$(objdir)/libq
+ifeq ($(os),Linux)
+	LIBS   += -lrt
+endif
+
+
 $(objdir)/%.o : %.c Makefile $(headers)
 	@ mkdir -p $(objdir)
 	$(CC) $(CFLAGS) -c $< -o $@

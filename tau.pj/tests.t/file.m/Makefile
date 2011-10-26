@@ -14,11 +14,5 @@
 
 
 include ../../mk/multi.mk
-LIBS += ../../libq.b/$(objdir)/libq -lm
-ifeq ($(os),Linux)
-	# So we can run it on ChromeOS
-	CFLAGS += -static
-	LIBS += -lrt
-endif
-LIBS += -lpthread
+LIBS += -lm -lpthread
 
