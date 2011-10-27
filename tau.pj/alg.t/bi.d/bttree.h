@@ -20,6 +20,7 @@ typedef struct BtAudit_s {
 typedef struct BtStat_s {
 	u64 num_inserts;
 	u64 num_deletes;
+	u64 num_finds;
 	u64 num_grow;
 	u64 num_shrink;
 	u64 num_split;
@@ -34,11 +35,11 @@ typedef struct BtTree_s {
 BtStat_s bt_stats(BtTree_s *tree);
 BtAudit_s bt_audit (BtTree_s *tree);
 
-int bt_print (BtTree_s *tree);
-int bt_find  (BtTree_s *tree, u64 key);
-u64 bt_next  (BtTree_s *tree, u64 key);
-int bt_insert(BtTree_s *tree, u64 key);
-int bt_delete(BtTree_s *tree, u64 key);
+int  bt_print (BtTree_s *tree);
+bool bt_find  (BtTree_s *tree, u64 key);
+u64  bt_next  (BtTree_s *tree, u64 key);
+int  bt_insert(BtTree_s *tree, u64 key);
+int  bt_delete(BtTree_s *tree, u64 key);
 
 void bt_pr_path(BtTree_s *tree, u64 key);
 

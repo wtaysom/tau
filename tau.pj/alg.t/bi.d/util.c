@@ -159,12 +159,17 @@ void k_seed (u64 seed)
 
 u64 k_rand_key (void)
 {
-	return Key++;
+	return twister_random();
 #if 0
 	return Key++;
 	return twister_urand(10000);
 	return twister_random();
 #endif
+}
+
+bool k_rand_percent (unint percent)
+{
+	return twister_urand(100) < percent;
 }
 
 static Rec_s *R;

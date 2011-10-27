@@ -26,5 +26,6 @@ void test_bi_level(int n, int level);
 void test_jsw_level(int n, int level);
 void test_bt(int n);
 void test_bt_level(int n, int level);
+void test_bt_find(int n, int level);
 
 #endif

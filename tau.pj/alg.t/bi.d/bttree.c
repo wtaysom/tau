@@ -150,30 +150,6 @@ int bt_print (BtTree_s *tree)
 
 #if 0
 
-int bt_find (BtTree_s *tree, u64 key)
-{
-	BtNode_s *node = tree->root;
-	while (node) {
-		if (key == node->key) {
-			return 0;
-		}
-		if (key < node->key) {
-			node = node->left;
-		} else {
-			node = node->right;
-		}
-	}
-	return -1;
-}
-
-u64 bt_first (BtTree_s *tree)
-{
-	BtNode_s *node = tree->root;
-	if (!node) return 0;
-	while (node->left) node = node->left;
-	return node->key;
-}
-
 u64 bt_next (BtTree_s *tree, u64 key)
 {
 	BtNode_s *node = tree->root;
@@ -484,11 +460,36 @@ static void audit_leaf (BtNode_s *node, BtAudit_s *audit, unint depth)
 	audit->num_lf_keys += node->num;
 }
 
+bool bt_find (BtTree_s *tree, u64 key)
+{
+	BtNode_s	*node = tree->root;
+	unint		i;
+
+	if (!node) return FALSE;
+
+	while (!node->is_leaf) {
+		for (i = 0; i < node->num; i++) {
+			if (key < node->twig[i].key) {
+				break;
+			}
+		}
+		node = node->twig[i - 1].node;
+	}
+	for (i = 0; i < node->num; i++) {
+		if (node->key[i] == key) {
+			++tree->stat.num_finds;
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
 static void audit_tree (BtNode_s *node, BtAudit_s *audit, unint depth);
 
 static void audit_branch (BtNode_s *node, BtAudit_s *audit, unint depth)
 {
-	unint i;
+	unint	i;
+
 	audit_tree(node->first, audit, depth + 1);
 	assert(node->num <= NUM_TWIGS);
 	for (i = 0; i < node->num; i++) {
@@ -513,13 +514,58 @@ static void audit_tree (BtNode_s *node, BtAudit_s *audit, unint depth)
 	}
 }
 
-u64 bt_next (BtTree_s *tree, u64 key) { fatal("Not implemeted"); return 0; }
 BtAudit_s bt_audit (BtTree_s *tree)
 {
-	BtAudit_s audit = { 0 };
-	BtNode_s *node = tree->root;
+	BtAudit_s	audit = { 0 };
+	BtNode_s	*node = tree->root;
+
 	printf("NUM_KEYS=%d NUM_TWIGS=%d\n", NUM_KEYS, NUM_TWIGS);
 	if (!node) return audit;
 	audit_tree(node, &audit, 0);
 	return audit;
 }
+
+static u64 first (BtNode_s *node)
+{
+	if (!node) return 0;
+	while (!node->is_leaf) {
+		node = node->first;
+	}
+	assert(node->num);	// Have to assume no leaves are empty
+	return node->key[0];
+}
+
+u64 bt_first (BtTree_s *tree)
+{
+	return first(tree->root);
+}
+
+u64 bt_next (BtTree_s *tree, u64 key)
+{
+	BtNode_s	*node = tree->root;
+	BtNode_s	*nextrt = NULL;
+	unint		i;
+
+	if (!key) return first(node);
+	while (!node->is_leaf) {
+		for (i = 0; i < node->num; i++) {
+			if (key < node->twig[i].key) {
+				nextrt = node->twig[i].node;
+				break;
+			}
+		}
+		node = node->twig[i - 1].node;
+	}
+	for (i = 0; i < node->num; i++) {
+		if (node->key[i] == key) {
+			++i;
+			if (i < node->num) {
+				return node->key[i];
+			} else {	/* last key in leaf */
+				return first(nextrt);
+			}		
+		}
+	}
+	return 0;
+}
+

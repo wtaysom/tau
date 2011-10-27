@@ -28,6 +28,7 @@ u64 k_get_rand(void);
 u64 k_delete_rand(void);
 int k_should_delete(s64 count, s64 level);
 u64 k_rand_key(void);
+bool k_rand_percent(unint percent);
 
 void r_add(Rec_s rec);
 snint r_rand_index(void);

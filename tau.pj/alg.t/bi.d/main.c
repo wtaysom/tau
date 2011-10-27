@@ -77,10 +77,7 @@ void myoptions(int argc, char *argv[])
 int main(int argc, char *argv[])
 {
 	myoptions(argc, argv);
-	test_jsw_level(Option.iterations, Option.level);
-	test_bt_level(Option.iterations, Option.level);
-	test_jsw_level(Option.iterations, Option.level);
-	//test_ibi_level(Option.iterations, Option.level);
+	test_bt_find(Option.iterations, Option.level);
 	return 0;
 }
 

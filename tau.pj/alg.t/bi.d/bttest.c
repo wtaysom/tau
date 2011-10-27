@@ -36,11 +36,13 @@ static void pr_audit (BtTree_s *tree)
 		a.num_br_keys,
 		(double)a.num_lf_keys / (double)a.num_leaves);
 	printf("stats:\n"
-		"num insertes=%lld\n"
+		"num inserts =%lld\n"
 		"num deletes =%lld\n"
+		"num finds   =%lld\n"
 		"num recs    =%lld\n",
 		tree->stat.num_inserts,
 		tree->stat.num_deletes,
+		tree->stat.num_finds,
 		tree->stat.num_inserts - tree->stat.num_deletes);
 }
 
@@ -66,7 +68,6 @@ if (Option.print)
 }
 #endif
 
-#if 0
 static void pr_next (BtTree_s *tree)
 {
 	u64 key = 0;
@@ -77,7 +78,6 @@ static void pr_next (BtTree_s *tree)
 		printf("%llu\n", key);
 	}
 }
-#endif
 
 void test_bt (int n)
 {
@@ -126,6 +126,49 @@ void test_bt_level (int n, int level)
 	total = finish - start;
 	printf("%lld nsecs  %g nsecs/op\n", total, (double)total/(double)n);
 //	pr_next(&tree);
+	if (Option.print) bt_print(&tree);
+	pr_audit(&tree);
+}
+
+void test_bt_find (int n, int level)
+{
+	BtTree_s tree = { 0 };
+	u64 key;
+	s64 count = 0;
+	int i;
+	int rc;
+	u64 start, finish, total;
+
+	k_seed(1);
+	k_init();
+	start = nsecs();
+	for (i = 0; i < n; i++) {
+		if (count && k_rand_percent(80)) {
+			key = k_get_rand();
+			assert(key);
+			if (!bt_find(&tree, key)) {
+				bt_print(&tree);
+				fatal("find key=%lld", key);
+			}
+		} else {
+			if (k_should_delete(count, level)) {
+				key = k_delete_rand();
+				rc = bt_delete(&tree, key);
+				if (rc) fatal("delete key=%lld", key);
+				--count;
+			} else {
+				key = k_rand_key();
+				k_add(key);
+				rc = bt_insert(&tree, key);
+				if (rc) fatal("bt_insert key=%lld", key);
+				++count;
+			}
+		}
+	}
+	finish = nsecs();
+	total = finish - start;
+	printf("%lld nsecs  %g nsecs/op\n", total, (double)total/(double)n);
+	pr_next(&tree);
 	if (Option.print) bt_print(&tree);
 	pr_audit(&tree);
 }
