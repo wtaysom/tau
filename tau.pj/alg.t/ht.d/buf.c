@@ -57,10 +57,10 @@ FN;
 	return dev;
 }
 
-void dev_block(Dev_s *dev, Buf_s *b)
+void dev_blknum(Dev_s *dev, Buf_s *b)
 {
 FN;
-	b->block = dev->next++;
+	b->blknum = dev->next++;
 	memset(b->d, 0, dev->block_size);
 }
 
@@ -69,9 +69,9 @@ void dev_flush(Buf_s *b)
 //FN;
 	Dev_s *dev = b->cache->dev;
 	int rc = pwrite(dev->fd, b->d, dev->block_size,
-			b->block * dev->block_size);
+			b->blknum * dev->block_size);
 	if (rc == -1) {
-		fatal("pwrite of %s at %lld:", dev->name, b->block);
+		fatal("pwrite of %s at %lld:", dev->name, b->blknum);
 	}
 }
 
@@ -80,10 +80,10 @@ void dev_fill(Buf_s *b)
 FN;
 	Dev_s *dev = b->cache->dev;
 	int rc = pread(dev->fd, b->d, dev->block_size,
-			b->block * dev->block_size);
+			b->blknum * dev->block_size);
 
 	if (rc == -1) {
-		fatal("pread of %s at %lld:", dev->name, b->block);
+		fatal("pread of %s at %lld:", dev->name, b->blknum);
 	}
 	b->crc = crc64(b->d, dev->block_size);
 }
@@ -114,13 +114,13 @@ FN;
 }
 
 // TODO(taysom) Implement a hash lookup
-Buf_s *lookup(Cache_s *cache, u64 block)
+Buf_s *lookup(Cache_s *cache, Blknum_t blknum)
 {
 FN;
 	int i;
 
 	for (i = 0; i < cache->stat.numbufs; i++) {
-		if (cache->buf[i].block == block) {
+		if (cache->buf[i].blknum == blknum) {
 			++cache->buf[i].inuse;
 			++cache->stat.gets;
 			++cache->stat.hits;
@@ -161,28 +161,28 @@ FN;
 	Buf_s *b;
 
 	b = victim(cache);
-	dev_block(cache->dev, b);
+	dev_blknum(cache->dev, b);
 	b->dirty = TRUE;
 	b->crc = 0;
 	return b;
 }
 
-Buf_s *buf_get(Cache_s *cache, u64 block)
+Buf_s *buf_get(Cache_s *cache, Blknum_t blknum)
 {
 FN;
 	Buf_s *b;
 
-	assert(block != 0);
-	b = lookup(cache, block);
+	assert(blknum != 0);
+	b = lookup(cache, blknum);
 	if (!b) {
 		b = victim(cache);
-		b->block = block;
+		b->blknum = blknum;
 		dev_fill(b);
 	}
 	b->clock = TRUE;
 //b->dirty = TRUE;
-	assert(block == b->block);
-	assert(b->block == ((Head_s *)b->d)->block);
+	assert(blknum == b->blknum);
+	assert(b->blknum == ((Node_s *)b->d)->blknum);
 	return b;
 }
 
@@ -192,7 +192,7 @@ FN;
 	Buf_s *b;
 
 	b = victim(cache);
-	b->block = 0;
+	b->blknum = 0;
 	return b;
 }
 
@@ -203,7 +203,7 @@ FN;
 	Cache_s *cache = b->cache;
 
 	*bp = NULL;
-	assert(b->block == ((Head_s *)b->d)->block);
+	assert(b->blknum == ((Node_s *)b->d)->blknum);
 	assert(b->inuse > 0);
 	++cache->stat.puts;
 	--b->inuse;
@@ -211,7 +211,7 @@ FN;
 		u64 crc = crc64(b->d, b->cache->dev->block_size);
 		if (b->dirty) {
 			if (crc == b->crc) {
-				printf("Didn't change %lld\n", b->block);
+				printf("Didn't change %lld\n", b->blknum);
 			}
 			assert(crc != b->crc);
 			b->crc = crc;
@@ -249,12 +249,12 @@ FN;
 	Cache_s *cache = b->cache;
 
 	*bp = NULL;
-	assert(b->block == ((Head_s *)b->d)->block);
+	assert(b->blknum == ((Node_s *)b->d)->blknum);
 	assert(b->inuse > 0);
 	++cache->stat.puts;
 	--b->inuse;
 	if (!b->inuse) {
-		b->block = 0;
+		b->blknum = 0;
 	}
 	//XXX: Don't know what to do yet with freed block
 }
@@ -265,7 +265,7 @@ FN;
 	int i;
 
 	for (i = 0; i < cache->stat.numbufs; i++) {
-		cache->buf[i].block = 0;
+		cache->buf[i].blknum = 0;
 	}
 }
 
