@@ -67,11 +67,6 @@ typedef struct Apply_s {
 	void *user;
 } Apply_s;
 
-typedef struct Hrec_s {
-	Key_t	key;
-	Lump_s	val;
-} Hrec_s;
-
 typedef struct Op_s {
 	Htree_s *tree;
 	Buf_s *parent;
@@ -239,6 +234,11 @@ static void pr_chars (int n, u8 *a)
 
 }
 
+static void pr_key (Key_t key)
+{
+	printf("%llu", (u64)key);
+}
+
 static void pr_lump (Lump_s a)
 {
 	enum { MAX_PRINT = 32 };
@@ -371,9 +371,13 @@ FN;
 	return twig;
 }
 
+void key_dump(Key_t key)
+{
+	printf("%llu", (u64)key);
+}
+
 void lump_dump(Lump_s a)
 {
-FN;
 #if 0
 	int i;
 
@@ -1395,11 +1399,6 @@ FN;
 		}
 		op->buf = t_get(op->tree, blknum);
 		node = op->buf->d;
-		if (node->is_split) {
-			if (br_store(op)) return FAILURE;
-			buf_dirty(op->parent);
-			continue;
-		}
 		if (node->free > REBALANCE) {
 			if (rebalance(op)) return FAILURE;
 			node = op->buf->d;
@@ -1457,11 +1456,12 @@ void t_dump(Htree_s *t)
 	//cache_balanced(t->cache);
 }
 
-bool pr_key (Node_s *node, unint i)
+bool pr_key_leaf (Node_s *node, unint i)
 {
 	unint size;
 	unint x;
 	u8 *start;
+	Key_t key;
 
 	if (i >= node->num_recs) {
 		printf("key index >= num_recs %ld >= %d\n",
@@ -1475,15 +1475,15 @@ bool pr_key (Node_s *node, unint i)
 		return FALSE;
 	}
 	start = &((u8 *)node)[x];
-	size = *start++;
-	size |= (*start++) << 8;
+	UNPACK(start, key);
+	size = sizeof(Key_t);
 	if (x + size >= SZ_BUF) {
 		printf("key size at %ld offset %ld is too big %ld\n",
 			i, x, size);
 		return FALSE;
 	}
 	printf(" %4ld, %4ld:", x, size);
-	pr_lump(lumpmk(size, start));
+	pr_key(key);
 	putchar('\n');
 	return TRUE;
 }
@@ -1626,10 +1626,10 @@ void pr_branch(Node_s *node)
 	unint i;
 
 	pr_node(node, 0);
+	printf(" first: %llu\n", (u64)node->first);
 	for (i = 0; i < node->num_recs; i++) {
 		pr_twig(node, i);
 	}
-	printf(" last: %lld\n", node->last);
 }
 
 void pr_node(Node_s *node)
@@ -1654,13 +1654,10 @@ static void pr_all_leaves(Buf_s *buf)
 	for (i = 0; i < node->num_recs; i++) {
 		rec = get_rec(node, i);
 		printf("%4ld. ", Recnum++);
-		lump_dump(rec.key);
+		key_dump(rec.key);
 		printf("\t");
 		lump_dump(rec.val);
 		printf("\n");
-	}
-	if (node->is_split) {
-		pr_all_nodes(buf->user, node->last);
 	}
 }
 
@@ -1670,11 +1667,11 @@ static void pr_all_branches(Buf_s *buf)
 	Blknum_t blknum;
 	unint i;
 
+	pr_all_nodes(buf->user, node->first);
 	for (i = 0; i < node->num_recs; i++) {
 		blknum = get_blknum(node, i);
 		pr_all_nodes(buf->user, blknum);
 	}
-	pr_all_nodes(buf->user, node->last);
 }
 
 static void pr_all_nodes(Htree_s *t, Blknum_t blknum)
@@ -1721,9 +1718,6 @@ static int lf_map(Buf_s *buf, Apply_s apply)
 		rc = apply.func(rec, apply.tree, apply.user);
 		if (rc) return rc;
 	}
-	if (node->is_split) {
-		return node_map(buf->user, node->last, apply);
-	}
 	return 0;
 }
 
@@ -1734,12 +1728,14 @@ static int br_map(Buf_s *buf, Apply_s apply)
 	unint i;
 	int rc;
 
+	rc = node_map(buf->user, node->first, apply);
+	if (rc) return rc;
 	for (i = 0; i < node->num_recs; i++) {
 		blknum = get_blknum(node, i);
 		rc = node_map(buf->user, blknum, apply);
 		if (rc) return rc;
 	}
-	return node_map(buf->user, node->last, apply);
+	return 0;
 }
 
 static int node_map(Htree_s *t, Blknum_t blknum, Apply_s apply)
@@ -1777,19 +1773,18 @@ int t_map(Htree_s *t, Apply_f func, void *sys, void *user)
 
 static int map_rec_audit (Hrec_s rec, Htree_s *t, void *user)
 {
-	Lump_s *old = user;
+	Key_t *oldkey = user;
 
-	if (cmplump(rec.key, *old) < 0) {
+	if (rec.key < *oldkey) {
 		t_dump(t);
-		pr_lump(rec.key);
+		pr_key(rec.key);
 		printf(" <= ");
-		pr_lump(*old);
+		pr_key(*oldkey);
 		printf("  ");
 		fatal("keys out of order");
 		return FAILURE;
 	}
-	freelump(*old);
-	*old = duplump(rec.key);
+	*oldkey = rec.key;
 	return 0;
 }
 
@@ -1811,9 +1806,6 @@ static int leaf_audit(Buf_s *buf, Audit_s *audit, int depth)
 	}
 #endif
 	audit->records += node->num_recs;
-	if (node->is_split) {
-		return node_audit(buf->user, node->last, audit, depth-1);
-	}
 	if (audit->max_depth) {
 		if (depth != audit->max_depth) {
 			t_dump(buf->user);
@@ -1834,13 +1826,14 @@ static int branch_audit(Buf_s *buf, Audit_s *audit, int depth)
 	int rc;
 
 	++audit->branches;
+	rc = node_audit(buf->user, node->first, audit, depth);
+	if (rc) return rc;
 	for (i = 0; i < node->num_recs; i++) {
 		blknum = get_blknum(node, i);
 		rc = node_audit(buf->user, blknum, audit, depth);
 		if (rc) return rc;
 	}
-	return node_audit(buf->user, node->last, audit,
-			node->is_split ? depth-1 : depth);
+	return 0;
 }
 
 static int node_audit(Htree_s *t, Blknum_t blknum, Audit_s *audit, int depth)
@@ -1852,7 +1845,6 @@ static int node_audit(Htree_s *t, Blknum_t blknum, Audit_s *audit, int depth)
 	if (!blknum) return rc;
 	buf = t_get(t, blknum);
 	node = buf->d;
-	if (node->is_split) ++audit->splits;
 	switch (node->kind) {
 	case LEAF:
 		rc = leaf_audit(buf, audit, depth+1);
@@ -1872,11 +1864,11 @@ static int node_audit(Htree_s *t, Blknum_t blknum, Audit_s *audit, int depth)
 
 int t_audit (Htree_s *t, Audit_s *audit)
 {
-	Lump_s old = Nil;
+	Key_t oldkey = 0;
 	int rc;
 
 	zero(*audit); 
-	rc = t_map(t, map_rec_audit, NULL, &old);
+	rc = t_map(t, map_rec_audit, NULL, &oldkey);
 	if (rc) {
 		printf("AUDIT FAILED %d\n", rc);
 		return rc;

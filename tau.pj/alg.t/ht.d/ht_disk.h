@@ -9,6 +9,10 @@
 #include <style.h>
 #endif
 
+#ifndef _BUF_H_
+#include <buf.h>
+#endif
+
 enum { LEAF = 1, BRANCH };
 
 #define TUESDAY 0
@@ -41,7 +45,7 @@ typedef struct Node_s {
 	Blknum_t	blknum;
 	union {
 		struct {
-			Blknum_t	frist;
+			Blknum_t	first;
 			Twig_s		twig[0];
 		};
 		struct {

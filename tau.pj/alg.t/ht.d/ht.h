@@ -28,7 +28,12 @@ enum {	HT_ERR_NOT_FOUND = 2000, /* Key not found */
 
 typedef struct Htree_s Htree_s;
 
-typedef int (*Apply_f)(Rec_s rec, Htree_s *t, void *user);
+typedef struct Hrec_s {
+	Key_t	key;
+	Lump_s	val;
+} Hrec_s;
+
+typedef int (*Apply_f)(Hrec_s rec, Htree_s *t, void *user);
 
 typedef struct Stat_s {
 	u64 new_leaves;
@@ -45,7 +50,6 @@ typedef struct Audit_s {
 	u64 leaves;
 	u64 branches;
 	u64 records;
-	u64 splits;
 	int max_depth;
 } Audit_s;
 
