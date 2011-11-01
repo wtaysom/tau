@@ -427,19 +427,17 @@ int bt_delete (BtTree_s *tree, u64 key)
 		node = tree->root;
 		++tree->stat.num_shrink;
 	}
-	for (;;) {
-		if (!node) fatal("Key %llu not found", key);
-		if (node->is_leaf) {
-			leaf_delete(node, key);
-			++tree->stat.num_deletes;
-			return 0;
-		}
+	while (node && !node->is_leaf) {
 		parent = node;
 		node = lookup(node, key);
 		if (is_sparse(node)) {
 			node = join(parent, key);
 		}
 	}
+	if (!node) fatal("Key %llu not found", key);
+	leaf_delete(node, key);
+	++tree->stat.num_deletes;
+	return 0;
 }
 
 static void audit_leaf (BtNode_s *node, BtAudit_s *audit, unint depth)

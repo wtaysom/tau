@@ -39,7 +39,7 @@ typedef struct Twig_s {
 typedef struct Node_s {
 	u8		is_leaf;
 	u8		unused1;
-	u16		num_recs;
+	u16		numrecs;
 	Blknum_t	blknum;
 	union {
 		struct {
@@ -56,9 +56,12 @@ typedef struct Node_s {
 
 enum {	BLOCK_SHIFT = 8,
 	BLOCK_SIZE  = BLOCK_SHIFT,
-	NUM_TWIGS   = (BLOCK_SIZE - sizeof(Node_s)) / sizeof(Twig_s),
+	MAX_FREE    = (BLOCK_SIZE - sizeof(Node_s)),
+	NUM_TWIGS   = MAX_FREE / sizeof(Twig_s),
 	TWIGS_LOWER_HALF = NUM_TWIGS / 2,
-	TWIGS_UPPER_HALF = NUM_TWIGS - TWIGS_LOWER_HALF };
+	TWIGS_UPPER_HALF = NUM_TWIGS - TWIGS_LOWER_HALF,
+	LEAF_SPLIT       = MAX_FREE / 3,
+	BRANCH_SPLIT     = NUM_TWIGS / 3};
 
 #define PACK(dst, data) memmove((dst), &(data), sizeof(data))
 #define UNPACK(src, data) memmove(&(data), (src), sizeof(data))
