@@ -167,8 +167,8 @@ void test_bt_find (int n, int level)
 	}
 	finish = nsecs();
 	total = finish - start;
-	printf("%lld nsecs  %g nsecs/op\n", total, (double)total/(double)n);
 	pr_next(&tree);
 	if (Option.print) bt_print(&tree);
 	pr_audit(&tree);
+	printf("%lld nsecs  %g nsecs/op\n", total, (double)total/(double)n);
 }
