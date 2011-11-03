@@ -52,8 +52,6 @@ typedef struct Err_s {
 	int err;
 } Err_s;
 
-#define SET_ERR(_e, _rc) (((_e).where = WHERE), ((_e).rc = (_rc)))
-
 struct Htree_s {
 	Cache_s *cache;
 	u64 root;
@@ -66,20 +64,6 @@ typedef struct Apply_s {
 	void *sys;
 	void *user;
 } Apply_s;
-
-typedef struct Op_s {
-	Htree_s *tree;
-	Buf_s *parent;
-	Buf_s *buf;
-	Buf_s *sibling;
-	int irec;  /* Record index */
-	Hrec_s r;
-	int size;
-	Err_s err;
-} Op_s;
-
-#define PRop(_op) pr_op(FN_ARG, # _op, _op)
-#define ERR(_err) t_err(FN_ARG, # _err, op, _err)
 
 void lump_dump(Lump_s a);
 void lf_dump(Buf_s *buf, int indent);
@@ -117,27 +101,6 @@ void cache_err (Htree_s *t)
 		(double)(cs.hits) / (cs.hits + cs.miss) * 100.);
 }
 
-int t_err(
-	const char *fn,
-	unsigned line,
-	const char *label,
-	Op_s *op,
-	int err)
-{
-	op->err.fn = fn;
-	op->err.line = line;
-	op->err.label = label;
-	op->err.err   = err;
-	printf("ERROR: %s<%d> %s: %d\n",
-		fn, line, label, err);
-
-	printf("t_err\n");
-	t_dump(op->tree);
-	cache_err(op->tree);
-exit(1);
-	return err;
-}
-
 Buf_s *t_get (Htree_s *t, Blknum_t blknum)
 {
 	Buf_s *buf = buf_get(t->cache, blknum);
@@ -145,19 +108,8 @@ Buf_s *t_get (Htree_s *t, Blknum_t blknum)
 	return buf;
 }
 
-bool pr_op(const char *fn, unsigned line, const char *label, Op_s *op)
-{
-	return print(fn, line,
-		"%s: tree=%p parent=%p buf=%p sibling=%p"
-		" irec=%d key=%.*s val=%.*s err=%d",
-		label, op->tree, op->parent, op->buf, op->sibling,
-		op->irec, op->r.key, op->val, op->err.err);
-}
-
-Stat_s t_get_stats (Htree_s *t)
-{ return t->stat; }
-CacheStat_s t_cache_stats (Htree_s *t)
-{ return cache_stats(t->cache); }
+Stat_s t_get_stats (Htree_s *t) { return t->stat; }
+CacheStat_s t_cache_stats (Htree_s *t) { return cache_stats(t->cache); }
 
 int usable(Node_s *node)
 {
@@ -1289,7 +1241,7 @@ int lf_delete(Op_s *op)
 FN;
 		i = leaf_eq(node, op->r.key);
 		if (i == -1) {
-			return ERR(HT_ERR_NOT_FOUND);
+			return HT_ERR_NOT_FOUND;
 		}
 		if (i == node->numrecs) {
 			if (node->is_split) {
@@ -1298,7 +1250,7 @@ FN;
 				op->buf = right;
 				node = op->buf->d;
 			} else {
-				return ERR(HT_ERR_NOT_FOUND);
+				return HT_ERR_NOT_FOUND;
 			}
 		} else {
 			delete_rec(node, i);
@@ -1483,6 +1435,7 @@ FN;
 
 static void join_leaf (Htree_s *t, Node_s *node, Buf_s *bchild, int irec)
 {
+	if (irec == node->numrecs) return;	/* No right sibling */
 }
 
 int t_delete(Htree_s *t, Key_t key)
@@ -1500,17 +1453,16 @@ FN;
 	node = buf->d;
 	while (node && node->numrecs == 0) {
 		if (node->is_leaf) {
-			t->root = NULL;
+			t->root = 0;
 		} else {
 			t->root = node->first;
 		}
 		buf_free(&buf);
 		if (!t->root) return HT_ERR_NOT_FOUND;
-		buf = t_get(t, t->root)
+		buf = t_get(t, t->root);
 		node = buf->d;
 	}
 	while (!node->is_leaf) {
-				rc = br_delete(t, buf, key);
 		irec = br_lt(node, key);
 		bchild = t_get(t, node->twig[irec - 1].blknum);
 		child = bchild->d;
