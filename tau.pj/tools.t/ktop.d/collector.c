@@ -21,6 +21,7 @@
 #include "collector.h"
 #include "ktop.h"
 #include "syscall.h"
+#include "token.h"
 #include "util.h"
 
 #define _STR(x) #x
@@ -54,76 +55,84 @@ Pidcall_s *Pidcall_bucket[PIDCALL_BUCKETS];
 int Sys_exit;
 int Sys_enter;
 
+static char Trace_path[MAX_PATH];
 static char *Event_path;
 
-static void init_kernel_release(void)
-{
-	if (kernel_release() < release_to_int("2.6.38")) {
-		Event_path = "events/syscalls/%s/enable";
-		Sys_exit = 21;
-		Sys_enter = 22;
-	} else {
-		Event_path = "events/raw_syscalls/%s/enable";
-		Sys_exit = 15;
-		Sys_enter = 16;
-	}
-}
-
-static const char *find_debugfs(void)
+static void find_trace_path(void)
 {
 	static const char tracing[] = "/tracing/";
-	static char debugfs[MAX_PATH + sizeof(tracing) + 1];
-	static int debugfs_found;
 	char type[100];
 	FILE *fp;
 
-	if (debugfs_found) return debugfs;
 	/*
 	 * Have to find where "debugfs" is mounted.
 	 */
 	if (!(fp = fopen("/proc/mounts","r"))) {
 		perror("/proc/mounts");
-		return NULL;
+		return;
 	}
 	while (fscanf(fp, "%*s %"
 			STR(MAX_PATH)
 			"s %99s %*s %*d %*d\n",
-			debugfs, type) == 2) {
+			Trace_path, type) == 2) {
 		if (strcmp(type, "debugfs") == 0) {
-			strcat(debugfs, tracing);
-			debugfs_found = 1;
+			strcat(Trace_path, tracing);
 			fclose(fp);
-			return debugfs;
+			return;
 		}
 	}
 	fclose(fp);
 	fprintf(stderr, "debugfs not mounted");
-	return NULL;
 }
 
-static const char *tracing_file(const char *file_name)
-{
-	static char trace_file[MAX_PATH];
-	snprintf(trace_file, MAX_PATH, "%s/%s", find_debugfs(), file_name);
-	return trace_file;
-}
-
-static void update_event(const char *name, const char *update)
+static int get_event_id (char *sys_call)
 {
 	char file_name[MAX_PATH];
-	const char *trace_file;
+	char *t;
+
+	snprintf(file_name, MAX_PATH,
+		"%s/%s/%s/format",
+		Trace_path, Event_path, sys_call);
+	open_token(file_name, " \n\t");
+	for (;;) {
+		t = get_token();
+		if (!t) break;
+		if (strcmp(t, "ID:") == 0) {
+			t =get_token();
+			if (!t) break;
+			return atoi(t);
+		}
+	}
+	fatal("event id for %s not found in %s", sys_call, file_name);
+	return 0;
+}
+
+static void init_tracing(void)
+{
+	find_trace_path();
+	if (kernel_release() < release_to_int("2.6.38")) {
+		Event_path = "events/syscalls";
+	} else {
+		Event_path = "events/raw_syscalls";
+	}
+}
+
+static void update_event(const char *sys_call, const char *update)
+{
+	char file_name[MAX_PATH];
 	FILE *file;
 	int rc;
 
-	snprintf(file_name, MAX_PATH, Event_path, name);
-	trace_file = tracing_file(file_name);
-	file = fopen(trace_file, "w");
+	snprintf(file_name, MAX_PATH,
+		"%s/%s/%s/enable",
+		Trace_path, Event_path, sys_call);
+	file = fopen(file_name, "w");
 	if (!file) {
-		fatal("fopen %s:", trace_file);
+		fatal("fopen %s:", file_name);
 	}
 	rc = fprintf(file, "%s\n", update);
 	if (rc < 0) {
-		fatal("fprintf %s:", trace_file);
+		fatal("fprintf %s:", file_name);
 	}
 	fclose(file);
 }
@@ -134,6 +143,7 @@ static const char Disable[] = "0";
 static void enable_sys_enter(void)
 {
 	update_event("sys_enter", Enable);
+	Sys_enter = get_event_id("sys_enter");
 }
 
 static void disable_sys_enter (void)
@@ -144,6 +154,7 @@ static void disable_sys_enter (void)
 static void enable_sys_exit(void)
 {
 	update_event("sys_exit", Enable);
+	Sys_exit = get_event_id("sys_exit");
 }
 
 static void disable_sys_exit (void)
@@ -156,8 +167,10 @@ int open_raw(int cpu)
 	char name[MAX_NAME];
 	int fd;
 
-	snprintf(name, sizeof(name), "per_cpu/cpu%d/trace_pipe_raw", cpu);
-	fd = open(tracing_file(name), O_RDONLY);
+	snprintf(name, sizeof(name),
+		"%s/per_cpu/cpu%d/trace_pipe_raw",
+		Trace_path, cpu);
+	fd = open(name, O_RDONLY);
 	if (fd == -1) {
 		fatal("open %s:", name);
 	}
@@ -419,7 +432,7 @@ void start_collector(void)
 	int i;
 	int rc;
 
-	init_kernel_release();
+	init_tracing();
 	enable_sys_enter();
 	if (Trace_exit) {
 		enable_sys_exit();
