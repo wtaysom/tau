@@ -75,6 +75,21 @@ void f_sum (double x)
 	}
 }
 
+double get_avg (void)
+{
+	return Sum / N;
+}
+
+double get_max (void)
+{
+	return Max;
+}
+
+double get_min (void)
+{
+	return Min;
+}
+
 void pr_sum (char *msg)
 {
 	double	avg;

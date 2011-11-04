@@ -67,11 +67,11 @@ Lump_s seq_lump(void)
 {
 	enum { MAX_KEY = 4 };
 
-	static int n = 0;
-	int x = n++;
-	char *s;
-	int i;
-	int r;
+	static int	n = 0;
+	int	x = n++;
+	char	*s;
+	int	i;
+	int	r;
 
 	s = malloc(MAX_KEY);
 	i = MAX_KEY - 1;
@@ -93,9 +93,16 @@ Key_t rnd_key (void)
 	return twister_random();
 }
 
+Key_t seq_key (void)
+{
+	static Key_t	key = 0;
+
+	return ++key;
+}
+
 void pr_cach_stats (Htree_s *t)
 {
-	CacheStat_s cs;
+	CacheStat_s	cs;
 	cs = t_cache_stats(t);
 	printf("cache stats:\n"
 		"  num bufs =%8d\n"
@@ -123,7 +130,7 @@ void pr_audit (Audit_s *a)
 
 int audit (Htree_s *t)
 {
-	Audit_s a;
+	Audit_s	a;
 	int rc = t_audit(t, &a);
 	return rc;
 }
@@ -131,8 +138,8 @@ int audit (Htree_s *t)
 void pr_lump (Lump_s a)
 {
 	enum { MAX_PRINT = 32 };
-	int i;
-	int size;
+	int	i;
+	int	size;
 
 	size = a.size;
 	if (size > MAX_PRINT) size = MAX_PRINT;
@@ -145,12 +152,17 @@ void pr_lump (Lump_s a)
 	}
 }
 
-static int pr_rec (Rec_s rec, Htree_s *t, void *user)
+void pr_key (Key_t key)
+{
+	printf("%llu", (u64)key);
+}
+
+static int pr_rec (Hrec_s rec, Htree_s *t, void *user)
 {
 	u64 *recnum = user;
 
 	printf("%4lld. ", ++*recnum);
-	pr_lump(rec.key);
+	pr_key(rec.key);
 	printf(" = ");
 	pr_lump(rec.val);
 	printf("\n");
@@ -193,13 +205,7 @@ enum { NUM_BUCKETS = (1 << 20) + 1,
 	DYNA_START  = 1,
 	DYNA_MAX    = 1 << 27 };
 
-typedef void (*recFunc)(Lump_s key, Lump_s val, void *user);
-
-typedef struct Hrec_s Hrec_s;
-struct Hrec_s {
-	Key_t	key;
-	Lump_s	val;
-};
+typedef void (*recFunc)(Key_t key, Lump_s val, void *user);
 
 static Hrec_s *R;
 static Hrec_s *Next;
@@ -252,7 +258,7 @@ Hrec_s r_get_rand (void)
 	snint x = r_rand_index();
 
 	if (x == -1) {
-		Hrec_s r = { Nil, Nil };
+		Hrec_s r = { 0, Nil };
 		return r;
 	}
 	return R[x];
@@ -263,7 +269,7 @@ Key_t r_delete_rand (void)
 	snint x = r_rand_index();
 	Key_t key;
 
-	if (x == -1) return Nil;
+	if (x == -1) return 0;
 	key = R[x].key;
 	R[x] = *--Next;
 	return key;
@@ -284,17 +290,16 @@ void test1(int n)
 void test_seq(int n)
 {
 	Htree_s *t;
-	Lump_s key;
+	Key_t key;
 	Lump_s val;
 	unint i;
 
 	if (FALSE) seed_random();
 	t = t_new(".tfile", NUM_BUFS);
 	for (i = 0; i < n; i++) {
-		key = seq_lump();
+		key = seq_key();
 		val = rnd_lump();
 		t_insert(t, key, val);
-		freelump(key);
 		freelump(val);
 	}
 	t_print(t);
@@ -302,18 +307,17 @@ void test_seq(int n)
 
 void test_rnd(int n)
 {
-	Htree_s *t;
-	Lump_s key;
-	Lump_s val;
-	unint i;
+	Htree_s	*t;
+	Key_t	key;
+	Lump_s	val;
+	unint	i;
 
 	if (FALSE) seed_random();
 	t = t_new(".tfile", NUM_BUFS);
 	for (i = 0; i < n; i++) {
-		key = fixed_lump(7);
+		key = rnd_key();
 		val = rnd_lump();
 		t_insert(t, key, val);
-		freelump(key);
 		freelump(val);
 	}
 // t_print(t);
@@ -323,34 +327,34 @@ void test_rnd(int n)
 	pr_stats(t);
 }
 
-void find_find (Lump_s key, Lump_s val, void *user)
+void find_find (Key_t key, Lump_s val, void *user)
 {
-	Htree_s *t = user;
-	Lump_s fval;
-	int rc;
+	Htree_s	*t = user;
+	Lump_s	fval;
+	int	rc;
 
 	rc = t_find(t, key, &fval);
 	if (rc) {
-		fatal("Didn't find %s : rc=%d", key.d, rc);
+		fatal("Didn't find %llu : rc=%d", (u64)key, rc);
 	} else if (cmplump(val, fval) != 0) {
 		fatal("Val not the same %s!=%s", val.d, fval.d);
 	} else {
-		printf("%s:%s\n", key.d, fval.d);
+		printf("%llu:%s\n", (u64)key, fval.d);
 	}
 	freelump(fval);
 }
 
 void test_find(int n)
 {
-	Htree_s *t;
-	Lump_s key;
-	Lump_s val;
-	unint i;
+	Htree_s	*t;
+	Key_t	key;
+	Lump_s	val;
+	unint	i;
 
 	if (FALSE) seed_random();
 	t = t_new(".tfile", NUM_BUFS);
 	for (i = 0; i < n; i++) {
-		key = fixed_lump(7);
+		key = rnd_key();
 		val = rnd_lump();
 		r_add(key, val);
 		t_insert(t, key, val);
@@ -360,14 +364,14 @@ void test_find(int n)
 	pr_stats(t);
 }
 
-void delete (Lump_s key, Lump_s val, void *user)
+void delete (Key_t key, Lump_s val, void *user)
 {
 	Htree_s *t = user;
 	int rc;
 
 	rc = t_delete(t, key);
 	if (rc) {
-		fatal("Didn't find %s : rc=%d", key.d, rc);
+		fatal("Didn't find %llu : rc=%d", (u64)key, rc);
 	}
 }
 
@@ -381,7 +385,7 @@ void test_delete(int n)
 	if (FALSE) seed_random();
 	t = t_new(".tfile", NUM_BUFS);
 	for (i = 0; i < n; i++) {
-		key = fixed_lump(7);
+		key = rnd_key();
 		val = rnd_lump();
 		r_add(key, val);
 		t_insert(t, key, val);

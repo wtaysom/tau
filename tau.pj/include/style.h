@@ -219,8 +219,13 @@ typedef struct timeval		timeval_s;
 enum {
 	ONE_THOUSAND  = 1000,
 	ONE_MILLION   = ONE_THOUSAND * ONE_THOUSAND,
-	ONE_BILLION   = ONE_MILLION * ONE_THOUSAND
-};
+	ONE_BILLION   = ONE_MILLION * ONE_THOUSAND,
+	KIBI = 1ULL << 10,
+	MEBI = 1ULL << 20,
+	GIBI = 1ULL << 30,
+	TEBI = 1ULL << 40,
+	PEBI = 1ULL << 50,
+	EXBI = 1ULL << 60};
 
 #ifndef MAGIC_STRING
 	#define MAGIC_STRING(_x_)	# _x_

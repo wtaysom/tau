@@ -50,6 +50,9 @@ void q_sum (long long x);
 void f_sum (double x);
 void pr_sum (char *msg);
 void pr_sum_min_max (char *msg);
+double get_avg (void);
+double get_max (void);
+double get_min (void);
 
 char *date (unsigned long time);
 

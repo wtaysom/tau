@@ -125,6 +125,13 @@ int main (int argc, char *argv[])
 		stopTimer();
 		printf("size=%lld n=%d ", size, n);
 		prTimer();
+
+		printf("\t%6.4g MiB/s",
+			(double)(n * bufsize) / get_avg() / MEBI);
+
+		printf("\t%6.4g IOPs/sec",
+			(double)(n) / get_avg());
+
 		printf("\n");
 	}
 	close(fd);

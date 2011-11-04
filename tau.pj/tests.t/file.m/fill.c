@@ -26,36 +26,29 @@ bool	Done = FALSE;
 unint	Bufs_written;
 bool	Keep = FALSE;
 
-enum {	KiB = 1ULL<<10,
-	MiB = 1ULL<<20,
-	GiB = 1ULL<<30,
-	TiB = 1ULL<<40,
-	PiB = 1ULL<<50,
-	EiB = 1ULL<<60};
-
 void pr_human_bytes (u64 x)
 {
 	char	*suffix;
 	u64	y;
 
-	if (x >= EiB) {
+	if (x >= EXBI) {
 		suffix = "EiB";
-		y = EiB;
-	} else if (x >= PiB) {
+		y = EXBI;
+	} else if (x >= PEBI) {
 		suffix = "PiB";
-		y = PiB;
-	} else if (x >= TiB) {
+		y = PEBI;
+	} else if (x >= TEBI) {
 		suffix = "TiB";
-		y = TiB;
-	} else if (x >= GiB) {
+		y = TEBI;
+	} else if (x >= GIBI) {
 		suffix = "GiB";
-		y = GiB;
-	} else if (x >= MiB) {
+		y = GIBI;
+	} else if (x >= MEBI) {
 		suffix = "MiB";
-		y = MiB;
-	} else if (x >= KiB) {
+		y = MEBI;
+	} else if (x >= KIBI) {
 		suffix = "KiB";
-		y = KiB;
+		y = KIBI;
 	} else {
 		suffix = "B";
 		y = 1;
