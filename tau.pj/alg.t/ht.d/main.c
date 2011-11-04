@@ -18,6 +18,7 @@
 #include <eprintf.h>
 #include <mystdlib.h>
 #include <style.h>
+#include <twister.h>
 
 #include "ht.h"
 
@@ -43,7 +44,7 @@ char *rndstring(unint n)
 
 	s = malloc(n);
 	for (j = 0; j < n-1; j++) {
-		s[j] = 'a' + urand(26);
+		s[j] = 'a' + twister_urand(26);
 	}
 	s[j] = 0;
 	return s;
@@ -53,7 +54,7 @@ Lump_s rnd_lump(void)
 {
 	unint n;
 
-	n = urand(7) + 5;
+	n = twister_urand(7) + 5;
 	return lumpmk(n, rndstring(n));
 }
 
@@ -87,6 +88,11 @@ Lump_s seq_lump(void)
 	return lumpmk(MAX_KEY, s);
 }
 
+Key_t rnd_key (void)
+{
+	return twister_random();
+}
+
 void pr_cach_stats (Htree_s *t)
 {
 	CacheStat_s cs;
@@ -107,11 +113,10 @@ void pr_audit (Audit_s *a)
 {
 	printf("Audit:\n"
 		"  branches:  %8lld\n"
-		"  splits:    %8lld\n"
 		"  leaves:    %8lld\n"
 		"  records:   %8lld\n"
 		"  recs/leaf: %8g\n",
-		a->branches, a->splits,
+		a->branches,
 		a->leaves, a->records,
 		(double)a->records / a->leaves);
 }
@@ -190,19 +195,19 @@ enum { NUM_BUCKETS = (1 << 20) + 1,
 
 typedef void (*recFunc)(Lump_s key, Lump_s val, void *user);
 
-typedef struct Record_s Record_s;
-struct Record_s {
-	Lump_s  key;
-	Lump_s  val;
+typedef struct Hrec_s Hrec_s;
+struct Hrec_s {
+	Key_t	key;
+	Lump_s	val;
 };
 
-static Record_s *R;
-static Record_s *Next;
+static Hrec_s *R;
+static Hrec_s *Next;
 static unint Size;
 
-static void r_add(Lump_s key, Lump_s val)
+static void r_add (Key_t key, Lump_s val)
 {
-	Record_s *r;
+	Hrec_s *r;
 
 	if (!R) {
 		Size = DYNA_START;
@@ -226,7 +231,7 @@ static void r_add(Lump_s key, Lump_s val)
 
 void r_for_each (recFunc f, void *user)
 {
-	Record_s *r;
+	Hrec_s *r;
 
 	for (r = R; r < Next; r++) {
 		f(r->key, r->val, user);
@@ -239,24 +244,24 @@ static snint r_rand_index (void)
 
 	if (!R) return -1;
 	if (x == 0) return -1;
-	return urand(x);
+	return twister_urand(x);
 }
 
-Record_s r_get_rand (void)
+Hrec_s r_get_rand (void)
 {
 	snint x = r_rand_index();
 
 	if (x == -1) {
-		Record_s r = { Nil, Nil };
+		Hrec_s r = { Nil, Nil };
 		return r;
 	}
 	return R[x];
 }
 
-Lump_s r_delete_rand (void)
+Key_t r_delete_rand (void)
 {
 	snint x = r_rand_index();
-	Lump_s key;
+	Key_t key;
 
 	if (x == -1) return Nil;
 	key = R[x].key;
@@ -368,10 +373,10 @@ void delete (Lump_s key, Lump_s val, void *user)
 
 void test_delete(int n)
 {
-	Htree_s *t;
-	Lump_s key;
-	Lump_s val;
-	unint i;
+	Htree_s	*t;
+	Key_t	key;
+	Lump_s	val;
+	unint	i;
 
 	if (FALSE) seed_random();
 	t = t_new(".tfile", NUM_BUFS);
@@ -423,14 +428,14 @@ if (i >= 95266)
 printf("%d\n", i);
 #endif
 
-void test_level(int n, int level)
+void test_level (int n, int level)
 {
-	Htree_s *t;
-	Lump_s key;
-	Lump_s val;
-	s64 count = 0;
-	int i;
-	int rc;
+	Htree_s	*t;
+	Key_t	key;
+	Lump_s	val;
+	s64	count = 0;
+	int	i;
+	int	rc;
 
 	Option.debug = TRUE;
 	if (FALSE) seed_random();
@@ -440,15 +445,15 @@ if (i % 1000 == 0) fprintf(stderr, ".");
 		if (should_delete(count, level)) {
 			key = r_delete_rand();
 			rc = t_delete(t, key);
-			if (rc) fatal("delete key=%s", key.d);
+			if (rc) fatal("delete key=%lld",(u64)key);
 			--count;
 		} else {
-			key = fixed_lump(7);
+			key = rnd_key();;
 			val = rnd_lump();
 			r_add(key, val);
 			rc = t_insert(t, key, val);
-			if (rc) fatal("t_insert key=%s val=%s",
-					key.d, val.d);
+			if (rc) fatal("t_insert key=%lld val=%s",
+					(u64)key, val.d);
 			++count;
 		}
 		audit(t);

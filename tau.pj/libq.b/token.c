@@ -10,8 +10,8 @@
 #include <style.h>
 
 /*
- * Given a file, read it one line at a time, tokenize it,
- * set things up so we can pull things out. Not thread safe.
+ * Given a file, read a token at a time.
+ * Not thread safe.
  */
 
 enum {	MAX_TOKEN = 1024 };
@@ -31,9 +31,9 @@ void close_token (void)
 
 void open_token (char *file, char *delim)
 {
-	if (Fp) close_token();
+	if (Fp) fatal("Token in use");;
 	Fp = fopen(file, "r");
-	if (!Fp) warn("couldn't open %s", file);
+	if (!Fp) fatal("couldn't open %s", file);
 	Delim = strdup(delim);
 	if (!Delim) fatal("couldn't duplicate %s", delim);
 }

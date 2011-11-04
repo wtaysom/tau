@@ -98,11 +98,13 @@ static int get_event_id (char *sys_call)
 		t = get_token();
 		if (!t) break;
 		if (strcmp(t, "ID:") == 0) {
-			t =get_token();
+			t = get_token();
 			if (!t) break;
+			close_token();
 			return atoi(t);
 		}
 	}
+	close_token();
 	fatal("event id for %s not found in %s", sys_call, file_name);
 	return 0;
 }

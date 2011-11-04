@@ -54,13 +54,13 @@ typedef struct Audit_s {
 } Audit_s;
 
 Htree_s *t_new(char *file, int num_bufs);
-void t_dump(Htree_s *t);
+void t_dump  (Htree_s *t);
 int  t_insert(Htree_s *t, Key_t key, Lump_s val);
-int  t_find(Htree_s *t, Key_t key, Lump_s *val);
+int  t_find  (Htree_s *t, Key_t key, Lump_s *val);
 int  t_delete(Htree_s *t, Key_t key);
-void pr_all_records(Htree_s *t);
-int  t_map(Htree_s *t, Apply_f func, void *sys, void *user);
-int  t_audit(Htree_s *t, Audit_s *audit);
-Stat_s  t_get_stats(Htree_s *t);
+int  t_map   (Htree_s *t, Apply_f func, void *sys, void *user);
+int  t_audit (Htree_s *t, Audit_s *audit);
+Stat_s      t_get_stats(Htree_s *t);
 CacheStat_s t_cache_stats(Htree_s *t);
+void pr_all_records(Htree_s *t);
 #endif

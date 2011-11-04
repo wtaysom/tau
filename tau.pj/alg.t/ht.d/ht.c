@@ -41,28 +41,20 @@ enum {	MAX_U16 = (1 << 16) - 1,
 	SZ_U16  = sizeof(u16),
 	SZ_U64  = sizeof(u64),
 	SZ_HEAD = sizeof(Node_s),
-	SZ_LEAF_OVERHEAD   = 3 * SZ_U16,
-	SZ_BRANCH_OVERHEAD = 2 * SZ_U16,
+	SZ_LEAF_OVERHEAD   = 2 * SZ_U16,
 	REBALANCE = 2 * (SZ_BUF - SZ_HEAD) / 3 };
 
-typedef struct Err_s {
-	const char *fn;
-	const char *label;
-	int line;
-	int err;
-} Err_s;
-
 struct Htree_s {
-	Cache_s *cache;
-	u64 root;
-	Stat_s stat;
+	Cache_s	*cache;
+	u64	root;
+	Stat_s	stat;
 };
 
 typedef struct Apply_s {
-	Apply_f func;
-	Htree_s *tree;
-	void *sys;
-	void *user;
+	Apply_f	func;
+	Htree_s	*tree;
+	void	*sys;
+	void	*user;
 } Apply_s;
 
 void lump_dump(Lump_s a);
@@ -71,7 +63,7 @@ void br_dump(Buf_s *buf, int indent);
 void node_dump(Htree_s *t, Blknum_t blknum, int indent);
 void pr_leaf(Node_s *node);
 void pr_branch(Node_s *node);
-void pr_node(Node_s *node);
+void pr_node(Node_s *node, int indent);
 
 bool Dump_buf = FALSE;
 
@@ -90,12 +82,12 @@ void cache_err (Htree_s *t)
 {
 	CacheStat_s cs = cache_stats(t->cache);
 	printf("cache stats:\n"
-		"  num bufs =%8d\n"
-		"  gets     =%8lld\n"
-		"  puts     =%8lld\n"
-		"  hits     =%8lld\n"
-		"  miss     =%8lld\n"
-		"hit ratio  =%8g%%\n",
+		"  num bufs = %8d\n"
+		"  gets     = %8lld\n"
+		"  puts     = %8lld\n"
+		"  hits     = %8lld\n"
+		"  miss     = %8lld\n"
+		"hit ratio  = %8g%%\n",
 		cs.numbufs,
 		cs.gets, cs.puts, cs.hits, cs.miss,
 		(double)(cs.hits) / (cs.hits + cs.miss) * 100.);
@@ -108,7 +100,7 @@ Buf_s *t_get (Htree_s *t, Blknum_t blknum)
 	return buf;
 }
 
-Stat_s t_get_stats (Htree_s *t) { return t->stat; }
+Stat_s      t_get_stats   (Htree_s *t) { return t->stat; }
 CacheStat_s t_cache_stats (Htree_s *t) { return cache_stats(t->cache); }
 
 int usable(Node_s *node)
@@ -131,22 +123,24 @@ void pr_indent(int indent)
 	}
 }
 
-void pr_node(Node_s *node, int indent)
+void pr_head(Node_s *node, int indent)
 {
 	pr_indent(indent);
-	printf("%s "
-		"%lld numrecs %d "
-		"free %d "
-		"end %d "
-		"last %lld\n",
-		node->is_leaf ? "LEAF" : "BRANCH",
-		node->blknum,
-		node->numrecs,
-		node->free,
-		node->end,
-		node->last);
+	if (node->is_leaf) {
+		printf("LEAF %lld numrecs: %d free: %d end: %d\n",
+			node->blknum,
+			node->numrecs,
+			node->free,
+			node->end);
+	} else {
+		printf("BRANCH %lld numrecs: %d first: %lld\n",
+			node->blknum,
+			node->numrecs,
+			node->first);
+	}
 }
 
+#if 0
 void pr_buf(Buf_s *buf, int indent)
 {
 	enum { BYTES_PER_ROW = 16 };
@@ -342,7 +336,7 @@ void lump_dump(Lump_s a)
 
 void rec_dump (Hrec_s rec)
 {
-	lump_dump(rec.key);
+	key_dump(rec.key);
 	printf(" = ");
 	lump_dump(rec.val);
 	printf("\n");
@@ -1435,7 +1429,21 @@ FN;
 
 static void join_leaf (Htree_s *t, Node_s *node, Buf_s *bchild, int irec)
 {
+	Node_s	*child = bchild->d;
+	Buf_s	*bsibling;
+	Node_s	*sibling;
+
 	if (irec == node->numrecs) return;	/* No right sibling */
+
+	bsibling = t_get(t, node->twig[i].blknum);
+	sibling = bsibling->d;
+	if (inuse(sibling) < child->free) {
+		lf_compact(child);
+		for (i = 0; i
+		lf_rec_move(node, 
+	} else {
+		/* Rebalance */
+	}
 }
 
 int t_delete(Htree_s *t, Key_t key)
@@ -1906,3 +1914,5 @@ int t_audit (Htree_s *t, Audit_s *audit)
 	rc = node_audit(t, t->root, audit, 0);
 	return rc;
 }
+
+#endif
