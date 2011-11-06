@@ -277,13 +277,13 @@ Key_t r_delete_rand (void)
 
 void test1(int n)
 {
-	Lump_s key;
+	Lump_s val;
 	unint i;
 
 	for (i = 0; i < n; i++) {
-		key = seq_lump();
-		printf("%s\n", key.d);
-		freelump(key);
+		val = seq_lump();
+		printf("%s\n", val.d);
+		freelump(val);
 	}
 }
 
@@ -297,6 +297,7 @@ void test_seq(int n)
 	if (FALSE) seed_random();
 	t = t_new(".tfile", NUM_BUFS);
 	for (i = 0; i < n; i++) {
+		t_print(t);
 		key = seq_key();
 		val = rnd_lump();
 		t_insert(t, key, val);
@@ -524,11 +525,12 @@ void myoptions(int argc, char *argv[])
 int main(int argc, char *argv[])
 {
 	myoptions(argc, argv);
-	test_level(Option.iterations, Option.level);
+	test_seq(Option.iterations);
 	return 0;
 }
 
 #if 0
- test_delete(Option.iterations);
+	test_delete(Option.iterations);
+	test_seq(Option.iterations);
 	test_level(Option.iterations, Option.level);
 #endif

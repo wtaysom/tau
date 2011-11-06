@@ -218,6 +218,9 @@ FN;
 			dev_flush(b);
 			b->dirty = FALSE;
 		} else {
+			if (crc != b->crc) {
+				PRd(b->blknum);
+			}
 			assert(crc == b->crc);
 		}
 	}
