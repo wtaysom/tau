@@ -1271,25 +1271,6 @@ FN;
 	}
 }
 
-void join_leaf (Htree_s *t, Node_s *node, Buf_s *bchild, int irec)
-{
-	Node_s	*child = bchild->d;
-	Buf_s	*bsibling;
-	Node_s	*sibling;
-
-	if (irec == node->numrecs) return;	/* No right sibling */
-
-	bsibling = t_get(t, node->twig[i].blknum);
-	sibling = bsibling->d;
-	if (inuse(sibling) < child->free) {
-		lf_compact(child);
-		for (i = 0; i)
-		lf_rec_move(node,); 
-	} else {
-		/* Rebalance */
-	}
-}
-
 bool pr_key_leaf (Node_s *node, unint i)
 {
 	unint size;
@@ -1713,6 +1694,24 @@ FN;
 	}
 }
 
+void join_leaf (Htree_s *t, Node_s *parent, Node_s *child, int irec)
+{
+	Buf_s	*buf;
+	Node_s	*sibling;
+
+	if (irec == node->numrecs) return;	/* No right sibling */
+
+	buf = t_get(t, node->twig[irec].blknum);
+	sibling = buf->d;
+	if (inuse(sibling) < child->free) {
+		lf_compact(child);
+		for (i = 0; i)
+		lf_rec_move(node,); 
+	} else {
+		/* Rebalance */
+	}
+}
+
 int t_delete(Htree_s *t, Key_t key)
 {
 FN;
@@ -1743,7 +1742,7 @@ FN;
 		child = bchild->d;
 		if (is_sparse(child)) {
 			if (child->isleaf) {
-				join_leaf(t, node, bchild, irec);
+				join_leaf(t, node, child, irec);
 			} else {
 				join_branch(t, node, bchild, irec);
 			}
