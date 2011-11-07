@@ -518,7 +518,6 @@ FN;
 	for (i = 0; i < leaf->numrecs; i++) {
 		rec = get_rec(leaf, i);
 		free -= rec.val.size + LEAF_OVERHEAD;
-		assert(rec.key < 1000);
 	}
 	if (free != leaf->free) {
 		printf("%s<%d> free:%d != %d:leaf->free\n",
@@ -539,7 +538,6 @@ FN;
 	prev = 0;
 	for (i = 0; i < branch->numrecs; i++) {
 		key = branch->twig[i].key;
-		assert(key < 1000);
 		if (key < prev) {
 			fatal("Key out of order prev = %lld key = %lld"
 				" branch = %p block = %lld\n",
@@ -1100,35 +1098,6 @@ FN;
 	return rc;
 }
 
-int lf_delete(Op_s *op)
-{
-	Buf_s *right;
-	Node_s *node = op->buf->d;
-	int i;
-
-	for (;;) {
-FN;
-		i = leaf_eq(node, op->r.key);
-		if (i == -1) {
-			return HT_ERR_NOT_FOUND;
-		}
-		if (i == node->numrecs) {
-			if (node->is_split) {
-				right = t_get(op->tree, node->last);
-				buf_put_dirty( &op->buf);
-				op->buf = right;
-				node = op->buf->d;
-			} else {
-				return HT_ERR_NOT_FOUND;
-			}
-		} else {
-			delete_rec(node, i);
-			buf_put_dirty( &op->buf);
-			return 0;
-		}
-	}
-}
-
 bool join(Op_s *op)
 {
 FN;
@@ -1319,53 +1288,6 @@ void join_leaf (Htree_s *t, Node_s *node, Buf_s *bchild, int irec)
 	} else {
 		/* Rebalance */
 	}
-}
-
-int t_delete(Htree_s *t, Key_t key)
-{
-FN;
-	Buf_s	*buf;
-	Node_s	*node;
-	Buf_s	*bchild;
-	Node_s	*child;
-	int	irec;
-	int	rc;
-
-	if (!t->root) return HT_ERR_NOT_FOUND;
-	buf = t_get(t, t->root);
-	node = buf->d;
-	while (node && node->numrecs == 0) {
-		if (node->isleaf) {
-			t->root = 0;
-		} else {
-			t->root = node->first;
-		}
-		buf_free( &buf);
-		if (!t->root) return HT_ERR_NOT_FOUND;
-		buf = t_get(t, t->root);
-		node = buf->d;
-	}
-	while (!node->isleaf) {
-		irec = br_lt(node, key);
-		bchild = t_get(t, node->twig[irec - 1].blknum);
-		child = bchild->d;
-		if (is_sparse(child)) {
-			if (child->isleaf) {
-				join_leaf(t, node, bchild, irec);
-			} else {
-				join_branch(t, node, bchild, irec);
-			}
-			buf_free( &bchild);
-		} else {
-			buf_free( &buf);
-			buf = bchild;
-			node = child;
-		}	
-	}
-	rc = lf_delete(t, buf, key);
-	cache_balanced(t->cache);
-	if (!rc) ++t->stat.delete;
-	return rc;
 }
 
 bool pr_key_leaf (Node_s *node, unint i)
@@ -1768,8 +1690,75 @@ int t_audit (Htree_s *t, Audit_s *audit)
 	rc = node_audit(t, t->root, audit, 0);
 	return rc;
 }
-
 #endif
+
+int lf_delete (Buf_s *buf, Key_t key)
+{
+	Node_s	*node = buf->d;
+	int	x;
+
+	for (;;) {
+FN;
+		x = leaf_eq(node, key);
+		if (x == -1) {
+			return HT_ERR_NOT_FOUND;
+		}
+		if (x == node->numrecs) {
+			return HT_ERR_NOT_FOUND;
+		} else {
+			delete_rec(node, x);
+			buf_put_dirty( &buf);
+			return 0;
+		}
+	}
+}
+
+int t_delete(Htree_s *t, Key_t key)
+{
+FN;
+	Buf_s	*buf;
+	Node_s	*node;
+	Buf_s	*bchild;
+	Node_s	*child;
+	int	irec;
+	int	rc;
+
+	if (!t->root) return HT_ERR_NOT_FOUND;
+	buf = t_get(t, t->root);
+	node = buf->d;
+	while (node && node->numrecs == 0) {
+		if (node->isleaf) {
+			t->root = 0;
+		} else {
+			t->root = node->first;
+		}
+		buf_free( &buf);
+		if (!t->root) return HT_ERR_NOT_FOUND;
+		buf = t_get(t, t->root);
+		node = buf->d;
+	}
+	while (!node->isleaf) {
+		irec = br_lt(node, key);
+		bchild = t_get(t, node->twig[irec - 1].blknum);
+		child = bchild->d;
+		if (is_sparse(child)) {
+			if (child->isleaf) {
+				join_leaf(t, node, bchild, irec);
+			} else {
+				join_branch(t, node, bchild, irec);
+			}
+			buf_free( &bchild);
+		} else {
+			buf_free( &buf);
+			buf = bchild;
+			node = child;
+		}	
+	}
+	rc = lf_delete(buf, key);
+	cache_balanced(t->cache);
+	if (!rc) ++t->stat.delete;
+	return rc;
+}
 
 void t_dump(Htree_s *t)
 {
@@ -1813,14 +1802,14 @@ int  t_insert(Htree_s *t, Key_t key, Lump_s val) {
 	warn("Not Implmented");
 	return 0;
 }
-#endif
 
-int  t_find  (Htree_s *t, Key_t key, Lump_s *val) {
+int  t_delete(Htree_s *t, Key_t key) {
 	warn("Not Implmented");
 	return 0;
 }
+#endif
 
-int  t_delete(Htree_s *t, Key_t key) {
+int  t_find  (Htree_s *t, Key_t key, Lump_s *val) {
 	warn("Not Implmented");
 	return 0;
 }
