@@ -646,6 +646,34 @@ FN;
 	lf_del_rec(src, j);
 }
 
+void lf_move_recs (Node_s *leaf, Node_s *sibling)
+{
+	int	i;
+	int	j;
+	int	size;
+	int	total;
+
+	lf_compact(leaf);
+
+	j = leaf->numrecs;
+	for (i = 0; i < sibling->numrecs; i++, j++) {
+		unint	x = leaf->rec[i];
+		u8	*start = &((u8 *)leaf)[x];
+
+		size = start[sizeof(Key_t)];
+		size |= start[sizeof(Key_t) + 1] << 8;
+		size += sizeof(u16) + sizeof(Key_t);
+		total = size + sizeof(u16);
+		assert(leaf->free >= total);
+		leaf->end -= size;
+		leaf->free -= total;
+		memmove(&((u8 *)leaf)[leaf->end], start, size);
+	}
+	leaf->numrecs = j;
+	sibling->numrecs = 0;
+	sibling->free = BLOCK_SIZE - SZ_HEAD;
+}
+
 void br_twig_del (Node_s *branch, unint i)
 {
 FN;
@@ -762,7 +790,7 @@ FN;
 	buf = t_get(t, t->root);
 	node = buf->d;
 	if (!is_full(node, size)) return buf;
-HERE;
+
 	bparent = br_new(t);
 	parent = bparent->d;
 	parent->first = node->blknum;
@@ -895,9 +923,6 @@ buf_dirty(op->parent);
 
 void twig_insert (Node_s *branch, Key_t key, Blknum_t blknum, int irec)
 {
-PRd(key);
-PRd(irec);
-PRd(branch->numrecs);
 	assert(!branch->isleaf);
 	memmove( &branch->twig[irec + 1], &branch->twig[irec],
 		(branch->numrecs - irec) * sizeof(Twig_s));
@@ -1694,21 +1719,43 @@ FN;
 	}
 }
 
-void join_leaf (Htree_s *t, Node_s *parent, Node_s *child, int irec)
+void join_leaf (Htree_s *t, Node_s *parent, Node_s *node, int irec)
 {
 	Buf_s	*buf;
 	Node_s	*sibling;
 
-	if (irec == node->numrecs) return;	/* No right sibling */
+	if (irec == parent->numrecs) return;	/* No right sibling */
 
 	buf = t_get(t, node->twig[irec].blknum);
 	sibling = buf->d;
-	if (inuse(sibling) < child->free) {
-		lf_compact(child);
-		for (i = 0; i)
-		lf_rec_move(node,); 
+	if (inuse(sibling) < node->free) {
+		lf_move_recs(node, sibling);
+		buf_free( &buf);
+		br_twig_del(parent, irec);
 	} else {
 		/* Rebalance */
+		buf_put( &buf);
+	}
+}
+
+void join_branch (Htree_s *t, Node_s *parent, Node_s *node, int irec)
+{
+	Buf_s	*buf;
+	Node_s	*sibling;
+
+	if (irec == parent->numrecs) return;	/* No right sibling */
+
+	buf = t_get(t, node->twig[irec].blknum);
+	sibling = buf->d;
+	if (sibling->numrecs < NUM_TWIGS - node->numrecs) {
+		memmove( &node->twig[node->numrecs], sibling->twig,
+			sizeof(Twig_s) * sibling->numrecs);
+		node->numrecs += sibling->numrecs;
+		buf_free( &buf);
+		br_twig_del(parent, irec);
+	} else {
+		/* Rebalance */
+		buf_put( &buf);
 	}
 }
 
@@ -1744,11 +1791,11 @@ FN;
 			if (child->isleaf) {
 				join_leaf(t, node, child, irec);
 			} else {
-				join_branch(t, node, bchild, irec);
+				join_branch(t, node, child, irec);
 			}
-			buf_free( &bchild);
+			buf_put( &bchild);
 		} else {
-			buf_free( &buf);
+			buf_put( &buf);
 			buf = bchild;
 			node = child;
 		}	
