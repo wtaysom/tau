@@ -712,6 +712,7 @@ FN;
 	BR_AUDIT(branch);
 	assert(i < branch->numrecs);
 
+ #error what if first ?
 	--branch->numrecs;
 	if (i < branch->numrecs) {
 		memmove( &branch->twig[i], &branch->twig[i + 1],
@@ -1710,6 +1711,9 @@ FN;
 	buf = t_get(t, node->twig[irec].blknum);
 	sibling = buf->d;
 	if (sibling->numrecs < NUM_TWIGS - node->numrecs) {
+#error what about first ?
+Get key from parent record
+irec may be zero
 		memmove( &node->twig[node->numrecs], sibling->twig,
 			sizeof(Twig_s) * sibling->numrecs);
 		node->numrecs += sibling->numrecs;
