@@ -66,7 +66,7 @@ static void dump (FILE *f)
 			for (j = 0; (j < BYTES_PER_LINE) && (k < n); j++, k++) {
 				c = b[k];
 				if (j == 8) putchar(' ');
-				printf(" %1x%1x", c & 0xf, (c >> 4) & 0xf);
+				printf(" %2x", c);
 			}
 			for (; j < BYTES_PER_LINE; j++) {
 				printf("   ");

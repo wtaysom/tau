@@ -391,6 +391,7 @@ void test_delete(int n)
 		r_add(key, val);
 		t_insert(t, key, val);
 	}
+t_print(t);
 	r_for_each(delete, t);
 	audit(t);
 	pr_stats(t);

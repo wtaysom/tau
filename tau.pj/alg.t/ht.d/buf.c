@@ -182,6 +182,11 @@ FN;
 	b->clock = TRUE;
 //b->dirty = TRUE;
 	assert(blknum == b->blknum);
+if (b->blknum != ((Node_s *)b->d)->blknum) {
+	printf("%p %llx %llx != %llx\n",
+		b, (u64)blknum,
+		(u64)b->blknum, (u64)((Node_s *)b->d)->blknum);
+}
 	assert(b->blknum == ((Node_s *)b->d)->blknum);
 	return b;
 }

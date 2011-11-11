@@ -206,6 +206,38 @@ void pr_rec (Hrec_s rec)
 	pr_lump(rec.val);
 }
 
+void pr_leaf(Node_s *leaf)
+{
+	unint	i;
+
+	pr_head(leaf, 0);
+	for (i = 0; i < leaf->numrecs; i++) {
+		//pr_record(leaf, i);
+	}
+}
+
+void pr_branch(Node_s *branch)
+{
+	unint	i;
+	Twig_s	*twig = branch->twig;
+
+	pr_head(branch, 0);
+	printf(" first: %llx\n", (u64)branch->first);
+	for (i = 0; i < branch->numrecs; i++, twig++) {
+		printf("%3ld. %8llx : %8llx\n",
+			i, (u64)twig->key, (u64)twig->blknum);
+	}
+}
+
+void pr_node(Node_s *node)
+{
+	if (node->isleaf) {
+		pr_leaf(node);
+	} else {
+		pr_branch(node);
+	}
+}
+
 void init_node (Node_s *node, bool isleaf, Blknum_t blknum)
 {
 FN;
@@ -377,8 +409,8 @@ int isEQ (Node_s *leaf, Key_t key, unint i)
 	Key_t	target;
 
 	target = get_key(leaf, i);
-	if (target < key) return -1;
-	if (target == key) return 0;
+	if (key < target) return -1;
+	if (key == target) return 0;
 	return 1;
 }
 
@@ -767,7 +799,9 @@ bool is_full (Node_s *node, int size)
 
 bool is_sparse (Node_s *node)
 {
+FN;
 	if (node->isleaf) {
+if (node->free < LEAF_SPLIT) pr_node(node);
 		return node->free < LEAF_SPLIT;
 	} else {
 		return node->numrecs < BRANCH_SPLIT;
@@ -1409,78 +1443,6 @@ bool pr_record (Node_s *node, unint i)
 	return TRUE;
 }
 
-void pr_leaf(Node_s *node)
-{
-	unint i;
-
-	pr_head(node, 0);
-	for (i = 0; i < node->numrecs; i++) {
-		pr_record(node, i);
-	}
-}
-
-bool pr_twig (Node_s *node, unint i)
-{
-	unint size;
-	unint x;
-	u8 *start;
-	Blknum_t blknum;
-
-	if (i >= node->numrecs) {
-		printf("key index >= numrecs %ld >= %d\n",
-			i, node->numrecs);
-		return FALSE;
-	}
-	x = node->rec[i];
-	if (x >= BLOCK_SIZE) {
-		printf("key offset >= BLOCK_SIZE %ld >= %ld\n",
-			x, i);
-		return FALSE;
-	}
-	start = &((u8 *)node)[x];
-	size = *start++;
-	size |= (*start++) << 8;
-	if (x + size >= BLOCK_SIZE) {
-		printf("key size at %ld offset %ld is too big %ld\n",
-					i, x, size);
-		return FALSE;
-	}
-	printf(" %4ld, %4ld:", x, size);
-	for (i = 0; i < size; i++) {
-		if (isprint(start[i])) {
-			printf("%c", start[i]);
-		} else {
-			putchar('.');
-		}
-	}
-	start += size;
-
-	UNPACK(start, blknum);
-	printf(" : %lld", blknum);
-	putchar('\n');
-	return TRUE;
-}
-
-void pr_branch(Node_s *node)
-{
-	unint i;
-
-	pr_head(node, 0);
-	printf(" first: %llu\n", (u64)node->first);
-	for (i = 0; i < node->numrecs; i++) {
-		pr_twig(node, i);
-	}
-}
-
-void pr_node(Node_s *node)
-{
-	if (node->isleaf) {
-		pr_leaf(node);
-	} else {
-		pr_branch(node);
-	}
-}
-
 static unint Recnum;
 
 static void pr_all_nodes(Htree_s *t, Blknum_t blknum);
@@ -1700,33 +1662,32 @@ int t_audit (Htree_s *t, Audit_s *audit)
 
 int lf_delete (Buf_s *buf, Key_t key)
 {
+FN;
 	Node_s	*node = buf->d;
 	int	x;
 
-	for (;;) {
-FN;
-		x = leaf_eq(node, key);
-		if (x == -1) {
-			return HT_ERR_NOT_FOUND;
-		}
-		if (x == node->numrecs) {
-			return HT_ERR_NOT_FOUND;
-		} else {
-			delete_rec(node, x);
-			buf_put_dirty( &buf);
-			return 0;
-		}
+	x = leaf_eq(node, key);
+	if (x == -1) {
+		return HT_ERR_NOT_FOUND;
+	}
+	if (x == node->numrecs) {
+		return HT_ERR_NOT_FOUND;
+	} else {
+		delete_rec(node, x);
+		buf_put_dirty( &buf);
+		return 0;
 	}
 }
 
 void join_leaf (Htree_s *t, Node_s *parent, Node_s *node, int irec)
 {
+FN;
 	Buf_s	*buf;
 	Node_s	*sibling;
 
 	if (irec == parent->numrecs) return;	/* No right sibling */
 
-	buf = t_get(t, node->twig[irec].blknum);
+	buf = t_get(t, parent->twig[irec].blknum);
 	sibling = buf->d;
 	if (inuse(sibling) < node->free) {
 		lf_move_recs(node, sibling);
@@ -1740,6 +1701,7 @@ void join_leaf (Htree_s *t, Node_s *parent, Node_s *node, int irec)
 
 void join_branch (Htree_s *t, Node_s *parent, Node_s *node, int irec)
 {
+FN;
 	Buf_s	*buf;
 	Node_s	*sibling;
 
@@ -1788,6 +1750,7 @@ FN;
 		bchild = t_get(t, node->twig[irec - 1].blknum);
 		child = bchild->d;
 		if (is_sparse(child)) {
+pr_node(child);
 			if (child->isleaf) {
 				join_leaf(t, node, child, irec);
 			} else {
