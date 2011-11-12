@@ -180,13 +180,13 @@ void pr_head (Node_s *node, int indent)
 {
 	pr_indent(indent);
 	if (node->isleaf) {
-		printf("LEAF %lld numrecs: %d free: %d end: %d\n",
+		printf("LEAF %lld numrecs=%d free=%d end=%d\n",
 			node->blknum,
 			node->numrecs,
 			node->free,
 			node->end);
 	} else {
-		printf("BRANCH %lld numrecs: %d first: %lld\n",
+		printf("BRANCH %lld numrecs=%d first=%lld\n",
 			node->blknum,
 			node->numrecs,
 			node->first);
@@ -281,7 +281,7 @@ void pr_branch(Node_s *branch)
 	pr_head(branch, 0);
 	printf(" first: %llx\n", (u64)branch->first);
 	for (i = 0; i < branch->numrecs; i++, twig++) {
-		printf("%3ld. %8llx : %8llx\n",
+		printf("%3ld. %lld : %lld\n",
 			i, (u64)twig->key, (u64)twig->blknum);
 	}
 }
@@ -808,7 +808,7 @@ FN;
 	if (node->isleaf) {
 		return node->free > LEAF_SPLIT;
 	} else {
-		return node->numrecs > BRANCH_SPLIT;
+		return node->numrecs < BRANCH_SPLIT;
 	}
 }
 
@@ -1709,14 +1709,20 @@ FN;
 	Buf_s	*buf;
 	Node_s	*sibling;
 
-	buf = t_get(t, branch->twig[irec].blknum);
+	BR_AUDIT(branch);
+	buf = t_get(t, parent->twig[irec].blknum);
 	sibling = buf->d;
-	if (sibling->numrecs < NUM_TWIGS - branch->numrecs) {
-		memmove( &branch->twig[branch->numrecs], sibling->twig,
+	BR_AUDIT(sibling);
+	if (branch->numrecs + sibling->numrecs + 1 < NUM_TWIGS) {
+		int n = branch->numrecs;
+		branch->twig[n].key = parent->twig[irec].key;
+		branch->twig[n].blknum = sibling->first;
+		memmove( &branch->twig[n + 1], sibling->twig,
 			sizeof(Twig_s) * sibling->numrecs);
-		branch->numrecs += sibling->numrecs;
+		branch->numrecs += sibling->numrecs + 1;
 		buf_free( &buf);
 		br_twig_del(parent, irec);
+		BR_AUDIT(branch);
 		return TRUE;
 	} else {
 		/* Rebalance */

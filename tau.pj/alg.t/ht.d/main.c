@@ -527,7 +527,7 @@ void myoptions(int argc, char *argv[])
 int main(int argc, char *argv[])
 {
 	myoptions(argc, argv);
-	test_delete(Option.iterations);
+	test_level(Option.iterations, Option.level);
 	return 0;
 }
 

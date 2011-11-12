@@ -218,7 +218,7 @@ FN;
 			if (crc == b->crc) {
 				printf("Didn't change %lld\n", b->blknum);
 			}
-			assert(crc != b->crc);
+			//XXX: this can be true. assert(crc != b->crc);
 			b->crc = crc;
 			dev_flush(b);
 			b->dirty = FALSE;
