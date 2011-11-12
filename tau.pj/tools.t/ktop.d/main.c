@@ -23,8 +23,9 @@ bool Dump = FALSE;
 bool Trace_exit = TRUE;
 bool Trace_self = FALSE;
 bool Pause = FALSE;
+bool Help = FALSE;
 
-display_fn Display = kernel_display;
+Display_s Display;
 
 pid_t gettid(void) { return syscall(__NR_gettid); }
 
@@ -90,6 +91,7 @@ static void usage(void)
 		"\th - usage\n"
 		"\ts - trace self\n\n"
 		"\tCommands while running:\n"
+		"\t? - help for current screen\n"
 		"\tq - quit\n"
 		"\tc - reset internal counters\n"
 		"\tk - display top kernel operations (default)\n"
@@ -127,6 +129,7 @@ static void init(int argc, char *argv[])
 			break;
 		}
 	}
+	Display = Kernel_display;
 }
 
 void quit(void)
@@ -157,23 +160,28 @@ void commander(void)
 		case '>':
 			increase_reduce_interval();
 			break;
+		case '?':
+			Help = !Help;
+			break;
 		case 'i':
-			Display = internal_display;
+			Display = Internal_display;
 			break;
 		case 'k':
-			Display = kernel_display;
+			Display = Kernel_display;
 			break;
 		case 'g':
-			Display = plot_display;
+			Display = Plot_display;
 			break;
 		case 'f':
-			Display = file_system_display;
+			Display = File_system_display;
 			break;
 		case 'p':
 			Pause = !Pause;
 			break;
 		default:
-			break;  // ignore
+			Pause = FALSE;
+			Help = FALSE;
+			break;
 		}
 	}
 }

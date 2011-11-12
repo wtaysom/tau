@@ -32,7 +32,7 @@ enum {	HELP_ROW = 0,
 	MAX_ROW  = SELF_ROW,
 	MAX_COL  = SELF_COL + 40,
 	TOP_PID_CALL_ROW = TOP_ROW,
-	TOP_PID_CALL_COL = 35,
+	TOP_PID_CALL_COL = 32,
 };
 
 typedef struct Top_ten_s {
@@ -71,7 +71,7 @@ Display_call_s Display_call[] = {
 static void help(void)
 {
 	mvprintw(HELP_ROW, HELP_COL,
-		"q quit  c clear  k kernel ops  g graph op"
+		"? help  q quit  c clear  k kernel ops  g graph"
 		"  i internal ops  f file ops"
 		"  p pause"
 		"  < shorter  > longer %d.%.3d",
@@ -83,7 +83,7 @@ static void file_system(void)
 	Display_call_s *d;
 	int row = RW_ROW;
 
-	mvprintw(row,   RW_COL, "            total   hits/sec");
+	mvprintw(row,   RW_COL, "            total   calls/sec");
 
 	for (d = Display_call; d->name; d++) {
 		mvprintw(++row, RW_COL, "%s %10lld %10d",
@@ -160,7 +160,7 @@ static void display_pidcall(void)
 	int pid;
 	int i;
 
-	mvprintw(row++, col, "%3d    pid  count   duration", Num_rank);
+	mvprintw(row++, col, "%3d    pid  calls   duration", Num_rank);
 	for (i = 0; i < 25 && i < Num_rank; i++, row++) {
 		pc = Rank_pidcall[i];
 		pid = get_pid(pc->pidcall);
@@ -175,8 +175,6 @@ static void display_pidcall(void)
 			pc->save.count ? pc->save.time / pc->save.count : 0LL,
 			Syscall[get_call(pc->pidcall)],
 			pc->name);
-		mvprintw(row, col+80, "%8lx %8lx %8lx",
-			pc->arg[0], pc->arg[1], pc->arg[2]);
 	}
 }
 
@@ -186,11 +184,11 @@ static void display_top_pidcall(void)
 	int row = TOP_PID_CALL_ROW;
 	int col = TOP_PID_CALL_COL;
 
-	mvprintw(row++, col, "   count   duration   when    pid");
+	mvprintw(row++, col, "|     calls   duration   when    pid");
 	for (tc = Top_pidcall; tc < &Top_pidcall[MAX_TOP]; tc++, row++) {
 		if (tc->count == 0) return;
 		mvprintw(row, col,
-		         "%8d %10lld %6d %6d %-22.22s %-30.30s",
+		         "|  %8d %10lld %6d %6d %-22.22s %-30.30s",
 		         tc->count, tc->time / tc->count,
 		         tc->tick, get_pid(tc->pidcall),
 		         Syscall[get_call(tc->pidcall)],
@@ -203,7 +201,7 @@ static void display_top_ten(void)
 	int row = TOP_ROW;
 	int i;
 
-	mvprintw(row++, TOP_COL, "   count sys_call");
+	mvprintw(row++, TOP_COL, "   calls system call");
 	for (i = 0; i < 10; i++, row++) {
 		if (Top_ten[i].value == 0) return;
 		mvprintw(row, TOP_COL, "%8d %-22.22s",
@@ -292,17 +290,110 @@ void plot_display(void)
 void internal_display(void)
 {
 	clear();
-	help();
 	self();
 	top_pid();
+	help();
 	refresh();
 }
 
 void file_system_display(void)
 {
 	clear();
-	help();
 	file_system();
+	help();
+	refresh();
+}
+
+void plot_help(void)
+{
+	int	row = HELP_ROW + 1;
+	int	col = HELP_COL + 2;
+
+	clear();
+	help();
+	row += 2;
+	mvprintw(row, col, "Still playing.");
+	row += 2;
+	mvprintw(row, col, "Type <return> to get back to screen.");
+	refresh();
+}
+
+void kernel_help (void)
+{
+	int	row = HELP_ROW + 3;
+	int	col = HELP_COL + 2;
+
+	clear();
+	mvprintw(row, col, "Top 10 most frequent system" );
+	++row;
+	if (Sleep.tv_sec == 1 && Sleep.tv_nsec == 0) {
+		mvprintw(row, col, "calls in last second.");
+	} else {
+		mvprintw(row, col, "calls in last %d.%.3d seconds.",
+			Sleep.tv_sec, Sleep.tv_nsec / ONE_MILLION);
+	}
+
+	row += 10;
+	mvprintw(row, col, "Most frequent system" );
+	++row;
+	if (Sleep.tv_sec == 1 && Sleep.tv_nsec == 0) {
+		mvprintw(row, col, "calls in last second");
+	} else {
+		mvprintw(row, col, "calls in last %d.%.3d seconds",
+			Sleep.tv_sec, Sleep.tv_nsec / ONE_MILLION);
+	}
+	++row;
+	mvprintw(row, col, "by process.");
+
+	row += 5;
+	mvprintw(row, col, "Type <return> to return to screen");
+
+	row = HELP_ROW + 3;
+	col = TOP_PID_CALL_COL + 10;
+	mvprintw(row, col, "All time top 10 most frequent" );
+	++row;
+	mvprintw(row, col, "system calls by process." );
+
+	help();
+	refresh();
+}
+
+void file_system_help (void)
+{
+	int	row = HELP_ROW + 3;
+	int	col = HELP_COL + 2;
+
+	clear();
+	mvprintw(row, col, "File system calls ordered by name." );
+	++row;
+	if (Sleep.tv_sec == 1 && Sleep.tv_nsec == 0) {
+		mvprintw(row, col,
+			"Total calls made and calls in last second.");
+	} else {
+		mvprintw(row, col,
+			"Total calls made and calls in last %d.%.3d seconds.",
+			Sleep.tv_sec, Sleep.tv_nsec / ONE_MILLION);
+	}
+	row += 5;
+	mvprintw(row, col, "Type <return> to return to screen");
+
+	help();
+	refresh();
+}
+
+void internal_help (void)
+{
+	int	row = HELP_ROW + 1;
+	int	col = HELP_COL + 2;
+
+	clear();
+	row += 2;
+	mvprintw(row, col, "Diplays what is going on inside ktop.");
+	row += 1;
+	mvprintw(row, col, "Used to debug ktop.");
+	row += 2;
+	mvprintw(row, col, "Type <return> to get back to screen.");
+	help();
 	refresh();
 }
 
@@ -310,3 +401,9 @@ void cleanup_display(void)
 {
 	endwin();
 }
+
+
+Display_s Kernel_display      = { kernel_display,      kernel_help };
+Display_s Internal_display    = { internal_display,    internal_help };
+Display_s Plot_display        = { plot_display,        plot_help };
+Display_s File_system_display = { file_system_display, file_system_help };

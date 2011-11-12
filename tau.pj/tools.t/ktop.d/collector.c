@@ -275,7 +275,6 @@ static void parse_sys_enter(void *event, u64 time)
 	}
 	++pc->count;
 	pc->time.start = time;
-	memmove(pc->arg, sy->arg, sizeof(pc->arg));
 }
 
 static void parse_sys_exit(void *event, u64 time)

@@ -37,12 +37,8 @@ static void pr_event(event_s *event)
 static void pr_sys_enter(void *event)
 {
 	sys_enter_s *sy = event;
-	int i;
 
 	printf(" %-20s", Syscall[sy->id]);
-	for (i = 0; i < 6; i++) {
-		printf(" %ld", sy->arg[i]);
-	}
 	printf("\n");
 }
 

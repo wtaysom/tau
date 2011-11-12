@@ -31,8 +31,7 @@ typedef struct CacheStat_s {
 	s64 miss;
 } CacheStat_s;
 
-static inline void buf_dirty(Buf_s *b)
-{ b->dirty = TRUE; }
+static inline void buf_dirty (Buf_s *b) { b->dirty = TRUE; }
 
 CacheStat_s cache_stats(Cache_s *cache);
 Cache_s *cache_new(char *filename, u64 num_bufs, u64 blockSize);

@@ -370,6 +370,7 @@ void delete (Key_t key, Lump_s val, void *user)
 	Htree_s *t = user;
 	int rc;
 
+t_print(t);
 	rc = t_delete(t, key);
 	if (rc) {
 		fatal("Didn't find %llu : rc=%d", (u64)key, rc);

@@ -54,7 +54,6 @@ typedef struct event_s {
 typedef struct sys_enter_s {
 	event_s	ev;
 	snint	id;
-	unint	arg[NUM_ARGS];
 } sys_enter_s;
 
 typedef struct sys_exit_s {

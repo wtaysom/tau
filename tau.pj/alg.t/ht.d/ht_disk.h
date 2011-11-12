@@ -54,7 +54,7 @@ typedef struct Node_s {
 	};
 } Node_s;
 
-enum {	BLOCK_SHIFT  = 8,
+enum {	BLOCK_SHIFT  = 7,
 	BLOCK_SIZE   = 1 << BLOCK_SHIFT,
 	MAX_FREE     = (BLOCK_SIZE - sizeof(Node_s)),
 	NUM_TWIGS    = MAX_FREE / sizeof(Twig_s),

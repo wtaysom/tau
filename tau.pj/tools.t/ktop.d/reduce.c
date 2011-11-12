@@ -190,7 +190,7 @@ void increase_reduce_interval(void)
 	if (Sleep.tv_nsec >= 500 * ONE_MILLION) {
 		Sleep.tv_sec = 1;
 		Sleep.tv_nsec = 0;
-	} else if (Sleep. tv_sec >= 1) {
+	} else if (Sleep.tv_sec >= 1) {
 		Sleep.tv_sec <<= 1;
 	} else {
 		Sleep.tv_nsec <<= 1;
@@ -217,7 +217,10 @@ void *reduce(void *arg)
 		if (Halt) return NULL;
 		delta();
 		reduce_pidcall();
-		if (!Pause) Display();
+		if (!Pause) {
+			if (Help) Display.help();
+			else Display.normal();
+		}
 		nanosleep(&Sleep, NULL);
 	}
 }
