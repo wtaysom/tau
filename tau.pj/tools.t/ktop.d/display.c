@@ -3,6 +3,7 @@
  * Distributed under the terms of the GNU General Public License v2
  */
 
+#include <sys/syscall.h>
 #include <ncurses.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -52,20 +53,24 @@ static Top_ten_s Top_ten[10];
 static graph_s TotalGraph = {{0, 0}, {{0, 10}, {60, 20}}};
 
 Display_call_s Display_call[] = {
-	{ "read:  ", sys_read },
-	{ "write: ", sys_write },
-	{ "pread: ", sys_pread64 },
-	{ "pwrite:", sys_pwrite64 },
-	{ "sync:  ", sys_sync },
-	{ "fsync: ", sys_fsync },
-	{ "open:  ", sys_open },
-	{ "close: ", sys_close },
-	{ "creat: ", sys_creat },
-	{ "unlink:", sys_unlink },
-	{ "stat:  ", sys_stat64 },
-	{ "fstat: ", sys_fstat64 },
-	{ "fork:  ", ptregs_fork },
-	{ "vfork: ", ptregs_vfork },
+	{ "read:  ", __NR_read },
+	{ "write: ", __NR_write },
+	{ "pread: ", __NR_pread64 },
+	{ "pwrite:", __NR_pwrite64 },
+	{ "sync:  ", __NR_sync },
+	{ "fsync: ", __NR_fsync },
+	{ "open:  ", __NR_open },
+	{ "close: ", __NR_close },
+	{ "creat: ", __NR_creat },
+	{ "unlink:", __NR_unlink },
+#ifdef __x86_64__
+	{ "stat:  ", __NR_stat },
+	{ "fstat: ", __NR_fstat },
+	{ "lstat: ", __NR_lstat },
+#else
+	{ "stat:  ", __NR_stat64 },
+	{ "fstat: ", __NR_fstat64 },
+#endif
 	{ NULL, 0 }};
 
 static void help(void)

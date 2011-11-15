@@ -15,6 +15,7 @@
 /* Excerpted from 'The Practice of Programming' */
 /* by Brian W. Kernighan and Rob Pike */
 
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -26,6 +27,7 @@
 #include <style.h>
 
 bool Stacktrace = TRUE;
+void (*Fatal_cleanup)(void) = NULL;
 
 /* pr_display: print debug message */
 void pr_display (const char *file, const char *func, int line, const char *fmt, ...)
@@ -71,6 +73,11 @@ void pr_fatal (const char *file, const char *func, int line, const char *fmt, ..
 	}
 	fprintf(stderr, "\n");
 	if (Stacktrace) stacktrace_err();
+	if (Fatal_cleanup) {
+		void (*cleanup)(void) = Fatal_cleanup;
+		Fatal_cleanup = NULL;	/* Prevent recursive loop of cleanup */
+		cleanup();
+	}
 	exit(2); /* conventional value for failed execution */
 }
 
@@ -233,3 +240,20 @@ void setprogname (const char *str)
 	name = estrdup(str);
 }
 #endif
+
+void catch_signals (catch_signal_t cleanup)
+{
+	signal(SIGHUP,	cleanup);
+	signal(SIGINT,	cleanup);
+	signal(SIGQUIT,	cleanup);
+	signal(SIGILL,	cleanup);
+	signal(SIGTRAP,	cleanup);
+	signal(SIGABRT,	cleanup);
+	signal(SIGBUS,	cleanup);
+	signal(SIGFPE,	cleanup);
+	signal(SIGKILL,	cleanup);
+	signal(SIGSEGV,	cleanup);
+	signal(SIGPIPE,	cleanup);
+	signal(SIGSTOP,	cleanup);
+	signal(SIGTSTP,	cleanup);
+}

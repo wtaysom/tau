@@ -273,6 +273,9 @@ enum {
 #undef ALIGN
 #define ALIGN(_x_, _p_)	(((_x_) + (_p_) - 1) & ~((_p_) - 1))
 
+#undef NELEMS
+#define	NELEMS(a)	(sizeof(a) / sizeof(a[0]))
+
 #ifdef __cplusplus
 }
 #endif

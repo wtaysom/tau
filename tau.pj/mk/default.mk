@@ -51,13 +51,13 @@ ifeq ($(os),Linux)
 endif
 
 
-$(objdir)/%.o : %.c Makefile $(headers)
-	@ mkdir -p $(objdir)
-	$(CC) $(CFLAGS) -c $< -o $@
-
 $(opus):$(objects) $(LIBS)
 	$(CC) $(CFLAGS) $(objects) $(LIBS) -o $(opus)
 	cp $(opus) $(bin)
+
+$(objdir)/%.o : %.c Makefile $(headers)
+	@ mkdir -p $(objdir)
+	$(CC) $(CFLAGS) -c $< -o $@
 
 .PHONEY: install clean test
 
