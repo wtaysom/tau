@@ -23,8 +23,6 @@ enum {	MAX_PID = 1 << 15,
 	MAX_TOP = 10,
 	MAX_THREAD_NAME = 40 };
 
-CHECK_CONST((1 << SYSCALL_SHIFT) >= NUM_SYS_CALLS);
-
 static inline u32 mkpidcall(int pid, int syscall)
 {
 	return pid << SYSCALL_SHIFT | syscall;
@@ -81,7 +79,7 @@ extern bool Help;	/* Display help screen */
 
 extern Display_s Display;
 
-extern u64 Syscall_count[NUM_SYS_CALLS];
+extern u64 *Syscall_count;
 extern int Pid[MAX_PID];
 extern Pidcall_s Pidcall[MAX_PIDCALLS];
 extern u64 Pidcall_record;

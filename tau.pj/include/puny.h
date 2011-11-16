@@ -21,6 +21,7 @@ typedef struct Option_s {
 	u64	sleep_secs;	/* -s<secs> */
 	u64	file_size;	/* -z<size> */
 	u64	name_size;	/* -n<num chars> */
+	bool	cleanup;	/* -c */
 	bool	print;		/* -p */
 	char	*file;		/* -f<file> */
 	char	*dir;		/* -d<dir> */

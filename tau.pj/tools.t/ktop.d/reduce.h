@@ -26,7 +26,7 @@ struct timespec Sleep;
 
 extern u64 *Old;
 extern u64 *New;
-extern int Delta[NUM_SYS_CALLS];
+extern int *Delta;
 extern void *Rank_pidcall[MAX_PIDCALLS];
 extern int Num_rank;
 extern TickCounter_s Total_delta;

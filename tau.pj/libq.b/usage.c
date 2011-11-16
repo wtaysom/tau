@@ -26,9 +26,10 @@ void usage(void)
 		" -x<name> -v<value> -n<num chars>\n\n");
 	fprintf(stderr,
 		"  -h  this help message\n"
-		"  -f  file name to use (source)\n"
+		"  -c  turn off cleanup\n"
 		"  -d  directory to use\n"
 		"  -e  destination or target directory/file\n"
+		"  -f  file name to use (source)\n"
 		"  -i  number of iterations to run (inner loop)\n"
 		"  -l  number of loops (outer loop) 0 -> LLONG_MAX\n"
 		"  -n  number of characters to use in file name\n"

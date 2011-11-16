@@ -27,6 +27,7 @@ Option_s Option = {
 	.sleep_secs  = 1,
 	.file_size   = 1457,
 	.name_size   = 17,
+	.cleanup     = TRUE,
 	.print       = FALSE,
 	.file        = "_test.out",
 	.dir         = "_dir",
@@ -35,7 +36,7 @@ Option_s Option = {
 	.xattr       = "attribute",
 	.value       = "value" };
 
-static char Default[] = "hpf:d:e:i:l:n:s:t:v:x:z:?";
+static char Default[] = "chpd:e:f:i:l:n:s:t:v:x:z:?";
 
 static void pr_cmd_line (int argc, char *argv[])
 {
@@ -74,14 +75,17 @@ void punyopt (
 		case '?':
 			usage();
 			break;
-		case 'f':
-			Option.file = optarg;
+		case 'c':
+			Option.cleanup = FALSE;
 			break;
 		case 'd':
 			Option.dir = optarg;
 			break;
 		case 'e':
 			Option.dest = optarg;
+			break;
+		case 'f':
+			Option.file = optarg;
 			break;
 		case 'i':
 			Option.iterations = strtoll(optarg, NULL, 0);
@@ -121,4 +125,5 @@ void punyopt (
 			break;
 		}
 	}
+	free(options);
 }

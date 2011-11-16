@@ -192,6 +192,7 @@ int main(int argc, char **argv)
 	int rc;
 
 	debugstderr();
+	assert(Num_syscalls <= (1 << SYSCALL_SHIFT));
 
 	init(argc, argv);
 

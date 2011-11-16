@@ -23,16 +23,15 @@ extern pthread_mutex_t Count_lock;
 struct timespec Sleep = { 1, 0 };
 
 /*
- * A and B are two arrays of counters for sys_call events
- * that are swapped between old and new.
+ * Old and New are two arrays of counters for sys_call events
+ * that are swapped at each interval. Then New gets a snapshot
+ * of the syscall counters.
  */
-static u64 A[NUM_SYS_CALLS];
-static u64 B[NUM_SYS_CALLS];
-u64 *Old = A;
-u64 *New = B;
+u64 *Old;
+u64 *New;
 
 /* Difference between New and Old */
-int Delta[NUM_SYS_CALLS];
+int *Delta;
 
 /* Descending sorted array of counts for pid/system_calls */
 void *Rank_pidcall[MAX_PIDCALLS];
@@ -154,15 +153,15 @@ static void delta(void)
 
 	if (0) {
 		pthread_mutex_lock(&Count_lock);
-		memmove(New, Syscall_count, sizeof(Syscall_count));
+		memmove(New, Syscall_count, Num_syscalls * sizeof(*Syscall_count));
 		memset(Syscall_count, 0, sizeof(Syscall_count));
 		pthread_mutex_unlock(&Count_lock);
 	} else {
-		memmove(New, Syscall_count, sizeof(Syscall_count));
+		memmove(New, Syscall_count, Num_syscalls * sizeof(*Syscall_count));
 	}
 
 	sum = 0;
-	for (i = 0; i < NUM_SYS_CALLS; i++) {
+	for (i = 0; i < Num_syscalls; i++) {
 		if (0) {
 			Delta[i] = New[i];
 		} else {
@@ -199,10 +198,10 @@ void increase_reduce_interval(void)
 
 void reset_reduce(void)
 {
-	zero(A);
-	zero(B);
+	memset(Old, 0, Num_syscalls * sizeof(*Old));
+	memset(New, 0, Num_syscalls * sizeof(*New));
+	memset(Syscall_count, 0, Num_syscalls * sizeof(*Syscall_count));
 	zero(Pid);
-	zero(Syscall_count);
 	Ignored_pid_count = 0;
 	Slept = 0;
 	zero(Top_pidcall);
@@ -210,6 +209,9 @@ void reset_reduce(void)
 
 void *reduce(void *arg)
 {
+	Old   = ezalloc(Num_syscalls * sizeof(*Old));
+	New   = ezalloc(Num_syscalls * sizeof(*New));
+	Delta = ezalloc(Num_syscalls * sizeof(*Delta));
 	ignore_pid(gettid());
 	init_display();
 

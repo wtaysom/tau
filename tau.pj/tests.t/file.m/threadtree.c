@@ -162,7 +162,7 @@ void fatal_cleanup (void)
 	char	cmd[1024];
 	int	rc;
 
-	if (cleaning_up) return;
+	if (!Option.cleanup || cleaning_up) return;
 	cleaning_up = TRUE;
 	Fatal_cleanup = NULL;
 	cd("..");

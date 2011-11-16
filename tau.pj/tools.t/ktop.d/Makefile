@@ -68,12 +68,11 @@ $(objdir)/%.o : %.c Makefile $(headers)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(objdir)/syscall.o : $(objdir)/syscall.c /usr/include/sys/syscall.h
-	@ mkdir -p $(objdir)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(objdir)/syscall.c : /usr/include/sys/syscall.h Makefile syscall.awk
-	echo '#include <sys/syscall.h>' | gcc -E -dD - -P | grep __NR_ \
-	| grep -v SYS | ./syscall.awk >$@
+	@ mkdir -p $(objdir)
+	echo '#include <sys/syscall.h>' | $(CC) -E -dD - -P | ./syscall.awk >$@
 
 .PHONEY: install clean test
 

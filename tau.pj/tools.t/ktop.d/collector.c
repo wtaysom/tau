@@ -34,7 +34,7 @@ pthread_mutex_t Count_lock = PTHREAD_MUTEX_INITIALIZER;
 /*
  * Count_lock protects these global variables
  */
-u64 Syscall_count[NUM_SYS_CALLS];
+u64 *Syscall_count;
 u64 Slept;
 int Pid[MAX_PID];
 
@@ -433,6 +433,7 @@ void start_collector(void)
 	int i;
 	int rc;
 
+	Syscall_count = ezalloc(Num_syscalls * sizeof(*Syscall_count));
 	init_tracing();
 	enable_sys_enter();
 	if (Trace_exit) {

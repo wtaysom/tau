@@ -235,7 +235,7 @@ static void top_ten(void)
 	int i;
 
 	zero(Top_ten);
-	for (i = 0; i < NUM_SYS_CALLS; i++) {
+	for (i = 0; i < Num_syscalls; i++) {
 		x = Delta[i];
 		if (x > Top_ten[9].value) {
 			top_ten_insert(x, i);

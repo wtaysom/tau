@@ -9,10 +9,12 @@ BEGIN { print "/*"
 	print " */\n"
 	print "#ifndef _SYSCALL_H_"
 	print "#define _SYSCALL_H_ 1\n"
+	print "#include <style.h>\n"
 	print "const char *const Syscall[] = {"
 }
-{ printf "\t\"%s\",", $2 }
+/define[ \t]+__NR_/ {	gsub("__NR_", "", $2)
+			printf "\t\"%s\",\n", $2 }
 END {	print "};\n"
-	print "const int Num_syscalls = sizeof(Syscall) / sizeof(char *);"
+	print "const int Num_syscalls = sizeof(Syscall) / sizeof(*Syscall);"
 	print "#endif"
 }
