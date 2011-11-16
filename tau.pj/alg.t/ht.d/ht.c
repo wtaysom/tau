@@ -1503,15 +1503,16 @@ void pr_all_records(Htree_s *t)
 	pr_all_nodes(t, t->root);
 	cache_balanced(t->cache);
 }
+#endif
 
 static int node_map(Htree_s *t, Blknum_t blknum, Apply_s apply);
 
-static int lf_map(Buf_s *buf, Apply_s apply)
+static int lf_map (Buf_s *buf, Apply_s apply)
 {
-	Node_s *node = buf->d;
-	unint i;
-	Hrec_s rec;
-	int rc;
+	Node_s	*node = buf->d;
+	unint	i;
+	Hrec_s	rec;
+	int	rc;
 
 	for (i = 0; i < node->numrecs; i++) {
 		rec = get_rec(node, i);
@@ -1521,28 +1522,28 @@ static int lf_map(Buf_s *buf, Apply_s apply)
 	return 0;
 }
 
-static int br_map(Buf_s *buf, Apply_s apply)
+static int br_map (Buf_s *buf, Apply_s apply)
 {
-	Node_s *node = buf->d;
-	Blknum_t blknum;
-	unint i;
-	int rc;
+	Node_s		*node = buf->d;
+	Blknum_t	blknum;
+	unint		i;
+	int		rc;
 
 	rc = node_map(buf->user, node->first, apply);
 	if (rc) return rc;
 	for (i = 0; i < node->numrecs; i++) {
-		blknum = get_blknum(node, i);
+		blknum = node->twig[i].blknum;
 		rc = node_map(buf->user, blknum, apply);
 		if (rc) return rc;
 	}
 	return 0;
 }
 
-static int node_map(Htree_s *t, Blknum_t blknum, Apply_s apply)
+static int node_map (Htree_s *t, Blknum_t blknum, Apply_s apply)
 {
-	Buf_s *buf;
-	Node_s *node;
-	int rc = 0;
+	Buf_s	*buf;
+	Node_s	*node;
+	int	rc = 0;
 
 	if (!blknum) return rc;
 	buf = t_get(t, blknum);
@@ -1556,17 +1557,18 @@ static int node_map(Htree_s *t, Blknum_t blknum, Apply_s apply)
 	return rc;
 }
 
-int t_map(Htree_s *t, Apply_f func, void *sys, void *user)
+int t_map (Htree_s *t, Apply_f func, void *sys, void *user)
 {
-	Apply_s apply = mk_apply(func, t, sys, user);
-	int rc = node_map(t, t->root, apply);
+	Apply_s	apply = mk_apply(func, t, sys, user);
+	int	rc = node_map(t, t->root, apply);
+
 	cache_balanced(t->cache);
 	return rc;
 }
 
 static int map_rec_audit (Hrec_s rec, Htree_s *t, void *user)
 {
-	Key_t *oldkey = user;
+	Key_t	*oldkey = user;
 
 	if (rec.key < *oldkey) {
 		t_dump(t);
@@ -1583,9 +1585,9 @@ static int map_rec_audit (Hrec_s rec, Htree_s *t, void *user)
 
 static int node_audit(Htree_s *t, Blknum_t blknum, Audit_s *audit, int depth);
 
-static int leaf_audit(Buf_s *buf, Audit_s *audit, int depth)
+static int leaf_audit (Buf_s *buf, Audit_s *audit, int depth)
 {
-	Node_s *node = buf->d;
+	Node_s	*node = buf->d;
 
 	++audit->leaves;
 #if 0
@@ -1611,29 +1613,29 @@ static int leaf_audit(Buf_s *buf, Audit_s *audit, int depth)
 	return 0;
 }
 
-static int branch_audit(Buf_s *buf, Audit_s *audit, int depth)
+static int branch_audit (Buf_s *buf, Audit_s *audit, int depth)
 {
-	Node_s *node = buf->d;
-	Blknum_t blknum;
-	unint i;
-	int rc;
+	Node_s		*node = buf->d;
+	Blknum_t	blknum;
+	unint		i;
+	int		rc;
 
 	++audit->branches;
 	rc = node_audit(buf->user, node->first, audit, depth);
 	if (rc) return rc;
 	for (i = 0; i < node->numrecs; i++) {
-		blknum = get_blknum(node, i);
+		blknum = node->twig[i].blknum;
 		rc = node_audit(buf->user, blknum, audit, depth);
 		if (rc) return rc;
 	}
 	return 0;
 }
 
-static int node_audit(Htree_s *t, Blknum_t blknum, Audit_s *audit, int depth)
+static int node_audit (Htree_s *t, Blknum_t blknum, Audit_s *audit, int depth)
 {
-	Buf_s *buf;
-	Node_s *node;
-	int rc = 0;
+	Buf_s	*buf;
+	Node_s	*node;
+	int	rc = 0;
 
 	if (!blknum) return rc;
 	buf = t_get(t, blknum);
@@ -1650,8 +1652,8 @@ static int node_audit(Htree_s *t, Blknum_t blknum, Audit_s *audit, int depth)
 
 int t_audit (Htree_s *t, Audit_s *audit)
 {
-	Key_t oldkey = 0;
-	int rc;
+	Key_t	oldkey = 0;
+	int	rc;
 
 	zero(*audit); 
 	rc = t_map(t, map_rec_audit, NULL, &oldkey);
@@ -1662,7 +1664,6 @@ int t_audit (Htree_s *t, Audit_s *audit)
 	rc = node_audit(t, t->root, audit, 0);
 	return rc;
 }
-#endif
 
 int lf_delete (Buf_s *buf, Key_t key)
 {
@@ -1839,9 +1840,8 @@ int  t_delete(Htree_s *t, Key_t key) {
 	warn("Not Implmented");
 	return 0;
 }
-#endif
 
-int  t_find  (Htree_s *t, Key_t key, Lump_s *val) {
+int t_audit (Htree_s *t, Audit_s *audit) {
 	warn("Not Implmented");
 	return 0;
 }
@@ -1850,8 +1850,9 @@ int  t_map   (Htree_s *t, Apply_f func, void *sys, void *user) {
 	warn("Not Implmented");
 	return 0;
 }
+#endif
 
-int t_audit (Htree_s *t, Audit_s *audit) {
+int  t_find  (Htree_s *t, Key_t key, Lump_s *val) {
 	warn("Not Implmented");
 	return 0;
 }
