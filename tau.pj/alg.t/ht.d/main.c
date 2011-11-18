@@ -22,14 +22,14 @@
 
 #include "ht.h"
 
-enum { NUM_BUFS = 10 };
-
 struct {
-	int iterations;
-	int level;
-	bool debug;
-	bool print;
+	int	numbufs;
+	int	iterations;
+	int	level;
+	bool	debug;
+	bool	print;
 } static Option = {
+	.numbufs = 20,
 	.iterations = 3000,
 	.level = 150,
 	.debug = FALSE,
@@ -90,7 +90,13 @@ Lump_s seq_lump(void)
 
 Key_t rnd_key (void)
 {
-	return twister_random();
+	switch (0) {
+	case 0: {
+			static Key_t	key = 0;
+			return ++key;
+		}
+	case 1: return twister_random();
+	}
 }
 
 Key_t seq_key (void)
@@ -182,16 +188,20 @@ void pr_stats (Htree_s *t)
 	Stat_s stat = t_get_stats(t);
 	u64 records = stat.insert - stat.delete;
 
-	printf("Num new leaves   = %8lld\n", stat.new_leaves);
-	printf("Num new branches = %8lld\n", stat.new_branches);
-	printf("Num split leaf   = %8lld\n", stat.split_leaf);
-	printf("Num split branch = %8lld\n", stat.split_branch);
-	printf("Num insert       = %8lld\n", stat.insert);
-	printf("Num find         = %8lld\n", stat.find);
-	printf("Num delete       = %8lld\n", stat.delete);
-	printf("Num join         = %8lld\n", stat.join);
-	printf("Num records      = %8lld\n", records);
-	printf("Records per leaf = %g\n", (double)records / stat.new_leaves);
+	printf("Num new leaves       = %8lld\n", stat.leaf.new);
+	printf("Num new branches     = %8lld\n", stat.branch.new);
+	printf("Num split leaf       = %8lld\n", stat.leaf.split);
+	printf("Num split branch     = %8lld\n", stat.branch.split);
+	printf("Num join leaf        = %8lld\n", stat.leaf.join);
+	printf("Num join branch      = %8lld\n", stat.branch.join);
+	printf("Num deleted leaves   = %8lld\n", stat.leaf.deleted);
+	printf("Num deleted branches = %8lld\n", stat.branch.deleted);
+	printf("Num insert           = %8lld\n", stat.insert);
+	printf("Num find             = %8lld\n", stat.find);
+	printf("Num delete           = %8lld\n", stat.delete);
+	printf("Num records          = %8lld\n", records);
+	printf("Records per leaf = %g\n",
+		(double)records / (stat.leaf.new - stat.leaf.deleted));
 }
 
 void t_print (Htree_s *t)
@@ -295,7 +305,7 @@ void test_seq(int n)
 	unint i;
 
 	if (FALSE) seed_random();
-	t = t_new(".tfile", NUM_BUFS);
+	t = t_new(".tfile", Option.numbufs);
 	for (i = 0; i < n; i++) {
 		t_print(t);
 		key = seq_key();
@@ -314,7 +324,7 @@ void test_rnd(int n)
 	unint	i;
 
 	if (FALSE) seed_random();
-	t = t_new(".tfile", NUM_BUFS);
+	t = t_new(".tfile", Option.numbufs);
 	for (i = 0; i < n; i++) {
 		key = rnd_key();
 		val = rnd_lump();
@@ -353,7 +363,7 @@ void test_find(int n)
 	unint	i;
 
 	if (FALSE) seed_random();
-	t = t_new(".tfile", NUM_BUFS);
+	t = t_new(".tfile", Option.numbufs);
 	for (i = 0; i < n; i++) {
 		key = rnd_key();
 		val = rnd_lump();
@@ -385,7 +395,7 @@ void test_delete(int n)
 	unint	i;
 
 	if (FALSE) seed_random();
-	t = t_new(".tfile", NUM_BUFS);
+	t = t_new(".tfile", Option.numbufs);
 	for (i = 0; i < n; i++) {
 		key = rnd_key();
 		val = rnd_lump();
@@ -446,7 +456,7 @@ void test_level (int n, int level)
 
 	Option.debug = TRUE;
 	if (FALSE) seed_random();
-	t = t_new(".tfile", NUM_BUFS);
+	t = t_new(".tfile", Option.numbufs);
 	for (i = 0; i < n; i++) {
 if (i % 1000 == 0) fprintf(stderr, ".");
 		if (should_delete(count, level)) {
@@ -480,11 +490,13 @@ printf("\n");
 void usage(void)
 {
 	pr_usage("[-dhp] [-i<iterations>] [-l<level>]\n"
+		"\t-b - turn on debugging [%d]\n"
 		"\t-d - turn on debugging [%s]\n"
 		"\t-h - print this help message\n"
 		"\t-i - num iterations [%d]\n"
 		"\t-l - level of records to keep [%d]\n"
 		"\t-p - turn on printing [%s]\n",
+		Option.numbufs,
 		Option.debug ? "on" : "off",
 		Option.iterations,
 		Option.level,
@@ -498,11 +510,14 @@ void myoptions(int argc, char *argv[])
 	fdebugoff();
 	setprogname(argv[0]);
 	setlocale(LC_NUMERIC, "en_US");
-	while ((c = getopt(argc, argv, "dhpi:l:")) != -1) {
+	while ((c = getopt(argc, argv, "dhpb:i:l:")) != -1) {
 		switch (c) {
 		case 'h':
 		case '?':
 			usage();
+			break;
+		case 'b':
+			Option.numbufs = strtoll(optarg, NULL, 0);
 			break;
 		case 'd':
 			Option.debug = TRUE;

@@ -164,7 +164,6 @@ void fatal_cleanup (void)
 
 	if (!Option.cleanup || cleaning_up) return;
 	cleaning_up = TRUE;
-	Fatal_cleanup = NULL;
 	cd("..");
 	rc = snprintf(cmd, sizeof(cmd), "rm -fr %s", Option.dir);
 	if (rc > sizeof(cmd) - 2) return;	/* shouldn't be that big */
@@ -174,18 +173,12 @@ void fatal_cleanup (void)
 	}
 }
 
-void cleanup_signal (int sig)
-{
-	fatal_cleanup();
-}
-
 void init (char *dir)
 {
 	int rc = mkdir(dir, 0700);
 	if (rc) fatal("mkdir %s:", dir);
 	cd(dir);
-	Fatal_cleanup = fatal_cleanup;
-	catch_signals(cleanup_signal);
+	set_cleanup(fatal_cleanup);
 }
 
 int open_file (char *name)

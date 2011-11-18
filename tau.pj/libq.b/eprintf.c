@@ -27,7 +27,15 @@
 #include <style.h>
 
 bool Stacktrace = TRUE;
-void (*Fatal_cleanup)(void) = NULL;
+static Cleanup_f Cleanup = NULL;
+
+static void call_cleanup (void)
+{
+	Cleanup_f cleanup = Cleanup;
+
+	Cleanup = NULL;		/* Prevent recursive loop of cleanup */
+	if (cleanup) cleanup();
+}
 
 /* pr_display: print debug message */
 void pr_display (const char *file, const char *func, int line, const char *fmt, ...)
@@ -73,11 +81,7 @@ void pr_fatal (const char *file, const char *func, int line, const char *fmt, ..
 	}
 	fprintf(stderr, "\n");
 	if (Stacktrace) stacktrace_err();
-	if (Fatal_cleanup) {
-		void (*cleanup)(void) = Fatal_cleanup;
-		Fatal_cleanup = NULL;	/* Prevent recursive loop of cleanup */
-		cleanup();
-	}
+	call_cleanup();
 	exit(2); /* conventional value for failed execution */
 }
 
@@ -141,6 +145,7 @@ void eprintf (const char *fmt, ...)
 			fprintf(stderr, " %s<%d>", strerror(errno), errno);
 	}
 	fprintf(stderr, "\n");
+	call_cleanup();
 	exit(2); /* conventional value for failed execution */
 }
 
@@ -241,19 +246,35 @@ void setprogname (const char *str)
 }
 #endif
 
-void catch_signals (catch_signal_t cleanup)
+static void caught_signal (int sig)
 {
-	signal(SIGHUP,	cleanup);
-	signal(SIGINT,	cleanup);
-	signal(SIGQUIT,	cleanup);
-	signal(SIGILL,	cleanup);
-	signal(SIGTRAP,	cleanup);
-	signal(SIGABRT,	cleanup);
-	signal(SIGBUS,	cleanup);
-	signal(SIGFPE,	cleanup);
-	signal(SIGKILL,	cleanup);
-	signal(SIGSEGV,	cleanup);
-	signal(SIGPIPE,	cleanup);
-	signal(SIGSTOP,	cleanup);
-	signal(SIGTSTP,	cleanup);
+	call_cleanup();
+}
+
+static void catch_signals (void)
+{
+	signal(SIGHUP,	caught_signal);
+	signal(SIGINT,	caught_signal);
+	signal(SIGQUIT,	caught_signal);
+	signal(SIGILL,	caught_signal);
+	signal(SIGTRAP,	caught_signal);
+	signal(SIGABRT,	caught_signal);
+	signal(SIGBUS,	caught_signal);
+	signal(SIGFPE,	caught_signal);
+	signal(SIGKILL,	caught_signal);
+	signal(SIGSEGV,	caught_signal);
+	signal(SIGPIPE,	caught_signal);
+	signal(SIGSTOP,	caught_signal);
+	signal(SIGTSTP,	caught_signal);
+}
+
+void set_cleanup (Cleanup_f cleanup)
+{
+	Cleanup = cleanup;
+	catch_signals();
+}
+
+void clear_cleanup (void)
+{
+	Cleanup = NULL;
 }

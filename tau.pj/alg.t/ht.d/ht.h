@@ -36,21 +36,23 @@ typedef struct Hrec_s {
 typedef int (*Apply_f)(Hrec_s rec, Htree_s *t, void *user);
 
 typedef struct Stat_s {
-	u64 new_leaves;
-	u64 new_branches;
-	u64 split_leaf;
-	u64 split_branch;
-	u64 insert;
-	u64 find;
-	u64 delete;
-	u64 join;
+	struct {
+		u64	new;
+		u64	deleted;
+		u64	split;
+		u64	join;
+	} leaf, branch;
+	u64	insert;
+	u64	find;
+	u64	delete;
+	u64	join;
 } Stat_s;
 
 typedef struct Audit_s {
-	u64 leaves;
-	u64 branches;
-	u64 records;
-	int max_depth;
+	u64	leaves;
+	u64	branches;
+	u64	records;
+	int	max_depth;
 } Audit_s;
 
 Htree_s *t_new(char *file, int num_bufs);
