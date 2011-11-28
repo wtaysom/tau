@@ -12,16 +12,18 @@
 
 typedef struct Cache_s Cache_s;
 
-typedef struct Buf_s {
-	Cache_s *cache;
-	u64 blknum;
-	u64 crc;
-	int inuse;
-	bool dirty;
-	bool clock;
-	void *user;
-	void *d;
-} Buf_s;
+typedef struct Buf_s	Buf_s;
+struct Buf_s {
+	Buf_s	*next;
+	Cache_s	*cache;
+	u64	blknum;
+	u64	crc;
+	int	inuse;
+	bool	dirty;
+	bool	clock;
+	void	*user;
+	void	*d;
+};
 
 typedef struct CacheStat_s {
 	int numbufs;

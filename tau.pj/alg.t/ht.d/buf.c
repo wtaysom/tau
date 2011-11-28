@@ -18,23 +18,30 @@
 #include <crc.h>
 #include <debug.h>
 #include <eprintf.h>
+#include <mystdlib.h>
 #include <style.h>
 
 #include "buf.h"
 #include "ht_disk.h"
 
 typedef struct Dev_s {
-	int fd;
-	u64 next; // Next block num to allocate
-	u64 block_size;
-	char *name;
+	int	fd;
+	u64	next; // Next block num to allocate
+	u64	block_size;
+	char	*name;
 } Dev_s;
 
+typedef struct Hash_s {
+	unint	numbuckets;
+	Buf_s	**bucket;
+} Hash_s;
+
 struct Cache_s {
-	Dev_s *dev;
-	int clock;
-	Buf_s *buf;
-	CacheStat_s stat;
+	Dev_s		*dev;
+	int		clock;
+	Buf_s		*buf;
+	Hash_s		hash;
+	CacheStat_s	stat;
 };
 
 CacheStat_s cache_stats (Cache_s *cache) { return cache->stat; }
@@ -57,11 +64,10 @@ FN;
 	return dev;
 }
 
-void dev_blknum(Dev_s *dev, Buf_s *b)
+Blknum_t dev_blknum (Dev_s *dev)
 {
 FN;
-	b->blknum = dev->next++;
-	memset(b->d, 0, dev->block_size);
+	return dev->next++;
 }
 
 void dev_flush(Buf_s *b)
@@ -91,11 +97,11 @@ FN;
 Cache_s *cache_new(char *filename, u64 numbufs, u64 block_size)
 {
 FN;
-	Cache_s *cache;
-	Buf_s *b;
-	Dev_s *dev;
-	u8 *data;
-	u64 i;
+	Cache_s	*cache;
+	Buf_s	*b;
+	Dev_s	*dev;
+	u8	*data;
+	u64	i;
 
 	dev = dev_open(filename, block_size);
 	if (!dev) return NULL;
@@ -110,33 +116,75 @@ FN;
 		b[i].cache = cache;
 		b[i].d = &data[i * block_size];
 	}
+	cache->hash.numbuckets = findprime(numbufs);
+	cache->hash.bucket = ezalloc(sizeof(Buf_s *) * cache->hash.numbuckets);
 	return cache;
 }
 
-// TODO(taysom) Implement a hash lookup
-Buf_s *lookup(Cache_s *cache, Blknum_t blknum)
+static inline Buf_s *hash (Cache_s *cache,  Blknum_t blknum)
+{
+	return (Buf_s *)&cache->hash.bucket[blknum % cache->hash.numbuckets];
+}
+
+Buf_s *lookup (Cache_s *cache, Blknum_t blknum)
 {
 FN;
-	int i;
+	Buf_s	*b;
+	Buf_s	*prev;
 
-	for (i = 0; i < cache->stat.numbufs; i++) {
-		if (cache->buf[i].blknum == blknum) {
-			++cache->buf[i].inuse;
+	prev = hash(cache, blknum);
+	b = prev->next;
+	while (b) {
+		if (b->blknum == blknum) {
+			++b->inuse;
 			++cache->stat.gets;
 			++cache->stat.hits;
-			return &cache->buf[i];
+			return b;
 		}
+		b = b->next;
 	}
 	++cache->stat.miss;
 	return NULL;
 }
 
-Buf_s *victim(Cache_s *cache)
+void rmv (Cache_s *cache, Blknum_t blknum)
 {
 FN;
-	Buf_s *b;
+	Buf_s	*b;
+	Buf_s	*prev;
 
-	for (;;) {
+	prev = hash(cache, blknum);
+	b = prev->next;
+	while (b) {
+		if (b->blknum == blknum) {
+			b->blknum = 0;
+			prev->next = b->next;
+			b->next = NULL;
+			return;
+		}
+		prev = b;
+		b = b->next;
+	}
+}
+
+void add (Cache_s *cache, Buf_s *b)
+{
+FN;
+	Buf_s	*prev = hash(cache, b->blknum);
+
+	assert(b->blknum);
+	assert(b->next == NULL);
+	b->next = prev->next;
+	prev->next = b;
+}
+
+Buf_s *victim (Cache_s *cache, Blknum_t blknum)
+{
+FN;
+	Buf_s	*b;
+	int	i;
+
+	for (i = 0; i < cache->stat.numbufs * 2; i++) {
 		++cache->clock;
 		if (cache->clock >= cache->stat.numbufs) {
 			cache->clock = 0;
@@ -150,18 +198,24 @@ FN;
 			memset(b->d, 0, cache->dev->block_size);
 			++b->inuse;
 			++cache->stat.gets;
+			if (b->blknum) rmv(cache, b->blknum);
+			b->blknum = blknum;
+			if (blknum) add(cache, b);
 			return b;
 		}
 	}
+	fatal("Out of cache buffers");
+	return NULL;
 }
 
 Buf_s *buf_new(Cache_s *cache)
 {
 FN;
-	Buf_s *b;
+	Buf_s		*b;
+	Blknum_t	blknum;
 
-	b = victim(cache);
-	dev_blknum(cache->dev, b);
+	blknum = dev_blknum(cache->dev);
+	b = victim(cache, blknum);
 	b->dirty = TRUE;
 	b->crc = 0;
 	return b;
@@ -175,8 +229,7 @@ FN;
 	assert(blknum != 0);
 	b = lookup(cache, blknum);
 	if (!b) {
-		b = victim(cache);
-		b->blknum = blknum;
+		b = victim(cache, blknum);
 		dev_fill(b);
 	}
 	b->clock = TRUE;
@@ -196,8 +249,7 @@ Buf_s *buf_scratch(Cache_s *cache)
 FN;
 	Buf_s *b;
 
-	b = victim(cache);
-	b->blknum = 0;
+	b = victim(cache, 0);
 	return b;
 }
 
@@ -262,7 +314,7 @@ FN;
 	++cache->stat.puts;
 	--b->inuse;
 	if (!b->inuse) {
-		b->blknum = 0;
+		if (b->blknum) rmv(cache, b->blknum);
 	}
 	//XXX: Don't know what to do yet with freed block
 }

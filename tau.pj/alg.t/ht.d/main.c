@@ -473,7 +473,7 @@ if (i % 1000 == 0) fprintf(stderr, ".");
 					(u64)key, val.d);
 			++count;
 		}
-		audit(t);
+		//audit(t);
 	}
 printf("\n");
 	audit(t);
@@ -490,7 +490,7 @@ printf("\n");
 void usage(void)
 {
 	pr_usage("[-dhp] [-i<iterations>] [-l<level>]\n"
-		"\t-b - turn on debugging [%d]\n"
+		"\t-b - set number of buffers [%d]\n"
 		"\t-d - turn on debugging [%s]\n"
 		"\t-h - print this help message\n"
 		"\t-i - num iterations [%d]\n"
