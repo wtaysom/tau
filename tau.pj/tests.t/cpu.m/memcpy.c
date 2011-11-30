@@ -21,10 +21,16 @@
 #include <timer.h>
 #include <twister.h>
 
+typedef void (*test_loop_f)(int j, u8 *a, u8 *b, int n, void *function);
 typedef void *(*memcpy_f)(void *dst, const void *src, size_t count);
 typedef void *(*memset_f)(void *dst, int c, size_t count);
-typedef int (*summem_f)(const void *src, size_t count);
+typedef int (*memsum_f)(const void *src, size_t count);
 
+/* Some tests report in powers of 10 others in powers of 2.
+ * Meg provides for conversion from bytes and nanoseconds
+ * to megabytes per second in either powers of 10 or powers
+ * of 2.
+ */
 struct {
 	double scale;
 	char *units;
@@ -71,8 +77,7 @@ void *alloc_aligned (size_t nbytes)
 	void	*p;
 	int	rc;
 
-	rc = posix_memalign(&p, ALIGNMENT,
-		((nbytes + ALIGNMENT - 1 ) / ALIGNMENT) * ALIGNMENT);
+	rc = posix_memalign(&p, ALIGNMENT, nbytes);
 	if (rc) {
 		fatal("posix_memalign %d:", rc);
 	}
@@ -142,7 +147,7 @@ void *memset64 (void *dst, int c, size_t n)
 	return dst;
 }
 
-int summem8 (const void *src, size_t n)
+int memsum8 (const void *src, size_t n)
 {
 	const u8	*s = src;
 	int		sum = 0;
@@ -151,7 +156,7 @@ int summem8 (const void *src, size_t n)
 	return sum;
 }
 
-int summem32 (const void *src, size_t n)
+int memsum32 (const void *src, size_t n)
 {
 	const u32	*s = src;
 	int		sum = 0;
@@ -161,7 +166,7 @@ int summem32 (const void *src, size_t n)
 	return sum;
 }
 
-int summem64 (const void *src, size_t n)
+int memsum64 (const void *src, size_t n)
 {
 	const u64	*s = src;
 	int		sum = 0;
@@ -184,17 +189,77 @@ void initMem (void *mem, int n)
 	}
 }
 
-void memcpyTest (char *test_name, memcpy_f f)
+void memcpy_loop (int j, u8 *a, u8 *b, int n, void *function)
 {
-	struct rusage before;
-	struct rusage after;
-	u64 start;
-	u64 finish;
-	u8 *a;
-	u8 *b;
-	int n;
-	int i;
-	int j;
+	memcpy_f	f = function;
+	u64		start;
+	u64		finish;
+	int		i;
+
+	start = nsecs();
+	for (i = Option.iterations; i > 0; i--) {
+		f(a, b, n);
+		if (bidirectional) f(b, a, n);
+	}
+	finish = nsecs();
+	if (bidirectional) {
+		printf("%d. %g %s/sec\n", j,
+			2.0 * meg.scale * (n * (u64)Option.iterations) /
+				(double)(finish - start),
+			meg.units);
+	} else {
+		printf("%d. %g %s/sec\n", j,
+			meg.scale * (n * (u64)Option.iterations) /
+				(double)(finish - start),
+			meg.units);
+	}
+}
+
+void memset_loop (int j, u8 *a, u8 *b, int n, void *function)
+{
+	memset_f	f = function;
+	u64		start;
+	u64		finish;
+	int		i;
+
+	start = nsecs();
+	for (i = Option.iterations; i > 0; i--) {
+		f(a, 0, n);
+	}
+	finish = nsecs();
+	printf("%d. %g %s/sec\n", j,
+		meg.scale * (n * (u64)Option.iterations) /
+			(double)(finish - start),
+		meg.units);
+}
+
+void memsum_loop (int j, u8 *a, u8 *b, int n, void *function)
+{
+	memsum_f	f = function;
+	u64		start;
+	u64		finish;
+	int		i;
+
+	start = nsecs();
+	for (i = Option.iterations; i > 0; i--) {
+		f(a, n);
+	}
+	finish = nsecs();
+	printf("%d. %g %s/sec\n", j,
+		meg.scale * (n * (u64)Option.iterations) /
+			(double)(finish - start),
+		meg.units);
+}
+
+void test (char *test_name, test_loop_f test_loop, void *function)
+{
+	struct rusage	before;
+	struct rusage	after;
+	u8		*a;
+	u8		*b;
+	int		n;
+	int		j;
+
 	printf("%s (%s)\n", test_name, meg.legend);
 	n = Option.file_size;
 	a = alloc_aligned(n);
@@ -205,97 +270,13 @@ void memcpyTest (char *test_name, memcpy_f f)
 	}
 	for (j = 0; j < Option.loops; j++) {
 		getrusage(RUSAGE_SELF, &before);
-		start = nsecs();
-		for (i = Option.iterations; i > 0; i--) {
-			f(a, b, n);
-			if (bidirectional) f(b, a, n);
-		}
-		finish = nsecs();
-		if (bidirectional) {
-			printf("%d. %g %s/sec\n", j,
-				2.0 * meg.scale * (n * (u64)Option.iterations) /
-					(double)(finish - start),
-				meg.units);
-		} else {
-			printf("%d. %g %s/sec\n", j,
-				meg.scale * (n * (u64)Option.iterations) /
-					(double)(finish - start),
-				meg.units);
-		}
+		test_loop(j, a, b, n, function);
 		getrusage(RUSAGE_SELF, &after);
 		PrUsage(&before);
 		PrUsage(&after);
 	}
 	free(a);
 	free(b);
-}
-
-void memsetTest (char *test_name, memset_f f)
-{
-	struct rusage	before;
-	struct rusage	after;
-	u64	start;
-	u64	finish;
-	u8	*a;
-	int	n;
-	int	i;
-	int	j;
-	printf("%s (%s)\n", test_name, meg.legend);
-	n = Option.file_size;
-	a = alloc_aligned(n);
-	if (init_buffers) {
-		initMem(a, n);
-	}
-	for (j = 0; j < Option.loops; j++) {
-		getrusage(RUSAGE_SELF, &before);
-		start = nsecs();
-		for (i = Option.iterations; i > 0; i--) {
-			f(a, 0, n);
-		}
-		finish = nsecs();
-		printf("%d. %g %s/sec\n", j,
-			meg.scale * (n * (u64)Option.iterations) /
-				(double)(finish - start),
-			meg.units);
-		getrusage(RUSAGE_SELF, &after);
-		PrUsage(&before);
-		PrUsage(&after);
-	}
-	free(a);
-}
-
-void summemTest (char *test_name, summem_f f)
-{
-	struct rusage	before;
-	struct rusage	after;
-	u64	start;
-	u64	finish;
-	u8	*a;
-	int	n;
-	int	i;
-	int	j;
-	printf("%s (%s)\n", test_name, meg.legend);
-	n = Option.file_size;
-	a = alloc_aligned(n);
-	if (init_buffers) {
-		initMem(a, n);
-	}
-	for (j = 0; j < Option.loops; j++) {
-		getrusage(RUSAGE_SELF, &before);
-		start = nsecs();
-		for (i = Option.iterations; i > 0; i--) {
-			f(a, n);
-		}
-		finish = nsecs();
-		printf("%d. %g %s/sec\n", j,
-			meg.scale * (n * (u64)Option.iterations) /
-				(double)(finish - start),
-			meg.units);
-		getrusage(RUSAGE_SELF, &after);
-		PrUsage(&before);
-		PrUsage(&after);
-	}
-	free(a);
 }
 
 pthread_mutex_t StartLock = PTHREAD_MUTEX_INITIALIZER;
@@ -316,23 +297,23 @@ void *RunTest (void *arg)
 	Ready();
 
 	printf("memcpy tests:\n");
-	memcpyTest("memcpy", memcpy);
-	memcpyTest("simple", memcpySimple);
-	memcpyTest("glibc", memcpyGlibc);
-	memcpyTest("32bit", memcpy32);
-	memcpyTest("64bit", memcpy64);
+	test("memcpy", memcpy_loop, memcpy);
+	test("simple", memcpy_loop, memcpySimple);
+	test("glibc",  memcpy_loop, memcpyGlibc);
+	test("32bit",  memcpy_loop, memcpy32);
+	test("64bit",  memcpy_loop, memcpy64);
 
 	printf("\nmemset tests:\n");
-	memsetTest("memset", memset);
-	memsetTest("8bit", memset8);
-	memsetTest("glibc", memsetGlibc);
-	memsetTest("32bit", memset32);
-	memsetTest("64bit", memset64);
+	test("memset", memset_loop, memset);
+	test("8bit",   memset_loop, memset8);
+	test("glibc",  memset_loop, memsetGlibc);
+	test("32bit",  memset_loop, memset32);
+	test("64bit",  memset_loop, memset64);
 
-	printf("\nsummem tests:\n");
-	summemTest("8bit", summem8);
-	summemTest("32bit", summem32);
-	summemTest("64bit", summem64);
+	printf("\nmemsum tests:\n");
+	test("8bit",  memsum_loop, memsum8);
+	test("32bit", memsum_loop, memsum32);
+	test("64bit", memsum_loop, memsum64);
 	return NULL;
 }
 

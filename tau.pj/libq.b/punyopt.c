@@ -64,7 +64,7 @@ void punyopt (
 		options = emalloc(strlen(myoptions) + strlen(Default) + 1);
 		cat(options, myoptions, Default, NULL);
 	} else {
-		options = Default;
+		options = strdup(Default);
 	}
 	setprogname(argv[0]);
 	setlocale(LC_NUMERIC, "en_US");
