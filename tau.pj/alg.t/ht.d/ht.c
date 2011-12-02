@@ -23,7 +23,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <crc.h>
 #include <debug.h>
 #include <eprintf.h>
 #include <mystdlib.h>

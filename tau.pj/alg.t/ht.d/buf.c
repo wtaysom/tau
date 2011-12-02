@@ -8,12 +8,8 @@
 // could even just encode the length into bytes and put it back together.
 // then it could be 3 bytes :-)
 
-#define _XOPEN_SOURCE 500
-
-#include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
 
 #include <crc.h>
 #include <debug.h>
@@ -22,14 +18,8 @@
 #include <style.h>
 
 #include "buf.h"
+#include "dev.h"
 #include "ht_disk.h"
-
-typedef struct Dev_s {
-	int	fd;
-	u64	next; // Next block num to allocate
-	u64	block_size;
-	char	*name;
-} Dev_s;
 
 typedef struct Hash_s {
 	unint	numbuckets;
@@ -46,54 +36,6 @@ struct Cache_s {
 
 CacheStat_s cache_stats (Cache_s *cache) { return cache->stat; }
 
-Dev_s *dev_open(char *name, u64 block_size)
-{
-FN;
-	Dev_s *dev;
-	int fd;
-
-	fd = open(name, O_RDWR | O_CREAT, 0666);
-	if (fd == -1) {
-		fatal("open %s:", name);
-	}
-	dev = ezalloc(sizeof(*dev));
-	dev->fd = fd;
-	dev->next = 1;
-	dev->block_size = block_size;
-	dev->name = strdup(name);
-	return dev;
-}
-
-Blknum_t dev_blknum (Dev_s *dev)
-{
-FN;
-	return dev->next++;
-}
-
-void dev_flush(Buf_s *b)
-{
-//FN;
-	Dev_s *dev = b->cache->dev;
-	int rc = pwrite(dev->fd, b->d, dev->block_size,
-			b->blknum * dev->block_size);
-	if (rc == -1) {
-		fatal("pwrite of %s at %lld:", dev->name, b->blknum);
-	}
-}
-
-void dev_fill(Buf_s *b)
-{
-FN;
-	Dev_s *dev = b->cache->dev;
-	int rc = pread(dev->fd, b->d, dev->block_size,
-			b->blknum * dev->block_size);
-
-	if (rc == -1) {
-		fatal("pread of %s at %lld:", dev->name, b->blknum);
-	}
-	b->crc = crc64(b->d, dev->block_size);
-}
-
 Cache_s *cache_new(char *filename, u64 numbufs, u64 block_size)
 {
 FN;
@@ -103,7 +45,7 @@ FN;
 	u8	*data;
 	u64	i;
 
-	dev = dev_open(filename, block_size);
+	dev = dev_create(filename, block_size);
 	if (!dev) return NULL;
 
 	b = ezalloc(sizeof(*b) * numbufs);
@@ -208,7 +150,7 @@ FN;
 	return NULL;
 }
 
-Buf_s *buf_new(Cache_s *cache)
+Buf_s *buf_new (Cache_s *cache)
 {
 FN;
 	Buf_s		*b;
@@ -221,7 +163,7 @@ FN;
 	return b;
 }
 
-Buf_s *buf_get(Cache_s *cache, Blknum_t blknum)
+Buf_s *buf_get (Cache_s *cache, Blknum_t blknum)
 {
 FN;
 	Buf_s *b;
@@ -230,7 +172,7 @@ FN;
 	b = lookup(cache, blknum);
 	if (!b) {
 		b = victim(cache, blknum);
-		dev_fill(b);
+		dev_fill(b->cache->dev, b);
 	}
 	b->clock = TRUE;
 //b->dirty = TRUE;
@@ -244,7 +186,7 @@ if (b->blknum != ((Node_s *)b->d)->blknum) {
 	return b;
 }
 
-Buf_s *buf_scratch(Cache_s *cache)
+Buf_s *buf_scratch (Cache_s *cache)
 {
 FN;
 	Buf_s *b;
@@ -253,7 +195,7 @@ FN;
 	return b;
 }
 
-void buf_put(Buf_s **bp)
+void buf_put (Buf_s **bp)
 {
 FN;
 	Buf_s *b = *bp;
@@ -272,7 +214,7 @@ FN;
 			}
 			//XXX: this can be true. assert(crc != b->crc);
 			b->crc = crc;
-			dev_flush(b);
+			dev_flush(b->cache->dev, b);
 			b->dirty = FALSE;
 		} else {
 			if (crc != b->crc) {
@@ -283,14 +225,14 @@ FN;
 	}
 }
 
-void buf_put_dirty(Buf_s **bp)
+void buf_put_dirty (Buf_s **bp)
 {
 FN;
 	buf_dirty(*bp);
 	buf_put(bp);
 }
 
-void buf_toss(Buf_s **bp)
+void buf_toss (Buf_s **bp)
 {
 FN;
 	Buf_s *b = *bp;
@@ -302,7 +244,7 @@ FN;
 	--b->inuse;
 }
 
-void buf_free(Buf_s **bp)
+void buf_free (Buf_s **bp)
 {
 FN;
 	Buf_s *b = *bp;
