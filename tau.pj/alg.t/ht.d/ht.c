@@ -56,12 +56,12 @@ typedef struct Apply_s {
 	void	*user;
 } Apply_s;
 
-void lump_dump(Lump_s a);
-void lf_dump(Buf_s *buf, int indent);
-void br_dump(Buf_s *buf, int indent);
-void node_dump(Htree_s *t, Blknum_t blknum, int indent);
-void pr_leaf(Node_s *leaf);
-void pr_branch(Node_s *branch);
+static void lump_dump(Lump_s a);
+static void lf_dump(Buf_s *buf, int indent);
+static void br_dump(Buf_s *buf, int indent);
+static void node_dump(Htree_s *t, Blknum_t blknum, int indent);
+static void pr_leaf(Node_s *leaf);
+static void pr_branch(Node_s *branch);
 
 bool Dump_buf = FALSE;
 
@@ -92,7 +92,7 @@ void cache_err (Htree_s *t)
 		(double)(cs.hits) / (cs.hits + cs.miss) * 100.);
 }
 
-Buf_s *t_get (Htree_s *t, Blknum_t blknum)
+static Buf_s *t_get (Htree_s *t, Blknum_t blknum)
 {
 	Buf_s *buf = buf_get(t->cache, blknum);
 	buf->user = t;
@@ -102,19 +102,19 @@ Buf_s *t_get (Htree_s *t, Blknum_t blknum)
 Stat_s      t_get_stats   (Htree_s *t) { return t->stat; }
 CacheStat_s t_cache_stats (Htree_s *t) { return cache_stats(t->cache); }
 
-int usable (Node_s *leaf)
+static int usable (Node_s *leaf)
 {
 FN;
 	assert(leaf->isleaf);
 	return leaf->end - SZ_HEAD - SZ_U16 * leaf->numrecs;
 }
 
-int inuse (Node_s *leaf)
+static int inuse (Node_s *leaf)
 {
 	return BLOCK_SIZE - SZ_HEAD - leaf->free;
 }
 
-Key_t get_key (Node_s *leaf, unint i)
+static Key_t get_key (Node_s *leaf, unint i)
 {
 	Key_t	key;
 	unint	x;
@@ -129,7 +129,8 @@ Key_t get_key (Node_s *leaf, unint i)
 	return key;
 }
 
-Lump_s get_val (Node_s *leaf, unint i)
+#if 0
+static Lump_s get_val (Node_s *leaf, unint i)
 {
 	Lump_s	val;
 	unint	x;
@@ -146,8 +147,9 @@ Lump_s get_val (Node_s *leaf, unint i)
 	val.d = start;
 	return val;
 }
+#endif
 
-Hrec_s get_rec (Node_s *leaf, unint i)
+static Hrec_s get_rec (Node_s *leaf, unint i)
 {
 	Hrec_s	rec;
 	unint	x;
@@ -167,7 +169,7 @@ Hrec_s get_rec (Node_s *leaf, unint i)
 	return rec;
 }
 
-void pr_indent (int indent)
+static void pr_indent (int indent)
 {
 	int i;
 
@@ -176,7 +178,7 @@ void pr_indent (int indent)
 	}
 }
 
-void pr_head (Node_s *node, int indent)
+static void pr_head (Node_s *node, int indent)
 {
 	pr_indent(indent);
 	if (node->isleaf) {
@@ -193,7 +195,7 @@ void pr_head (Node_s *node, int indent)
 	}
 }
 
-void pr_buf(Buf_s *buf, int indent)
+static void pr_buf(Buf_s *buf, int indent)
 {
 	enum { BYTES_PER_ROW = 16 };
 	unint	i;
@@ -259,7 +261,7 @@ void pr_rec (Hrec_s rec)
 	pr_lump(rec.val);
 }
 
-void pr_leaf(Node_s *leaf)
+static void pr_leaf(Node_s *leaf)
 {
 	unint	i;
 	Hrec_s	rec;
@@ -273,7 +275,7 @@ void pr_leaf(Node_s *leaf)
 	}
 }
 
-void pr_branch(Node_s *branch)
+static void pr_branch(Node_s *branch)
 {
 	unint	i;
 	Twig_s	*twig = branch->twig;
@@ -295,7 +297,7 @@ void pr_node(Node_s *node)
 	}
 }
 
-void init_node (Node_s *node, bool isleaf, Blknum_t blknum)
+static void init_node (Node_s *node, bool isleaf, Blknum_t blknum)
 {
 FN;
 	node->isleaf = isleaf;
@@ -309,12 +311,12 @@ FN;
 	}
 }
 
-void key_dump (Key_t key)
+static void key_dump (Key_t key)
 {
 	printf("%llu", (u64)key);
 }
 
-void lump_dump(Lump_s a)
+static void lump_dump(Lump_s a)
 {
 #if 0
 	int	i;
@@ -327,7 +329,7 @@ void lump_dump(Lump_s a)
 #endif
 }
 
-void rec_dump (Hrec_s rec)
+static void rec_dump (Hrec_s rec)
 {
 	key_dump(rec.key);
 	printf(" = ");
@@ -335,7 +337,7 @@ void rec_dump (Hrec_s rec)
 	printf("\n");
 }
 
-void lf_dump (Buf_s *buf, int indent)
+static void lf_dump (Buf_s *buf, int indent)
 {
 	Node_s	*leaf = buf->d;
 	Hrec_s	rec;
@@ -353,7 +355,7 @@ void lf_dump (Buf_s *buf, int indent)
 	}
 }
 
-void br_dump (Buf_s *buf, int indent)
+static void br_dump (Buf_s *buf, int indent)
 {
 	Node_s	*branch = buf->d;
 	Twig_s	twig;
@@ -373,7 +375,7 @@ void br_dump (Buf_s *buf, int indent)
 	}
 }
 
-void node_dump (Htree_s *t, Blknum_t blknum, int indent)
+static void node_dump (Htree_s *t, Blknum_t blknum, int indent)
 {
 	Buf_s	*buf;
 	Node_s	*node;
@@ -390,7 +392,7 @@ void node_dump (Htree_s *t, Blknum_t blknum, int indent)
 }
 
 #if 0
-bool isGE (Node_s *leaf, Key_t key, unint i)
+static bool isGE (Node_s *leaf, Key_t key, unint i)
 {
 FN;
 	Key_t	target;
@@ -400,7 +402,7 @@ FN;
 }
 #endif
 
-bool isLT (Node_s *leaf, Key_t key, unint i)
+static bool isLT (Node_s *leaf, Key_t key, unint i)
 {
 	Key_t	target;
 
@@ -408,7 +410,7 @@ bool isLT (Node_s *leaf, Key_t key, unint i)
 	return key < target;
 }
 
-int isEQ (Node_s *leaf, Key_t key, unint i)
+static int isEQ (Node_s *leaf, Key_t key, unint i)
 {
 	Key_t	target;
 
@@ -418,7 +420,7 @@ int isEQ (Node_s *leaf, Key_t key, unint i)
 	return 1;
 }
 
-void store_key (Node_s *leaf, Key_t key)
+static void store_key (Node_s *leaf, Key_t key)
 {
 FN;
 	u8	*start;
@@ -433,7 +435,7 @@ FN;
 	PACK(start, key);
 }
 
-void store_lump (Node_s *leaf, Lump_s lump)
+static void store_lump (Node_s *leaf, Lump_s lump)
 {
 FN;
 	int total = lump.size + SZ_U16;
@@ -452,16 +454,8 @@ FN;
 	memmove(start, lump.d, lump.size);
 }
 
-void update_blknum (Node_s *branch, Blknum_t blknum, unint irec)
-{
-FN;
-	assert(!branch->isleaf);
-	assert(irec < branch->numrecs);
-	branch->twig[irec].blknum = blknum;
-}
-
 /* XXX: Don't like this name */
-void store_end (Node_s *leaf, unint i)
+static void store_end (Node_s *leaf, unint i)
 {
 FN;
 	assert(leaf->isleaf);
@@ -475,7 +469,7 @@ FN;
 	leaf->free -= SZ_U16;
 }
 
-void rec_copy(Node_s *dst, int a, Node_s *src, int b)
+static void rec_copy(Node_s *dst, int a, Node_s *src, int b)
 {
 	assert(dst->isleaf);
 	assert(src->isleaf);
@@ -487,20 +481,7 @@ void rec_copy(Node_s *dst, int a, Node_s *src, int b)
 	store_end(dst, a);
 }
 
-void twig_copy (Node_s *dst, int a, Node_s *src, int b)
-{
-	assert(!dst->isleaf);
-	assert(!src->isleaf);
-
-	if (a < dst->numrecs) {
-		memmove( &dst->twig[a + 1], &dst->twig[a],
-			(dst->numrecs - a) * SZ_U16);
-	}
-	dst->twig[a] = src->twig[b];
-	++dst->numrecs;
-}
-
-void lf_compact (Node_s *leaf)
+static void lf_compact (Node_s *leaf)
 {
 FN;
 	u8	b[BLOCK_SIZE];
@@ -517,7 +498,7 @@ FN;
 	memmove(leaf, h, BLOCK_SIZE);
 }
 
-void store_rec (Node_s *leaf, Key_t key, Lump_s val, unint i)
+static void store_rec (Node_s *leaf, Key_t key, Lump_s val, unint i)
 {
 FN;
 	assert(leaf->isleaf);
@@ -527,7 +508,7 @@ FN;
 	store_end(leaf, i);
 }
 
-void delete_rec (Node_s *leaf, unint i)
+static void delete_rec (Node_s *leaf, unint i)
 {
 FN;
 	Hrec_s	rec;
@@ -543,7 +524,7 @@ FN;
 	}
 }
 
-void lf_audit (const char *fn, unsigned line, Node_s *leaf)
+static void lf_audit (const char *fn, unsigned line, Node_s *leaf)
 {
 FN;
 	Hrec_s	rec;
@@ -562,7 +543,7 @@ FN;
 	}
 }
 
-void br_audit (const char *fn, unsigned line, Node_s *branch)
+static void br_audit (const char *fn, unsigned line, Node_s *branch)
 {
 FN;
 	Key_t	prev;
@@ -583,7 +564,7 @@ FN;
 	}
 }
 
-int leaf_lt (Node_s *leaf, Key_t key)
+static int leaf_lt (Node_s *leaf, Key_t key)
 {
 FN;
 	int	x;
@@ -604,7 +585,7 @@ FN;
 	return left;
 }
 
-int br_lt (Node_s *branch, Key_t key)
+static int br_lt (Node_s *branch, Key_t key)
 {
 FN;
 	int	x;
@@ -624,7 +605,7 @@ FN;
 	return left;
 }
 
-int leaf_eq (Node_s *leaf, Key_t key)
+static int leaf_eq (Node_s *leaf, Key_t key)
 {
 FN;
 	int	x;
@@ -649,7 +630,7 @@ FN;
 	return -1;
 }
 
-void lf_del_rec (Node_s *leaf, unint i)
+static void lf_del_rec (Node_s *leaf, unint i)
 {
 FN;
 	Hrec_s	rec;
@@ -667,14 +648,7 @@ FN;
 	LF_AUDIT(leaf);
 }
 
-void lf_rec_copy (Node_s *dst, int i, Node_s *src, int j)
-{
-FN;
-	Hrec_s	rec = get_rec(src, j);
-	store_rec(dst, rec.key, rec.val, i);
-}
-
-void lf_rec_move(Node_s *dst, int i, Node_s *src, int j)
+static void lf_rec_move(Node_s *dst, int i, Node_s *src, int j)
 {
 FN;
 	Hrec_s	rec = get_rec(src, j);
@@ -682,7 +656,7 @@ FN;
 	lf_del_rec(src, j);
 }
 
-void lf_move_recs (Node_s *leaf, Node_s *sibling)
+static void lf_move_recs (Node_s *leaf, Node_s *sibling)
 {
 	int	i;
 	int	j;
@@ -711,7 +685,7 @@ void lf_move_recs (Node_s *leaf, Node_s *sibling)
 	sibling->free = BLOCK_SIZE - SZ_HEAD;
 }
 
-void br_twig_del (Node_s *branch, unint irec)
+static void br_twig_del (Node_s *branch, unint irec)
 {
 FN;
 	BR_AUDIT(branch);
@@ -725,14 +699,7 @@ FN;
 	BR_AUDIT(branch);
 }
 
-void br_twig_move (Node_s *dst, int i, Node_s *src, int j)
-{
-FN;
-	dst->twig[i] = dst->twig[j];
-	br_twig_del(src, j);
-}
-
-Buf_s *node_new (Htree_s *t, u8 isleaf)
+static Buf_s *node_new (Htree_s *t, u8 isleaf)
 {
 FN;
 	Buf_s	*buf = buf_new(t->cache);
@@ -742,7 +709,7 @@ FN;
 	return buf;
 }
 
-void node_free (Htree_s *t, Buf_s **bp)
+static void node_free (Htree_s *t, Buf_s **bp)
 {
 	Buf_s	*buf = *bp;
 	Node_s	*node = buf->d;
@@ -755,41 +722,21 @@ void node_free (Htree_s *t, Buf_s **bp)
 	buf_free(bp);
 }
 
-Buf_s *br_new (Htree_s *t)
+static Buf_s *br_new (Htree_s *t)
 {
 FN;
 	++t->stat.branch.new;
 	return node_new(t, FALSE);
 }
 
-Buf_s *lf_new (Htree_s *t)
+static Buf_s *lf_new (Htree_s *t)
 {
 FN;
 	++t->stat.leaf.new;
 	return node_new(t, TRUE);
 }
 
-Buf_s *lf_split (Buf_s *buf)
-{
-FN;
-	Node_s	*leaf     = buf->d;
-	Htree_s	*t        = buf->user;
-	Buf_s	*bsibling = lf_new(t);
-	Node_s	*sibling  = bsibling->d;
-	int	middle    = (leaf->numrecs + 1) / 2;
-	int	i;
-
-	LF_AUDIT(leaf);
-	for (i = 0; middle < leaf->numrecs; i++) {
-		lf_rec_move(sibling, i, leaf, middle);
-	}
-	LF_AUDIT(leaf);
-	LF_AUDIT(sibling);
-	++t->stat.leaf.split;
-	return bsibling;
-}
-
-int lf_insert (Buf_s *buf, Key_t key, Lump_s val, int size)
+static int lf_insert (Buf_s *buf, Key_t key, Lump_s val, int size)
 {
 FN;
 	Node_s *leaf = buf->d;
@@ -806,7 +753,7 @@ FN;
 	return 0;
 }
 
-bool is_full (Node_s *node, int size)
+static bool is_full (Node_s *node, int size)
 {
 	if (node->isleaf) {
 		return size > node->free;
@@ -815,7 +762,7 @@ bool is_full (Node_s *node, int size)
 	}
 }
 
-bool is_low (Node_s *node)
+static bool is_low (Node_s *node)
 {
 FN;
 	if (node->isleaf) {
@@ -825,7 +772,7 @@ FN;
 	}
 }
 
-Buf_s *grow (Htree_s *t, int size)
+static Buf_s *grow (Htree_s *t, int size)
 {
 FN;
 	Buf_s	*buf;
@@ -850,7 +797,7 @@ FN;
 	return bparent;
 }
 
-void twig_insert (Node_s *branch, Key_t key, Blknum_t blknum, int irec)
+static void twig_insert (Node_s *branch, Key_t key, Blknum_t blknum, int irec)
 {
 	assert(!branch->isleaf);
 	memmove( &branch->twig[irec + 1], &branch->twig[irec],
@@ -861,7 +808,7 @@ void twig_insert (Node_s *branch, Key_t key, Blknum_t blknum, int irec)
 	BR_AUDIT(branch);
 }
 
-void split_leaf (Htree_s *t, Node_s *parent, Node_s *leaf, int irec)
+static void split_leaf (Htree_s *t, Node_s *parent, Node_s *leaf, int irec)
 {
 	Buf_s	*buf     = lf_new(t);
 	Node_s	*sibling = buf->d;
@@ -882,7 +829,7 @@ void split_leaf (Htree_s *t, Node_s *parent, Node_s *leaf, int irec)
 	++t->stat.leaf.split;
 }
 
-void split_branch (Htree_s *t, Node_s *parent, Node_s *branch, int irec)
+static void split_branch (Htree_s *t, Node_s *parent, Node_s *branch, int irec)
 {
 	assert(branch->numrecs == NUM_TWIGS);
 	BR_AUDIT(parent);
@@ -905,32 +852,6 @@ void split_branch (Htree_s *t, Node_s *parent, Node_s *branch, int irec)
 	BR_AUDIT(sibling);
 	BR_AUDIT(parent);
 	buf_put_dirty( &buf);
-}
-
-void br_split (Htree_s *t, Node_s *parent, Node_s *branch, int irec)
-{
-FN;
-	Buf_s	*bsibling;
-	Node_s	*sibling;
-	int	middle = (branch->numrecs + 1) / 2;
-	Twig_s	twig = branch->twig[middle];
-
-	bsibling = br_new(t);
-	sibling = bsibling->d;
-	BR_AUDIT(branch);
-	memmove(sibling->twig, &branch->twig[middle + 1], 
-		(branch->numrecs - middle - 1) * sizeof(Twig_s));
-	sibling->first = twig.blknum;
-	sibling->numrecs = branch->numrecs - middle - 1;
-	memmove( &parent->twig[irec + 1], &parent->twig[irec],
-		(branch->numrecs - irec) * sizeof(Twig_s));
-	parent->twig[irec].key = twig.key;
-	parent->twig[irec].blknum = sibling->blknum;
-	++parent->numrecs;
-	BR_AUDIT(parent);
-	BR_AUDIT(branch);
-	BR_AUDIT(sibling);
-	buf_put_dirty( &bsibling);
 }
 
 int t_insert(Htree_s *t, Key_t key, Lump_s val)
@@ -971,7 +892,7 @@ FN;
 }
 
 #if 0
-int lf_find(Buf_s *bleaf, Key_t key, Lump_s *val)
+static int lf_find(Buf_s *bleaf, Key_t key, Lump_s *val)
 {
 FN;
 	Buf_s *right;
@@ -1002,7 +923,7 @@ FN;
 	}
 }
 
-int br_find(Buf_s *bparent, Key_t key, Lump_s *val)
+static int br_find(Buf_s *bparent, Key_t key, Lump_s *val)
 {
 FN;
 	Node_s *parent = bparent->d;
@@ -1214,7 +1135,7 @@ int t_audit (Htree_s *t, Audit_s *audit)
 	return rc;
 }
 
-int lf_delete (Buf_s *buf, Key_t key)
+static int lf_delete (Buf_s *buf, Key_t key)
 {
 FN;
 	Node_s	*node = buf->d;
@@ -1233,7 +1154,7 @@ FN;
 	}
 }
 
-bool join_leaf (Htree_s *t, Node_s *parent, Node_s *leaf, int irec)
+static bool join_leaf (Htree_s *t, Node_s *parent, Node_s *leaf, int irec)
 {
 FN;
 	Buf_s	*buf;
@@ -1254,7 +1175,7 @@ FN;
 	}
 }
 
-bool join_branch (Htree_s *t, Node_s *parent, Node_s *branch, int irec)
+static bool join_branch (Htree_s *t, Node_s *parent, Node_s *branch, int irec)
 {
 FN;
 	Buf_s	*buf;
@@ -1283,7 +1204,7 @@ FN;
 	}
 }
 
-bool join (Htree_s *t, Node_s *parent, Node_s *node, int irec)
+static bool join (Htree_s *t, Node_s *parent, Node_s *node, int irec)
 {
 	if (is_low(node)) {
 		if (irec == parent->numrecs) {

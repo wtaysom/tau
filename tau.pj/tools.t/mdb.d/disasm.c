@@ -154,7 +154,7 @@ static void init_disasm (struct disassemble_info *info)
 
 addr disasm (addr address)
 {
-	unint	n;
+	unint	n = 0;
 
 	printf("%lx:    ", address);
 

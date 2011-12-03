@@ -17,6 +17,11 @@
 
 #include "buf.h"
 #include "dev.h"
+#include "ht_disk.h"
+
+typedef struct Superblock_s {
+	u64	magic;
+	Bl
 
 Dev_s *dev_create(char *name, u64 block_size)
 {
