@@ -86,7 +86,7 @@ void *alloc_aligned (size_t nbytes)
 
 void *memcpyGlibc (void *dst, const void *src, size_t n)
 {
-	return memcpy(dst, src, n);
+	return memcpy(dst, src, 1<<8);
 }
 
 void *memcpySimple (void *dst, const void *src, size_t n)

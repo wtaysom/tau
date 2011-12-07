@@ -36,7 +36,7 @@ include $(makedir)/$(target).mk
 INC+=-I. -I../include -I../../include
 
 CFLAGS += -rdynamic
-CFLAGS += -g -O -Wall -Wstrict-prototypes -Werror \
+CFLAGS += -g -O3 -Wall -Wstrict-prototypes -Werror \
 	-D_F=\"$(basename $(notdir $(<)))\" \
 	-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 \
 	$(.INCLUDES) $(INC) \

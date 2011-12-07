@@ -19,9 +19,12 @@
 #include "dev.h"
 #include "ht_disk.h"
 
+enum { SUPER_BLOCK = 1 };
+
 typedef struct Superblock_s {
-	u64	magic;
-	Bl
+	u64		magic;
+	Blknum_t	next;	/* Next block to be allocated */
+} Superblock_s;
 
 Dev_s *dev_create(char *name, u64 block_size)
 {
