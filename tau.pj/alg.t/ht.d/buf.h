@@ -6,43 +6,41 @@
 #ifndef _BUF_H_
 #define _BUF_H_ 1
 
-#ifndef _STYLE_H_
 #include <style.h>
-#endif
 
-typedef struct Cache_s Cache_s;
+#include "crfs.h"
 
-typedef struct Buf_s	Buf_s;
 struct Buf_s {
-	Buf_s	*next;
-	Cache_s	*cache;
-	u64	blknum;
-	u64	crc;
-	int	inuse;
-	bool	dirty;
-	bool	clock;
-	void	*user;
-	void	*d;
+	Buf_s		*next;
+	Crnode_s	*crnode;
+	u64		blknum;
+	u64		crc;
+	int		inuse;
+	bool		dirty;
+	bool		clock;
+	void		*user;
+	void		*d;
 };
 
 typedef struct CacheStat_s {
-	int numbufs;
-	s64 gets;
-	s64 puts;
-	s64 hits;
-	s64 miss;
+	int	numbufs;
+	s64	gets;
+	s64	puts;
+	s64	hits;
+	s64	miss;
 } CacheStat_s;
 
 static inline void buf_dirty (Buf_s *b) { b->dirty = TRUE; }
 
-CacheStat_s cache_stats(Cache_s *cache);
-Cache_s *cache_new(char *filename, u64 num_bufs, u64 blockSize);
-bool     cache_balanced(Cache_s *cache);
-void     cache_pr(Cache_s *cache);
-Buf_s   *buf_new(Cache_s *cache);
+CacheStat_s cache_stats(void);
+void cache_start(u64 numbufs);
+bool cache_balanced(void);
+void cache_pr(void);
+
+Buf_s   *buf_alloc(Crnode_s *crnode);
 void     buf_free(Buf_s **bp);
-Buf_s   *buf_get(Cache_s *cache, u64 blknum);
-Buf_s   *buf_scratch(Cache_s *cache);
+Buf_s   *buf_get(Crnode_s *crnode, Blknum_t blknum);
+Buf_s   *buf_scratch(void);
 void     buf_put(Buf_s **bp);
 void     buf_put_dirty(Buf_s **bp);
 void     buf_toss(Buf_s **bp);

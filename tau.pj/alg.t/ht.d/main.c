@@ -20,6 +20,7 @@
 #include <style.h>
 #include <twister.h>
 
+#include "buf.h"
 #include "ht.h"
 
 struct {
@@ -109,7 +110,7 @@ Key_t seq_key (void)
 void pr_cach_stats (Htree_s *t)
 {
 	CacheStat_s	cs;
-	cs = t_cache_stats(t);
+	cs = cache_stats();
 	printf("cache stats:\n"
 		"  num bufs =%8d\n"
 		"  gets     =%8lld\n"
@@ -285,10 +286,11 @@ Key_t r_delete_rand (void)
 	return key;
 }
 
-void test1(int n)
+void test1 (void)
 {
-	Lump_s val;
-	unint i;
+	int	n = Option.iterations;
+	Lump_s	val;
+	unint	i;
 
 	for (i = 0; i < n; i++) {
 		val = seq_lump();
@@ -297,15 +299,14 @@ void test1(int n)
 	}
 }
 
-void test_seq(int n)
+void test_seq (Htree_s *t)
 {
-	Htree_s *t;
-	Key_t key;
-	Lump_s val;
-	unint i;
+	int	n = Option.iterations;
+	Key_t	key;
+	Lump_s	val;
+	unint	i;
 
 	if (FALSE) seed_random();
-	t = t_new(".tfile", Option.numbufs);
 	for (i = 0; i < n; i++) {
 		t_print(t);
 		key = seq_key();
@@ -316,15 +317,14 @@ void test_seq(int n)
 	t_print(t);
 }
 
-void test_rnd(int n)
+void test_rnd (Htree_s *t)
 {
-	Htree_s	*t;
+	int	n = Option.iterations;
 	Key_t	key;
 	Lump_s	val;
 	unint	i;
 
 	if (FALSE) seed_random();
-	t = t_new(".tfile", Option.numbufs);
 	for (i = 0; i < n; i++) {
 		key = rnd_key();
 		val = rnd_lump();
@@ -355,15 +355,14 @@ void find_find (Key_t key, Lump_s val, void *user)
 	freelump(fval);
 }
 
-void test_find(int n)
+void test_find (Htree_s *t)
 {
-	Htree_s	*t;
+	int	n = Option.iterations;
 	Key_t	key;
 	Lump_s	val;
 	unint	i;
 
 	if (FALSE) seed_random();
-	t = t_new(".tfile", Option.numbufs);
 	for (i = 0; i < n; i++) {
 		key = rnd_key();
 		val = rnd_lump();
@@ -380,29 +379,26 @@ void delete (Key_t key, Lump_s val, void *user)
 	Htree_s *t = user;
 	int rc;
 
-t_print(t);
 	rc = t_delete(t, key);
 	if (rc) {
 		fatal("Didn't find %llu : rc=%d", (u64)key, rc);
 	}
 }
 
-void test_delete(int n)
+void test_delete (Htree_s *t)
 {
-	Htree_s	*t;
+	int	n = Option.iterations;
 	Key_t	key;
 	Lump_s	val;
 	unint	i;
 
 	if (FALSE) seed_random();
-	t = t_new(".tfile", Option.numbufs);
 	for (i = 0; i < n; i++) {
 		key = rnd_key();
 		val = rnd_lump();
 		r_add(key, val);
 		t_insert(t, key, val);
 	}
-t_print(t);
 	r_for_each(delete, t);
 	audit(t);
 	pr_stats(t);
@@ -414,40 +410,10 @@ int should_delete(s64 count, s64 level)
 	return (random() & MASK) * count / level / RANGE;
 }
 
-#if 0
-if (i >= 595)
+void test_level (Htree_s *t)
 {
-	fdebugon();
-	Option.debug = TRUE;
-	Option.print = TRUE;
-printf("=========%d======\n", i);
-}
-if (i > 596)
-{
-	fdebugoff();
-	Option.debug = FALSE;
-	Option.print = FALSE;
-}
-if (Option.print)
-{
-	printf("delete\n");
-	PRlp(key);
-	t_print(t);
-}
-if (i >= 95266)
-{
-	fdebugon();
-	Option.debug = TRUE;
-	Option.print = TRUE;
-	printf("=========%d======\n", i);
-	t_print(t);
-}
-printf("%d\n", i);
-#endif
-
-void test_level (int n, int level)
-{
-	Htree_s	*t;
+	int	n = Option.iterations;
+	int	level = Option.level;
 	Key_t	key;
 	Lump_s	val;
 	s64	count = 0;
@@ -456,9 +422,7 @@ void test_level (int n, int level)
 
 	Option.debug = TRUE;
 	if (FALSE) seed_random();
-	t = t_new(".tfile", Option.numbufs);
 	for (i = 0; i < n; i++) {
-if (i % 1000 == 0) fprintf(stderr, ".");
 		if (should_delete(count, level)) {
 			key = r_delete_rand();
 			rc = t_delete(t, key);
@@ -475,7 +439,6 @@ if (i % 1000 == 0) fprintf(stderr, ".");
 		}
 		//audit(t);
 	}
-printf("\n");
 	audit(t);
 	t_print(t);
 	pr_stats(t);
@@ -542,12 +505,18 @@ void myoptions(int argc, char *argv[])
 int main(int argc, char *argv[])
 {
 	myoptions(argc, argv);
-	test_level(Option.iterations, Option.level);
+	cache_start(Option.numbufs);
+	crfs_start(".tfile");
+	Htree_s *t = crfs_htree();
+
+	test_delete(t);
+	test_seq(t);
+	test_level(t);
 	return 0;
 }
 
 #if 0
-	test_delete(Option.iterations);
-	test_seq(Option.iterations);
-	test_level(Option.iterations, Option.level);
+	test_delete(t);
+	test_seq(t);
+	test_level(t);
 #endif

@@ -6,20 +6,18 @@
 #ifndef _DEV_H_
 #define _DEV_H_ 1
 
-#include "ht_disk.h"
+#include "buf.h"
+#include "crfs.h"
 
-typedef struct Dev_s {
+struct Dev_s {
 	int	fd;
-	u64	next; // Next block num to allocate
-	u64	block_size;
 	char	*name;
-} Dev_s;
+};
 
-
-Dev_s *dev_create(char *name, u64 block_size);
-Dev_s *dev_open(char *name, u64 block_size);
-Blknum_t dev_blknum (Dev_s *dev);
-void dev_flush(Dev_s *dev, Buf_s *b);
-void dev_fill(Dev_s *dev, Buf_s *b);
+Dev_s *dev_create(char *name);
+Dev_s *dev_open(char *name);
+Blknum_t dev_blknum(Crnode_s *crnode);
+void dev_flush(Buf_s *b);
+void dev_fill(Buf_s *b);
 
 #endif

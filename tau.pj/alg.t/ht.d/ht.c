@@ -28,6 +28,7 @@
 #include <mystdlib.h>
 #include <style.h>
 
+#include "crfs.h"
 #include "ht.h"
 #include "ht_disk.h"
 #include "buf.h"
@@ -42,12 +43,6 @@ enum {	MAX_U16 = (1 << 16) - 1,
 	SZ_HEAD = sizeof(Node_s),
 	LEAF_OVERHEAD = 2 * SZ_U16 + sizeof(Key_t),
 	REBALANCE = 2 * (BLOCK_SIZE - SZ_HEAD) / 3 };
-
-struct Htree_s {
-	Cache_s	*cache;
-	u64	root;
-	Stat_s	stat;
-};
 
 typedef struct Apply_s {
 	Apply_f	func;
@@ -79,7 +74,7 @@ static inline Apply_s mk_apply (Apply_f func, Htree_s *t,
 
 void cache_err (Htree_s *t)
 {
-	CacheStat_s cs = cache_stats(t->cache);
+	CacheStat_s cs = cache_stats();
 	printf("cache stats:\n"
 		"  num bufs = %8d\n"
 		"  gets     = %8lld\n"
@@ -94,13 +89,12 @@ void cache_err (Htree_s *t)
 
 static Buf_s *t_get (Htree_s *t, Blknum_t blknum)
 {
-	Buf_s *buf = buf_get(t->cache, blknum);
+	Buf_s *buf = buf_get(&t->crnode, blknum);
 	buf->user = t;
 	return buf;
 }
 
 Stat_s      t_get_stats   (Htree_s *t) { return t->stat; }
-CacheStat_s t_cache_stats (Htree_s *t) { return cache_stats(t->cache); }
 
 static int usable (Node_s *leaf)
 {
@@ -160,7 +154,7 @@ static Hrec_s get_rec (Node_s *leaf, unint i)
 	x = leaf->rec[i];
 	assert(x < BLOCK_SIZE);
 	start = &((u8 *)leaf)[x];
-	
+
 	UNPACK(start, rec.key);
 	start += sizeof(Key_t);
 	rec.val.size = *start++;
@@ -183,15 +177,15 @@ static void pr_head (Node_s *node, int indent)
 	pr_indent(indent);
 	if (node->isleaf) {
 		printf("LEAF %lld numrecs=%d free=%d end=%d\n",
-			node->blknum,
+			(u64)node->blknum,
 			node->numrecs,
 			node->free,
 			node->end);
 	} else {
 		printf("BRANCH %lld numrecs=%d first=%lld\n",
-			node->blknum,
+			(u64)node->blknum,
 			node->numrecs,
-			node->first);
+			(u64)node->first);
 	}
 }
 
@@ -370,7 +364,7 @@ static void br_dump (Buf_s *buf, int indent)
 		pr_indent(indent);
 		printf("%ld. ", i);
 		key_dump(twig.key);
-		printf(" = %lld\n", twig.blknum);
+		printf(" = %lld\n", (u64)twig.blknum);
 		node_dump(buf->user, twig.blknum, indent + 1);
 	}
 }
@@ -702,7 +696,7 @@ FN;
 static Buf_s *node_new (Htree_s *t, u8 isleaf)
 {
 FN;
-	Buf_s	*buf = buf_new(t->cache);
+	Buf_s	*buf = buf_alloc(&t->crnode);
 
 	buf->user = t;
 	init_node(buf->d, isleaf, buf->blknum);
@@ -840,7 +834,7 @@ static void split_branch (Htree_s *t, Node_s *parent, Node_s *branch, int irec)
 	Twig_s	twig = branch->twig[MIDDLE_TWIG];
 
 	sibling->first = twig.blknum;
-	
+
 	memmove(sibling->twig, &branch->twig[MIDDLE_TWIG + 1],
 		sizeof(Twig_s) * (NUM_TWIGS - MIDDLE_TWIG - 1));
 	sibling->numrecs = NUM_TWIGS - MIDDLE_TWIG - 1;
@@ -883,10 +877,10 @@ FN;
 			buf_put( &buf);
 			buf = bchild;
 			node = child;
-		}	
+		}
 	}
 	rc = lf_insert(buf, key, val, size);
-	cache_balanced(t->cache);
+	cache_balanced();
 	++t->stat.insert;
 	return rc;
 }
@@ -1032,7 +1026,7 @@ int t_map (Htree_s *t, Apply_f func, void *sys, void *user)
 	Apply_s	apply = mk_apply(func, t, sys, user);
 	int	rc = node_map(t, t->root, apply);
 
-	cache_balanced(t->cache);
+	cache_balanced();
 	return rc;
 }
 
@@ -1125,7 +1119,7 @@ int t_audit (Htree_s *t, Audit_s *audit)
 	Key_t	oldkey = 0;
 	int	rc;
 
-	zero(*audit); 
+	zero(*audit);
 	rc = t_map(t, map_rec_audit, NULL, &oldkey);
 	if (rc) {
 		printf("AUDIT FAILED %d\n", rc);
@@ -1219,9 +1213,9 @@ static bool join (Htree_s *t, Node_s *parent, Node_s *node, int irec)
 	} else {
 		return FALSE;
 	}
-}	
+}
 
-int t_delete(Htree_s *t, Key_t key)
+int t_delete (Htree_s *t, Key_t key)
 {
 FN;
 	Buf_s	*buf;
@@ -1256,15 +1250,15 @@ FN;
 			buf_put( &buf);
 			buf = bchild;
 			node = child;
-		}	
+		}
 	}
 	rc = lf_delete(buf, key);
-	cache_balanced(t->cache);
+	cache_balanced();
 	if (!rc) ++t->stat.delete;
 	return rc;
 }
 
-void t_dump(Htree_s *t)
+void t_dump (Htree_s *t)
 {
 	int is_on = fdebug_is_on();
 
@@ -1272,18 +1266,17 @@ void t_dump(Htree_s *t)
 	if (is_on) fdebugoff();
 	node_dump(t, t->root, 0);
 	if (is_on) fdebugon();
-	//cache_balanced(t->cache);
+	//cache_balanced();
 }
 
 Twig_s CheckTwig[NUM_TWIGS];
 
-Htree_s *t_new(char *file, int num_bufs)
+Htree_s *t_new (void)
 {
 FN;
 	Htree_s *t;
 
 	t = ezalloc(sizeof(*t));
-	t->cache = cache_new(file, num_bufs, BLOCK_SIZE);
 PRd(BLOCK_SIZE);
 PRd(NUM_TWIGS);
 PRd(LEAF_SPLIT);
@@ -1294,21 +1287,21 @@ PRd(sizeof(CheckTwig));
 }
 
 #if 0
-Htree_s *t_new(char *file, int num_bufs) {
+Htree_s *t_new (char *file, int num_bufs) {
 	warn("Not Implmented");
 	return 0;
 }
 
-void t_dump  (Htree_s *t) {
+void t_dump (Htree_s *t) {
 	warn("Not Implmented");
 }
 
-int  t_insert(Htree_s *t, Key_t key, Lump_s val) {
+int  t_insert (Htree_s *t, Key_t key, Lump_s val) {
 	warn("Not Implmented");
 	return 0;
 }
 
-int  t_delete(Htree_s *t, Key_t key) {
+int  t_delete (Htree_s *t, Key_t key) {
 	warn("Not Implmented");
 	return 0;
 }

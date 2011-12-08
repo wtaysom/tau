@@ -19,14 +19,7 @@
 #include "dev.h"
 #include "ht_disk.h"
 
-enum { SUPER_BLOCK = 1 };
-
-typedef struct Superblock_s {
-	u64		magic;
-	Blknum_t	next;	/* Next block to be allocated */
-} Superblock_s;
-
-Dev_s *dev_create(char *name, u64 block_size)
+Dev_s *dev_create(char *name)
 {
 FN;
 	Dev_s *dev;
@@ -39,12 +32,11 @@ FN;
 	dev = ezalloc(sizeof(*dev));
 	dev->fd = fd;
 	dev->next = 1;
-	dev->block_size = block_size;
 	dev->name = strdup(name);
 	return dev;
 }
 
-Dev_s *dev_open (char *name, u64 block_size)
+Dev_s *dev_open (char *name)
 {
 FN;
 	Dev_s *dev;
@@ -57,35 +49,40 @@ FN;
 	dev = ezalloc(sizeof(*dev));
 	dev->fd = fd;
 	dev->next = 1;
-	dev->block_size = block_size;
 	dev->name = strdup(name);
 	return dev;
 }
 
-Blknum_t dev_blknum (Dev_s *dev)
+Blknum_t dev_blknum (Crnode_s *crnode)
 {
 FN;
+	Dev_s	*dev = crnode->volume->dev;
+
 	return dev->next++;
 }
 
-void dev_flush (Dev_s *dev, Buf_s *b)
+void dev_flush (Buf_s *b)
 {
 //FN;
-	int rc = pwrite(dev->fd, b->d, dev->block_size,
-			b->blknum * dev->block_size);
+	Dev_s	*dev = b->crnode->volume->dev;
+
+	int rc = pwrite(dev->fd, b->d, BLOCK_SIZE,
+			b->blknum * BLOCK_SIZE);
 	if (rc == -1) {
 		fatal("pwrite of %s at %lld:", dev->name, b->blknum);
 	}
 }
 
-void dev_fill (Dev_s *dev, Buf_s *b)
+void dev_fill (Buf_s *b)
 {
 FN;
-	int rc = pread(dev->fd, b->d, dev->block_size,
-			b->blknum * dev->block_size);
+	Dev_s	*dev = b->crnode->volume->dev;
+
+	int rc = pread(dev->fd, b->d, BLOCK_SIZE,
+			b->blknum * BLOCK_SIZE);
 
 	if (rc == -1) {
 		fatal("pread of %s at %lld:", dev->name, b->blknum);
 	}
-	b->crc = crc64(b->d, dev->block_size);
+	b->crc = crc64(b->d, BLOCK_SIZE);
 }

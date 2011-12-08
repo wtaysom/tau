@@ -13,24 +13,6 @@
 #include <buf.h>
 #endif
 
-#define TUESDAY 0
-#define WEDNESDAY 1
-#define THUSDAY 0
-
-#if TUESDAY
-typedef u64 Key_t;
-typedef u64 Blknum_t;
-#elif WEDNESDAY
-typedef u32 Key_t;
-typedef u64 Blknum_t;
-#elif THURSDAY
-typedef u64 Key_t;
-typedef u32 Blknum_t;
-#else
-typedef u32 Key_t;
-typedef u32 Blknum_t;
-#endif
-
 typedef struct Twig_s {
 	Key_t		key;
 	Blknum_t	blknum;
@@ -54,9 +36,7 @@ typedef struct Node_s {
 	};
 } Node_s;
 
-enum {	BLOCK_SHIFT  = 7,
-	BLOCK_SIZE   = 1 << BLOCK_SHIFT,
-	MAX_FREE     = (BLOCK_SIZE - sizeof(Node_s)),
+enum {	MAX_FREE     = (BLOCK_SIZE - sizeof(Node_s)),
 	NUM_TWIGS    = MAX_FREE / sizeof(Twig_s),
 	MIDDLE_TWIG  = NUM_TWIGS / 2,
 	LEAF_SPLIT   = MAX_FREE / 3,

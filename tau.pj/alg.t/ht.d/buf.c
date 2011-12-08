@@ -18,6 +18,7 @@
 #include <style.h>
 
 #include "buf.h"
+#include "crfs.h"
 #include "dev.h"
 #include "ht_disk.h"
 
@@ -27,75 +28,67 @@ typedef struct Hash_s {
 } Hash_s;
 
 struct Cache_s {
-	Dev_s		*dev;
 	int		clock;
 	Buf_s		*buf;
 	Hash_s		hash;
 	CacheStat_s	stat;
 };
 
-CacheStat_s cache_stats (Cache_s *cache) { return cache->stat; }
+static Cache_s	Cache;
 
-Cache_s *cache_new(char *filename, u64 numbufs, u64 block_size)
+CacheStat_s cache_stats (void) { return Cache.stat; }
+
+void cache_start (u64 numbufs)
 {
 FN;
-	Cache_s	*cache;
 	Buf_s	*b;
-	Dev_s	*dev;
 	u8	*data;
 	u64	i;
 
-	dev = dev_create(filename, block_size);
-	if (!dev) return NULL;
-
 	b = ezalloc(sizeof(*b) * numbufs);
-	data = ezalloc(numbufs * block_size);
-	cache = ezalloc(sizeof(*cache));
-	cache->dev = dev;
-	cache->buf = b;
-	cache->stat.numbufs = numbufs;
+	data = ezalloc(numbufs * BLOCK_SIZE);
+	Cache.buf = b;
+	Cache.stat.numbufs = numbufs;
 	for (i = 0; i < numbufs; i++) {
-		b[i].cache = cache;
-		b[i].d = &data[i * block_size];
+		b[i].d = &data[i * BLOCK_SIZE];
 	}
-	cache->hash.numbuckets = findprime(numbufs);
-	cache->hash.bucket = ezalloc(sizeof(Buf_s *) * cache->hash.numbuckets);
-	return cache;
+	Cache.hash.numbuckets = findprime(numbufs);
+	Cache.hash.bucket = ezalloc(sizeof(Buf_s *) * Cache.hash.numbuckets);
 }
 
-static inline Buf_s *hash (Cache_s *cache,  Blknum_t blknum)
+static inline Buf_s *hash (Blknum_t blknum)
 {
-	return (Buf_s *)&cache->hash.bucket[blknum % cache->hash.numbuckets];
+	return (Buf_s *)&Cache.hash.bucket[blknum % Cache.hash.numbuckets];
 }
 
-Buf_s *lookup (Cache_s *cache, Blknum_t blknum)
+Buf_s *lookup (Blknum_t blknum)
 {
 FN;
 	Buf_s	*b;
 	Buf_s	*prev;
 
-	prev = hash(cache, blknum);
+	prev = hash(blknum);
 	b = prev->next;
 	while (b) {
 		if (b->blknum == blknum) {
 			++b->inuse;
-			++cache->stat.gets;
-			++cache->stat.hits;
+			++Cache.stat.gets;
+			++Cache.stat.hits;
 			return b;
 		}
 		b = b->next;
 	}
-	++cache->stat.miss;
+	++Cache.stat.miss;
 	return NULL;
 }
 
-void rmv (Cache_s *cache, Blknum_t blknum)
+void rmv (Blknum_t blknum)
 {
 FN;
 	Buf_s	*b;
 	Buf_s	*prev;
 
-	prev = hash(cache, blknum);
+	prev = hash(blknum);
 	b = prev->next;
 	while (b) {
 		if (b->blknum == blknum) {
@@ -109,10 +102,10 @@ FN;
 	}
 }
 
-void add (Cache_s *cache, Buf_s *b)
+void add (Buf_s *b)
 {
 FN;
-	Buf_s	*prev = hash(cache, b->blknum);
+	Buf_s	*prev = hash(b->blknum);
 
 	assert(b->blknum);
 	assert(b->next == NULL);
@@ -120,29 +113,29 @@ FN;
 	prev->next = b;
 }
 
-Buf_s *victim (Cache_s *cache, Blknum_t blknum)
+Buf_s *victim (Blknum_t blknum)
 {
 FN;
 	Buf_s	*b;
 	int	i;
 
-	for (i = 0; i < cache->stat.numbufs * 2; i++) {
-		++cache->clock;
-		if (cache->clock >= cache->stat.numbufs) {
-			cache->clock = 0;
+	for (i = 0; i < Cache.stat.numbufs * 2; i++) {
+		++Cache.clock;
+		if (Cache.clock >= Cache.stat.numbufs) {
+			Cache.clock = 0;
 		}
-		if (cache->buf[cache->clock].clock) {
-			cache->buf[cache->clock].clock = FALSE;
+		if (Cache.buf[Cache.clock].clock) {
+			Cache.buf[Cache.clock].clock = FALSE;
 			continue;
 		}
-		b = &cache->buf[cache->clock];
+		b = &Cache.buf[Cache.clock];
 		if (!b->inuse) {
-			memset(b->d, 0, cache->dev->block_size);
+			memset(b->d, 0, BLOCK_SIZE);
 			++b->inuse;
-			++cache->stat.gets;
-			if (b->blknum) rmv(cache, b->blknum);
+			++Cache.stat.gets;
+			if (b->blknum) rmv(b->blknum);
 			b->blknum = blknum;
-			if (blknum) add(cache, b);
+			if (blknum) add(b);
 			return b;
 		}
 	}
@@ -150,29 +143,42 @@ FN;
 	return NULL;
 }
 
-Buf_s *buf_new (Cache_s *cache)
+Buf_s *buf_new (Crnode_s *crnode, Blknum_t blknum)
 {
 FN;
 	Buf_s		*b;
-	Blknum_t	blknum;
 
-	blknum = dev_blknum(cache->dev);
-	b = victim(cache, blknum);
+	b = victim(blknum);
+	if (blknum) add(b); ??????
 	b->dirty = TRUE;
 	b->crc = 0;
 	return b;
 }
 
-Buf_s *buf_get (Cache_s *cache, Blknum_t blknum)
+Buf_s *buf_alloc (Crnode_s *crnode)
+{
+FN;
+	Buf_s		*b;
+	Blknum_t	blknum;
+
+	blknum = dev_blknum(crnode);
+	b = victim(blknum);
+	b->dirty = TRUE;
+	b->crc = 0;
+	return b;
+}
+
+Buf_s *buf_get (Crnode_s *crnode, Blknum_t blknum)
 {
 FN;
 	Buf_s *b;
 
 	assert(blknum != 0);
-	b = lookup(cache, blknum);
+	b = lookup(blknum);
 	if (!b) {
-		b = victim(cache, blknum);
-		dev_fill(b->cache->dev, b);
+		b = victim(blknum);
+		b->crnode = crnode;
+		dev_fill(b);
 	}
 	b->clock = TRUE;
 //b->dirty = TRUE;
@@ -186,12 +192,12 @@ if (b->blknum != ((Node_s *)b->d)->blknum) {
 	return b;
 }
 
-Buf_s *buf_scratch (Cache_s *cache)
+Buf_s *buf_scratch (void)
 {
 FN;
 	Buf_s *b;
 
-	b = victim(cache, 0);
+	b = victim(0);
 	return b;
 }
 
@@ -199,22 +205,21 @@ void buf_put (Buf_s **bp)
 {
 FN;
 	Buf_s *b = *bp;
-	Cache_s *cache = b->cache;
 
 	*bp = NULL;
 	assert(b->blknum == ((Node_s *)b->d)->blknum);
 	assert(b->inuse > 0);
-	++cache->stat.puts;
+	++Cache.stat.puts;
 	--b->inuse;
 	if (!b->inuse) {
-		u64 crc = crc64(b->d, b->cache->dev->block_size);
+		u64 crc = crc64(b->d, BLOCK_SIZE);
 		if (b->dirty) {
 			if (crc == b->crc) {
 				printf("Didn't change %lld\n", b->blknum);
 			}
 			//XXX: this can be true. assert(crc != b->crc);
 			b->crc = crc;
-			dev_flush(b->cache->dev, b);
+			dev_flush(b);
 			b->dirty = FALSE;
 		} else {
 			if (crc != b->crc) {
@@ -236,11 +241,10 @@ void buf_toss (Buf_s **bp)
 {
 FN;
 	Buf_s *b = *bp;
-	Cache_s *cache = b->cache;
 
 	*bp = NULL;
 	assert(b->inuse > 0);
-	++cache->stat.puts;
+	++Cache.stat.puts;
 	--b->inuse;
 }
 
@@ -248,40 +252,39 @@ void buf_free (Buf_s **bp)
 {
 FN;
 	Buf_s *b = *bp;
-	Cache_s *cache = b->cache;
 
 	*bp = NULL;
 	assert(b->blknum == ((Node_s *)b->d)->blknum);
 	assert(b->inuse > 0);
-	++cache->stat.puts;
+	++Cache.stat.puts;
 	--b->inuse;
 	if (!b->inuse) {
-		if (b->blknum) rmv(cache, b->blknum);
+		if (b->blknum) rmv(b->blknum);
 	}
 	//XXX: Don't know what to do yet with freed block
 }
 
-void cache_invalidate (Cache_s *cache)
+void cache_invalidate (void)
 {
 FN;
 	int i;
 
-	for (i = 0; i < cache->stat.numbufs; i++) {
-		cache->buf[i].blknum = 0;
+	for (i = 0; i < Cache.stat.numbufs; i++) {
+		Cache.buf[i].blknum = 0;
 	}
 }
 
-bool cache_balanced(Cache_s *cache)
+bool cache_balanced (void)
 {
 FN;
-	if (cache->stat.gets != cache->stat.puts) {
+	if (Cache.stat.gets != Cache.stat.puts) {
 		fatal("gets %lld != %lld puts %d",
-			cache->stat.gets, cache->stat.puts,
-			cache->stat.gets - cache->stat.puts);
+			Cache.stat.gets, Cache.stat.puts,
+			Cache.stat.gets - Cache.stat.puts);
 		return FALSE;
 	}
 // printf("balanced gets=%lld puts=%lld\n",
-//        cache->stat.gets, cache->stat.puts);
+//        Cache.stat.gets, Cache.stat.puts);
 // stacktrace();
 //  cache_invalidate(cache);
 	return TRUE;
