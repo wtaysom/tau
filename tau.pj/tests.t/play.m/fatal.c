@@ -15,7 +15,7 @@ void cleanup (void)
 
 int main (int argc, char *argv[])
 {
-	Fatal_cleanup = cleanup;
+	set_cleanup(cleanup);
 	fatal("Test cleanup");
 	return 0;
 }
