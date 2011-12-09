@@ -15,14 +15,12 @@ typedef struct Superblock_s {
 } Superblock_s;
 
 static Buf_s *vol_new(Crnode_s *crnode);
-static int vol_read(Buf_s *buf);
-static int vol_flush(Buf_s *buf);
-static int vol_delete(Buf_s *buf);
+static void vol_delete(Buf_s *buf);
 
 Crtype_s Volume_type = { "Volume",
 	.new    = vol_new,
-	.read   = vol_read,
-	.flush  = vol_flush,
+	.read   = dev_fill,
+	.flush  = dev_flush,
 	.delete = vol_delete};
 	
 
@@ -47,17 +45,10 @@ Htree_s *crfs_htree (void)
 
 static Buf_s *vol_new (Crnode_s *crnode)
 {
+	return buf_new(crnode, SUPER_BLOCK);
 }
 
-static int vol_read (Buf_s *buf)
-{
-}
-
-static int vol_flush (Buf_s *buf)
-{
-}
-
-static int vol_delete (Buf_s *buf)
+static void vol_delete (Buf_s *buf)
 {
 }
 

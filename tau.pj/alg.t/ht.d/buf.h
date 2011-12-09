@@ -37,12 +37,13 @@ void cache_start(u64 numbufs);
 bool cache_balanced(void);
 void cache_pr(void);
 
-Buf_s   *buf_alloc(Crnode_s *crnode);
-void     buf_free(Buf_s **bp);
-Buf_s   *buf_get(Crnode_s *crnode, Blknum_t blknum);
-Buf_s   *buf_scratch(void);
-void     buf_put(Buf_s **bp);
-void     buf_put_dirty(Buf_s **bp);
-void     buf_toss(Buf_s **bp);
+Buf_s *buf_alloc(Crnode_s *crnode);
+Buf_s *buf_new(Crnode_s *crnode, Blknum_t blknum);
+Buf_s *buf_get(Crnode_s *crnode, Blknum_t blknum);
+Buf_s *buf_scratch(void);
+void buf_free(Buf_s **bp);
+void buf_put(Buf_s **bp);
+void buf_put_dirty(Buf_s **bp);
+void buf_toss(Buf_s **bp);
 
 #endif

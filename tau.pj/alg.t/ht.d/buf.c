@@ -113,7 +113,7 @@ FN;
 	prev->next = b;
 }
 
-Buf_s *victim (Blknum_t blknum)
+Buf_s *victim (void)
 {
 FN;
 	Buf_s	*b;
@@ -134,8 +134,9 @@ FN;
 			++b->inuse;
 			++Cache.stat.gets;
 			if (b->blknum) rmv(b->blknum);
-			b->blknum = blknum;
-			if (blknum) add(b);
+			b->crnode = NULL;
+			b->blknum = 0;
+			b->crc = 0;
 			return b;
 		}
 	}
@@ -148,10 +149,9 @@ Buf_s *buf_new (Crnode_s *crnode, Blknum_t blknum)
 FN;
 	Buf_s		*b;
 
-	b = victim(blknum);
-	if (blknum) add(b); ??????
-	b->dirty = TRUE;
-	b->crc = 0;
+	b = victim();
+	b->crnode = crnode;
+	if (blknum) add(b);
 	return b;
 }
 
@@ -162,9 +162,8 @@ FN;
 	Blknum_t	blknum;
 
 	blknum = dev_blknum(crnode);
-	b = victim(blknum);
+	b = buf_new(crnode, blknum);
 	b->dirty = TRUE;
-	b->crc = 0;
 	return b;
 }
 
@@ -176,8 +175,7 @@ FN;
 	assert(blknum != 0);
 	b = lookup(blknum);
 	if (!b) {
-		b = victim(blknum);
-		b->crnode = crnode;
+		b = buf_new(crnode, blknum);
 		dev_fill(b);
 	}
 	b->clock = TRUE;
@@ -197,7 +195,7 @@ Buf_s *buf_scratch (void)
 FN;
 	Buf_s *b;
 
-	b = victim(0);
+	b = victim();
 	return b;
 }
 

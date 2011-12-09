@@ -37,9 +37,9 @@ typedef struct Htree_s	Htree_s;
 typedef struct Crtype_s {
 	char	name[8];
 	Buf_s	*(*new)(Crnode_s *crnode);
-	int	(*read)(Buf_s *buf);
-	int	(*flush)(Buf_s *buf);
-	int	(*delete)(Buf_s *buf);
+	void	(*read)(Buf_s *buf);
+	void	(*flush)(Buf_s *buf);
+	void	(*delete)(Buf_s *buf);
 } Crtype_s;
 
 struct Crnode_s {

@@ -31,7 +31,6 @@ FN;
 	}
 	dev = ezalloc(sizeof(*dev));
 	dev->fd = fd;
-	dev->next = 1;
 	dev->name = strdup(name);
 	return dev;
 }
@@ -48,7 +47,6 @@ FN;
 	}
 	dev = ezalloc(sizeof(*dev));
 	dev->fd = fd;
-	dev->next = 1;
 	dev->name = strdup(name);
 	return dev;
 }
