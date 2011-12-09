@@ -52,3 +52,20 @@ static void vol_delete (Buf_s *buf)
 {
 }
 
+static Buf_s *ht_new (Crnode_s *crnode)
+{
+	Volume_s	*v = crnode->volume;
+	Superblock_s	*sb = v->superblock->d;
+	Blknum_t	blknum;
+	Buf_s		*b;
+
+	blknum = ++sb->next;
+	buf_dirty(v->superblock);
+	b = buf_new(crnode, blknum);
+	buf_dirty(b);
+	return b;
+}
+
+
+	
+

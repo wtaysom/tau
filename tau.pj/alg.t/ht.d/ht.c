@@ -696,7 +696,7 @@ FN;
 static Buf_s *node_new (Htree_s *t, u8 isleaf)
 {
 FN;
-	Buf_s	*buf = buf_alloc(&t->crnode);
+	Buf_s	*buf = t->crnode.type->new(&t->crnode);
 
 	buf->user = t;
 	init_node(buf->d, isleaf, buf->blknum);

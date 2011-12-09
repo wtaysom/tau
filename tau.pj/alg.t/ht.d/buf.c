@@ -155,18 +155,6 @@ FN;
 	return b;
 }
 
-Buf_s *buf_alloc (Crnode_s *crnode)
-{
-FN;
-	Buf_s		*b;
-	Blknum_t	blknum;
-
-	blknum = dev_blknum(crnode);
-	b = buf_new(crnode, blknum);
-	b->dirty = TRUE;
-	return b;
-}
-
 Buf_s *buf_get (Crnode_s *crnode, Blknum_t blknum)
 {
 FN;

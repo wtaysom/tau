@@ -51,14 +51,6 @@ FN;
 	return dev;
 }
 
-Blknum_t dev_blknum (Crnode_s *crnode)
-{
-FN;
-	Dev_s	*dev = crnode->volume->dev;
-
-	return dev->next++;
-}
-
 void dev_flush (Buf_s *b)
 {
 //FN;

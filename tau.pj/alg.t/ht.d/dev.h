@@ -16,7 +16,6 @@ struct Dev_s {
 
 Dev_s *dev_create(char *name);
 Dev_s *dev_open(char *name);
-Blknum_t dev_blknum(Crnode_s *crnode);
 void dev_flush(Buf_s *b);
 void dev_fill(Buf_s *b);
 
