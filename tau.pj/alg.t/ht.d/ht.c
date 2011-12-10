@@ -769,24 +769,26 @@ FN;
 static Buf_s *grow (Htree_s *t, int size)
 {
 FN;
-	Buf_s	*buf;
-	Node_s	*node;
-	Buf_s	*bparent;
-	Node_s	*parent;
+	Buf_s		*buf;
+	Node_s		*node;
+	Buf_s		*bparent;
+	Node_s		*parent;
+	Blknum_t	root;
 
-	if (!t->root) {
+	root = get_root(t);
+	if (!root) {
 		buf = lf_new(t);
-		t->root = buf->blknum;
+		set_root(t, buf->blknum);
 		return buf;
 	}
-	buf = t_get(t, t->root);
+	buf = t_get(t, root);
 	node = buf->d;
 	if (!is_full(node, size)) return buf;
 
 	bparent = br_new(t);
 	parent = bparent->d;
 	parent->first = node->blknum;
-	t->root = parent->blknum;
+	set_root(t, parent->blknum);
 	buf_put( &buf);
 	return bparent;
 }
@@ -949,14 +951,16 @@ FN;
 int t_find(Htree_s *t, Key_t key, Lump_s *val)
 {
 FN;
-	Buf_s *buf;
-	Node_s *node;
-	int rc;
+	Buf_s		*buf;
+	Node_s		*node;
+	Blknum_t	root;
+	int		rc;
 
-	if (!t->root) {
+	root = get_root(t);
+	if (!root) {
 		return HT_ERR_NOT_FOUND;
 	}
-	buf = t_get(t, t->root);
+	buf = t_get(t, root);
 	node = buf->d;
 	if (node->isleaf) {
 		rc = lf_find(buf, key, val);
@@ -1024,7 +1028,7 @@ static int node_map (Htree_s *t, Blknum_t blknum, Apply_s apply)
 int t_map (Htree_s *t, Apply_f func, void *sys, void *user)
 {
 	Apply_s	apply = mk_apply(func, t, sys, user);
-	int	rc = node_map(t, t->root, apply);
+	int	rc = node_map(t, get_root(t), apply);
 
 	cache_balanced();
 	return rc;
@@ -1125,7 +1129,7 @@ int t_audit (Htree_s *t, Audit_s *audit)
 		printf("AUDIT FAILED %d\n", rc);
 		return rc;
 	}
-	rc = node_audit(t, t->root, audit, 0);
+	rc = node_audit(t, get_root(t), audit, 0);
 	return rc;
 }
 
@@ -1218,26 +1222,26 @@ static bool join (Htree_s *t, Node_s *parent, Node_s *node, int irec)
 int t_delete (Htree_s *t, Key_t key)
 {
 FN;
-	Buf_s	*buf;
-	Node_s	*node;
-	Buf_s	*bchild;
-	Node_s	*child;
-	int	irec;
-	int	rc;
+	Buf_s		*buf;
+	Node_s		*node;
+	Buf_s		*bchild;
+	Node_s		*child;
+	int		irec;
+	int		rc;
+	Blknum_t	root;
 
-	if (!t->root) return HT_ERR_NOT_FOUND;
-	buf = t_get(t, t->root);
-	node = buf->d;
-	while (node && node->numrecs == 0) {
+	for (;;) {
+		root = get_root(t);
+		if (!root) return HT_ERR_NOT_FOUND;
+		buf = t_get(t, root);
+		node = buf->d;
+		if (node->numrecs != 0) break;
 		if (node->isleaf) {
-			t->root = 0;
+			set_root(t, 0);
 		} else {
-			t->root = node->first;
+			set_root(t, node->first);
 		}
 		node_free(t, &buf);
-		if (!t->root) return HT_ERR_NOT_FOUND;
-		buf = t_get(t, t->root);
-		node = buf->d;
 	}
 	while (!node->isleaf) {
 		irec = br_lt(node, key);
@@ -1264,7 +1268,7 @@ void t_dump (Htree_s *t)
 
 	printf("\n************************t_dump**************************\n");
 	if (is_on) fdebugoff();
-	node_dump(t, t->root, 0);
+	node_dump(t, get_root(t), 0);
 	if (is_on) fdebugon();
 	//cache_balanced();
 }

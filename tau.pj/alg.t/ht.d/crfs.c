@@ -105,16 +105,16 @@ static Buf_s *ht_new (Crnode_s *crnode)
 	return b;
 }
 
-Blknum_t get_root (void)
+Blknum_t get_root (Htree_s *t)
 {
-	return Htree.ht_root;
+	return t->ht_root;
 }
 
-void set_root (Blknum_t blknum)
+void set_root (Htree_s *t, Blknum_t blknum)
 {
 	Superblock_s	*sb = Volume.superblock->d;
 
-	sb->ht_root = Htree.ht_root = blknum;
+	sb->ht_root = t->ht_root = blknum;
 	dev_flush(Volume.superblock);
 }
 

@@ -76,7 +76,7 @@ void crfs_start(char *file);
 void crfs_create(char *file);
 Htree_s *crfs_htree(void);
 
-Blknum_t get_root(void);
-void set_root(Blknum_t blknum);
+Blknum_t get_root(Htree_s *t);
+void set_root(Htree_s *t, Blknum_t blknum);
 
 #endif

@@ -3,7 +3,9 @@
  * Distributed under the terms of the GNU General Public License v2
  */
 
+#ifndef __APPLE__
 #define _XOPEN_SOURCE 500
+#endif
 
 #include <sys/types.h>
 #include <sys/stat.h>
