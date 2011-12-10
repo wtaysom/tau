@@ -68,7 +68,7 @@ typedef struct Stat_s {
 
 struct Htree_s {
 	Crnode_s	crnode;
-	u64		root;
+	u64		ht_root;
 	Stat_s		stat;
 };
 
@@ -76,5 +76,7 @@ void crfs_start(char *file);
 void crfs_create(char *file);
 Htree_s *crfs_htree(void);
 
+Blknum_t get_root(void);
+void set_root(Blknum_t blknum);
 
 #endif

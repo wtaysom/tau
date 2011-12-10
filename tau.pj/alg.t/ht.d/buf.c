@@ -151,6 +151,7 @@ FN;
 
 	b = victim();
 	b->crnode = crnode;
+	b->blknum = blknum;
 	if (blknum) add(b);
 	return b;
 }
@@ -275,3 +276,14 @@ FN;
 //  cache_invalidate(cache);
 	return TRUE;
 }
+
+void buf_pin (Buf_s *b)
+{
+	++Cache.stat.puts;
+}
+
+void buf_unpin (Buf_s *b)
+{
+	++Cache.stat.gets;
+}
+

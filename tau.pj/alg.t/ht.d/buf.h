@@ -40,9 +40,13 @@ void cache_pr(void);
 Buf_s *buf_new(Crnode_s *crnode, Blknum_t blknum);
 Buf_s *buf_get(Crnode_s *crnode, Blknum_t blknum);
 Buf_s *buf_scratch(void);
-void buf_free(Buf_s **bp);
-void buf_put(Buf_s **bp);
+
+void buf_free     (Buf_s **bp);
+void buf_put      (Buf_s **bp);
 void buf_put_dirty(Buf_s **bp);
-void buf_toss(Buf_s **bp);
+void buf_toss     (Buf_s **bp);
+
+void buf_pin      (Buf_s *b);
+void buf_unpin    (Buf_s *b);
 
 #endif

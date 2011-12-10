@@ -506,11 +506,9 @@ int main(int argc, char *argv[])
 {
 	myoptions(argc, argv);
 	cache_start(Option.numbufs);
-	crfs_start(".tfile");
+	crfs_create(".tfile");
 	Htree_s *t = crfs_htree();
 
-	test_delete(t);
-	test_seq(t);
 	test_level(t);
 	return 0;
 }
