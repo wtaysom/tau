@@ -249,6 +249,7 @@ static Pidcall_s *reallocate_pidcall(u32 pidcall)
 	zero(*pc);
 	pc->pidcall = pidcall;
 	add_pidcall(pc);
+	pc->start_interval = Current_interval;
 
 	return pc;
 }
@@ -283,6 +284,7 @@ static void parse_sys_exit(void *event, u64 time)
 	int	pid      = sy->ev.pid;
 	snint	call_num = sy->id;
 	u32	pidcall  = mkpidcall(pid, call_num);
+	u64	time_used;
 	Pidcall_s *pc;
 
 	pc = find_pidcall(pidcall);
@@ -293,7 +295,11 @@ static void parse_sys_exit(void *event, u64 time)
 	if (pc->time.start) {
 		if (time > pc->time.start) {
 			++Found;
-			pc->time.total += time - pc->time.start;
+			time_used = time - pc->time.start;
+			pc->time.total += time_used;
+			if (time_used > pc->time.max) {
+				pc->time.max = time_used;
+			}
 		} else {
 			++Out_of_order;
 		}

@@ -20,6 +20,8 @@
 
 extern pthread_mutex_t Count_lock;
 
+u32 Current_interval = 0;
+
 struct timespec Sleep = { 1, 0 };
 
 /*
@@ -53,17 +55,17 @@ static int compare_pidcall(const void *a, const void *b)
 	const Pidcall_s *p = *(const Pidcall_s **)a;
 	const Pidcall_s *q = *(const Pidcall_s **)b;
 
-	if (p->save.count > q->save.count) return -1;
-	if (p->save.count == q->save.count) return 0;
+	if (p->snap.count > q->snap.count) return -1;
+	if (p->snap.count == q->snap.count) return 0;
 	return 1;
 }
 
 static void fill_top_pidcall(TopPidcall_s *tc, Pidcall_s *pc)
 {
 	tc->pidcall = pc->pidcall;
-	tc->count   = pc->save.count;
+	tc->count   = pc->snap.count;
 	tc->tick    = Num_ticks;
-	tc->time    = pc->save.time;
+	tc->time    = pc->snap.total_time;
 	if (pc->name) {
 		strncpy(tc->name, pc->name, MAX_THREAD_NAME);
 		tc->name[MAX_THREAD_NAME - 1] = '\0';
@@ -79,7 +81,7 @@ static void replace_top_pidcall(TopPidcall_s *insert_here, Pidcall_s *pc)
 	/* see if this pidcall is already in list */
 	for (tc = Top_pidcall; tc < &Top_pidcall[MAX_TOP]; tc++) {
 		if (pc->pidcall == tc->pidcall) {
-			if (pc->save.count <= tc->count) return;
+			if (pc->snap.count <= tc->count) return;
 			assert(tc >= insert_here);
 			memmove(&insert_here[1], insert_here,
 				(tc - insert_here) * sizeof(*tc));
@@ -107,10 +109,10 @@ static void top_pidcall(void)
 	}
 	for (i = 0; i < num_top; i++) {
 		pc = Rank_pidcall[i];
-		if (pc->save.count < Top_pidcall[MAX_TOP - 1].count) break;
+		if (pc->snap.count < Top_pidcall[MAX_TOP - 1].count) break;
 		for (j = 0; j < MAX_TOP; j++) {
 			TopPidcall_s *tc = &Top_pidcall[j];
-			if (pc->save.count >= tc->count) {
+			if (pc->snap.count >= tc->count) {
 				replace_top_pidcall(tc, pc);
 				break;
 			}
@@ -122,20 +124,35 @@ static void reduce_pidcall(void)
 {
 	Pidcall_s *pc;
 	int k;
+	int i;
 
 	pthread_mutex_lock(&Count_lock);
+	++Current_interval;
 	for (pc = Pidcall, k = 0; pc < &Pidcall[MAX_PIDCALLS]; pc++) {
 		if (pc->count) {
 			Rank_pidcall[k++] = pc;
-			pc->save.count = pc->count;
+			pc->snap.count = pc->count;
+			pc->snap.total_time = pc->time.total;
+			pc->snap.max_time = pc->time.max;
+
 			pc->count = 0;
-			pc->save.time = pc->time.total;
 			pc->time.total = 0;
+			pc->time.max = 0;
 		}
 	}
 	pthread_mutex_unlock(&Count_lock);
 	Num_rank = k;
-
+	for (i = 0; i < k; i++) {
+		pc = Rank_pidcall[i];
+		if (pc->snap.count > pc->summary.max_count) {
+			pc->summary.max_count = pc->snap.count;
+		}
+		pc->summary.total_count += pc->snap.count;
+		pc->summary.total_time  += pc->snap.total_time;
+		if (pc->snap.max_time > pc->summary.max_time) {
+			pc->summary.max_time = pc->snap.max_time;
+		}
+	}
 	qsort(Rank_pidcall, k, sizeof(void *), compare_pidcall);
 
 	top_pidcall();
@@ -151,14 +168,7 @@ static void delta(void)
 	Old = New;
 	New = tmp;
 
-	if (0) {
-		pthread_mutex_lock(&Count_lock);
-		memmove(New, Syscall_count, Num_syscalls * sizeof(*Syscall_count));
-		memset(Syscall_count, 0, sizeof(Syscall_count));
-		pthread_mutex_unlock(&Count_lock);
-	} else {
-		memmove(New, Syscall_count, Num_syscalls * sizeof(*Syscall_count));
-	}
+	memmove(New, Syscall_count, Num_syscalls * sizeof(*Syscall_count));
 
 	sum = 0;
 	for (i = 0; i < Num_syscalls; i++) {

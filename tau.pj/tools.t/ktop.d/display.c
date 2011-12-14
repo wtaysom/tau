@@ -36,6 +36,8 @@ enum {	HELP_ROW = 0,
 	TOP_PID_CALL_COL = 32,
 };
 
+enum {	MAX_SUMMARY = 30 };
+
 typedef struct Top_ten_s {
 	int	syscall;
 	int	value;
@@ -73,12 +75,14 @@ Display_call_s Display_call[] = {
 #endif
 	{ NULL, 0 }};
 
+static Pidcall_s *Pidcall_summary[MAX_PIDCALLS];
+
 static void help(void)
 {
 	mvprintw(HELP_ROW, HELP_COL,
 		"? help  q quit  c clear  k kernel ops  g graph"
 		"  i internal ops  f file ops"
-		"  p pause"
+		"  p pause  s summary"
 		"  < shorter  > longer %d.%.3d",
 		Sleep.tv_sec, Sleep.tv_nsec / ONE_MILLION);
 }
@@ -176,8 +180,8 @@ static void display_pidcall(void)
 			}
 		}
 		mvprintw(row, col, "%3d. %5d %6d %10lld %-22.22s %-28.28s",
-			i + 1, pid, pc->save.count,
-			pc->save.count ? pc->save.time / pc->save.count : 0LL,
+			i + 1, pid, pc->snap.count,
+			pc->snap.count ? pc->snap.total_time / pc->snap.count : 0LL,
 			Syscall[get_call(pc->pidcall)],
 			pc->name);
 	}
@@ -260,6 +264,79 @@ static void graph_total(void)
 	vplot(&TotalGraph, v, '*');
 }
 
+static int compare_summary (const void *a, const void *b)
+{
+	const Pidcall_s *p = *(const Pidcall_s **)a;
+	const Pidcall_s *q = *(const Pidcall_s **)b;
+	u64 ip;
+	u64 iq;
+	u64 avgp;
+	u64 avgq;
+
+	ip = Current_interval - p->start_interval;
+	iq = Current_interval - q->start_interval;
+	avgp = ROUNDED_DIVIDE(p->summary.total_count, ip);
+	avgq = ROUNDED_DIVIDE(q->summary.total_count, iq);
+	if (avgp > avgq) return -1;
+	if (avgp == avgq) return 0;
+	return 1;
+}
+
+static void summary (void)
+{
+	Pidcall_s	*pc;
+	int	row = TOP_ROW;
+	int	col = TOP_COL;
+	int	i;
+	int	k;
+	int	pid;
+	int	num_display;
+	u64	num_intervals;
+	u64	avg_count;
+	u64	avg_time;
+	u32	max_count;
+	u64	max_time;
+
+	for (pc = Pidcall, k = 0; pc < &Pidcall[MAX_PIDCALLS]; pc++) {
+		if (pc->summary.total_count) {
+			Pidcall_summary[k++] = pc;
+		}
+	}
+	qsort(Pidcall_summary, k, sizeof(Pidcall_summary[0]),
+		compare_summary);
+	num_display = k > MAX_SUMMARY ? MAX_SUMMARY : k;
+	mvprintw(row++, col,
+		"%4d                              "
+		"                                "
+		"  avg      max       avg         max", k);
+	mvprintw(row++, col,
+		"       pid  syscall                "
+		" process name                  "
+		" count    count   duration    duration");
+	for (i = 0; i < num_display; i++, row++) {
+		pc = Pidcall_summary[i];
+		pid = get_pid(pc->pidcall);
+		if (!pc->name) {
+			pc->name = getpidname(pid);
+			if (!pc->name) {
+				pc->name = strdup("(unknown)");
+			}
+		}
+		num_intervals = Current_interval - pc->start_interval;
+		avg_count = ROUNDED_DIVIDE(pc->summary.total_count, num_intervals);
+		avg_time  = ROUNDED_DIVIDE(pc->summary.total_time, pc->summary.total_count);
+		max_count = pc->summary.max_count;
+		max_time  = pc->summary.max_time;
+		mvprintw(row, col, "%4d. %5d %-22.22s %-28.28s"
+			" %8lld %8ld %8lld %12lld",
+			i + 1, pid,
+			Syscall[get_call(pc->pidcall)],
+			pc->name,
+			avg_count, max_count,
+			avg_time, max_time);
+	}
+}
+
 void init_display(void)
 {
 	initscr();
@@ -305,6 +382,14 @@ void file_system_display(void)
 {
 	clear();
 	file_system();
+	help();
+	refresh();
+}
+
+void summary_display(void)
+{
+	clear();
+	summary();
 	help();
 	refresh();
 }
@@ -386,6 +471,22 @@ void file_system_help (void)
 	refresh();
 }
 
+void summary_help (void)
+{
+	int	row = HELP_ROW + 3;
+	int	col = HELP_COL + 2;
+
+	clear();
+	mvprintw(row, col, "Summary of pid-call information." );
+	++row;
+	mvprintw(row, col, "Average and max count and time for system calls by pid");
+	row += 5;
+	mvprintw(row, col, "Type <return> to return to screen");
+
+	help();
+	refresh();
+}
+
 void internal_help (void)
 {
 	int	row = HELP_ROW + 1;
@@ -412,3 +513,4 @@ Display_s Kernel_display      = { kernel_display,      kernel_help };
 Display_s Internal_display    = { internal_display,    internal_help };
 Display_s Plot_display        = { plot_display,        plot_help };
 Display_s File_system_display = { file_system_display, file_system_help };
+Display_s Summary_display     = { summary_display,     summary_help };

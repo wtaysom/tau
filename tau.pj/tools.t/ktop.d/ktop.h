@@ -6,13 +6,9 @@
 #ifndef _KTOP_H_
 #define _KTOP_H_ 1
 
-#ifndef _STYLE_H_
+#include <sys/types.h>
 #include <style.h>
-#endif
-
-#ifndef _SYSCALL_H_
 #include "syscall.h"
-#endif
 
 enum {	MAX_PID = 1 << 15,
 	MAX_PIDCALLS = 1 << 10,
@@ -47,19 +43,27 @@ typedef struct Display_s {
 
 typedef struct Pidcall_s Pidcall_s;
 struct Pidcall_s {
-	Pidcall_s *next;
-	u32 pidcall;
-	u32 count;
-	unint clock;
+	Pidcall_s *next;	/* hash table chain */
+	unint clock;		/* clock alg throws out old results */
+	u32 pidcall;		/* combination of pid and system call */
+	u32 count;		/* count of calls in last interval */
+	u32 start_interval;	/* interval when created */
 	struct {
-		u64 start;
-		u64 total;
+		u64 start;	/* start time of last call */
+		u64 total;	/* total time in this interval */
+		u64 max;	/* max time in this interval */
 	} time;
 	struct {
-		u32 count;
-		u64 time;
-	} save;
-	unint arg[NUM_ARGS];
+		u32 count;	/* snapshot of count */
+		u64 total_time;	/* snapshot of total time */
+		u64 max_time;	/* snapshot of max time */
+	} snap;
+	struct {
+		u32 max_count;	/* max count across intervals */
+		u64 total_count;/* total count across intervals */
+		u64 total_time;	/* total time used by this pidcall */
+		u64 max_time;	/* Max time by any pidcall */
+	} summary;
 	char *name;
 };
 
@@ -86,6 +90,8 @@ extern u64 Pidcall_record;
 extern u64 Pidcall_iterations;
 extern u64 Pidcall_tick;
 
+extern u32 Current_interval;
+
 extern TopPidcall_s Top_pidcall[MAX_TOP];
 
 extern u64 No_enter;
@@ -102,6 +108,7 @@ extern Display_s Internal_display;
 extern Display_s Kernel_display;
 extern Display_s Plot_display;
 extern Display_s File_system_display;
+extern Display_s Summary_display;
 
 void cleanup(int sig);
 
@@ -121,5 +128,8 @@ void ignore_pid(int pid);
 bool do_ignore_pid(int pid);
 
 void graph(void);
+
+/* Rounded integer divide - x/y -> (x + y/2) / y */
+#define ROUNDED_DIVIDE(x, y)	((y) ? (((x) + (y) / 2) / (y)) : 0)
 
 #endif

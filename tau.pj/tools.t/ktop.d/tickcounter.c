@@ -8,6 +8,7 @@
 
 #include <style.h>
 
+#include "ktop.h"
 #include "tickcounter.h"
 
 bool tick_is_valid(u32 tick)
@@ -22,11 +23,6 @@ bool init_counter(TickCounter_s *counter, u32 tick)
 	counter->tick_size = tick;
 	counter->ticks_per_wheel = WHEEL_SIZE / tick;
 	return TRUE;
-}
-
-static u32 average(u32 x, u32 q)
-{
-	return (x + q / 2) / q;
 }
 
 /*
@@ -48,8 +44,8 @@ void tick(TickCounter_s *counter, u32 n)
 		if (x > max) max = x;
 	}
 	counter->itick = 0;
-	counter->minute[counter->iminute].avg = average(sum, WHEEL_SIZE);
-	counter->minute[counter->iminute].peak = average(max, counter->tick_size);
+	counter->minute[counter->iminute].avg = ROUNDED_DIVIDE(sum, WHEEL_SIZE);
+	counter->minute[counter->iminute].peak = ROUNDED_DIVIDE(max, counter->tick_size);
 	if (++counter->iminute < WHEEL_SIZE) return;
 	for (sum = 0, max = 0, i = 0; i < WHEEL_SIZE; i++) {
 		sum += counter->minute[i].avg;;
@@ -58,7 +54,7 @@ void tick(TickCounter_s *counter, u32 n)
 		}
 	}
 	counter->iminute = 0;
-	counter->hour[counter->ihour].avg = average(sum, WHEEL_SIZE);
+	counter->hour[counter->ihour].avg = ROUNDED_DIVIDE(sum, WHEEL_SIZE);
 	counter->hour[counter->ihour].peak = max;
 	if (++counter->ihour < WHEEL_SIZE) return;
 	counter->ihour = 0;
@@ -73,7 +69,7 @@ void dump_counter(TickCounter_s *counter)
 	for (i = 0; i < counter->ticks_per_wheel; i++) {
 		printf("%2i. %d %d\n",
 			i, counter->tick[i],
-			average(counter->tick[i], counter->tick_size));
+			ROUNDED_DIVIDE(counter->tick[i], counter->tick_size));
 	}
 	printf("Minutes:\n");
 	for (i = 0; i < WHEEL_SIZE; i++) {

@@ -99,6 +99,7 @@ static void usage(void)
 		"\tf - display just file system operations\n"
 		"\ti - display counters internal to ktop for debugging\n"
 		"\tp - toggle pause\n"
+		"\ts - display summary\n"
 		"\t< - reduce redisplay interval\n"
 		"\t> - increase redisplay interval\n",
 		getprogname());
@@ -174,6 +175,9 @@ void commander(void)
 			break;
 		case 'f':
 			Display = File_system_display;
+			break;
+		case 's':
+			Display = Summary_display;
 			break;
 		case 'p':
 			Pause = !Pause;
