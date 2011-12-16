@@ -1,5 +1,6 @@
 cscope.*
 save
+*out
 .Linux*
 .x86*
 .i386
@@ -9,3 +10,4 @@ save
 _go_.6
 _obj
 .linux
+.??*
