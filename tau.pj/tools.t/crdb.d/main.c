@@ -176,6 +176,7 @@ int main (int argc, char *argv[])
 
 	setjmp(Err_jmp);
 	for (;;) {
+#if READLINE IS_ENABLED
 		line = readline("> ");	/* use getline on OS-X */
 		if (!line) {
 			break;
@@ -184,6 +185,15 @@ int main (int argc, char *argv[])
 		if (*s) {
 			add_history(s);
 		}
+#else
+		ssize_t	rc;
+		size_t	n;
+		printf("> ");
+		fflush(stdin);
+		line = NULL;
+		rc = getline( &line, &n, stdin);
+		s = stripwhite(line);
+#endif
 		parse_line(s);
 		if (Debug) dump_args();
 		invokeCmd(Argc, Argv);

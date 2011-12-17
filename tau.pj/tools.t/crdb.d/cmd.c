@@ -21,6 +21,7 @@
 
 #include <mdb.h>
 
+
 typedef void	(*cmdfunc_t)(int argc, char *arg[]);
 
 typedef struct Cmd_s {
@@ -481,6 +482,58 @@ static void q (int argc, char *argv[])
 	exit(0);
 }
 
+#if DISASM IS_ENABLED
+static bool u_args (int argc, char *argv[])
+{
+	addr	address = Arg.a_addr;
+	char	*arg;
+
+	arg = *++argv;
+	if (arg) {
+		address = eval(arg);
+		if (!address) {
+			fprintf(stderr, "invalid expression: %s\n", arg);
+			return FALSE;
+		}
+		arg = *++argv;
+	}
+	set_lines(arg);
+	Arg.a_addr  = address;
+	return TRUE;
+}
+
+static void pr_label (addr address)
+{
+	Sym_s	*sym;
+
+	sym = findname(address);
+
+	if ((sym) && (sym_address(sym) == address)) {
+		printf("%s:\n", sym_name(sym));
+	}
+}
+
+static void u_repeat (void)
+{
+	unint	i;
+	addr	address = Arg.a_addr;
+
+	for (i = 0; i < Arg.a_lines; ++i) {
+		pr_label(address);
+		address += disasm(address);
+	}
+	Arg.a_addr = address;
+}
+
+static void u (int argc, char *argv[])
+{
+	if (u_args(argc, argv)) {
+		Arg.a_cmd = u_repeat;
+		u_repeat();
+	}
+}
+#endif
+
 Cmd_s	Cmd[] =
 {
 { "q",    q,   "quit                       : exit program"},
@@ -499,6 +552,10 @@ Cmd_s	Cmd[] =
 { "sd",   sd,	"sd <pattern> <from> [<num>] : search for 32 bit pattern"},
 { "find", find, "find <wild card exp>       : uses '*' and '?'" },
 { "pid",  pid,  "pid <pid>                  : finds task address for pid"},
+
+#if DISASM IS_ENABLED
+{ "u",    u,    "u <address> [<num lines>]  : disassemble"},
+#endif
 
 { NULL, 0, NULL }
 };

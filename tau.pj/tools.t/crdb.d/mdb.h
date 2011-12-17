@@ -14,13 +14,16 @@
 #ifndef _M_H_
 #define _M_H_
 
-#ifndef _MYDEF_H_
+#ifndef _STYLE_H_
 #include <style.h>
 #endif
 
 #ifndef _KERNELSYMBOLS_H_
 #include <kernelsymbols.h>
 #endif
+
+#define DISASM ENABLE
+#define READLINE ENABLE
 
 
 enum {	U8_LINE       = 16,

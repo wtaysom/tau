@@ -12,6 +12,12 @@
 #  GNU General Public License for more details.
 ############################################################################
 
+CFLAGS += -static
+
 include ../../mk/default.mk
 
+#LIBS += -ledit
 LIBS += -lreadline
+LIBS += -lncurses
+LIBS += -lopcodes -liberty -lbfd
+LIBS += -lc
