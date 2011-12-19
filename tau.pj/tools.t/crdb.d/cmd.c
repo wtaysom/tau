@@ -536,9 +536,9 @@ static void u (int argc, char *argv[])
 
 Cmd_s	Cmd[] =
 {
-{ "q",    q,   "quit                       : exit program"},
-{ "help", help,"help                       : print this message"},
-{ "dump", dump,"dump                       : dump symbol table"},
+{ "q",    q,	"q                          : exit program"},
+{ "help", help,	"help                       : print this message"},
+{ "dump", dump,	"dump                       : dump symbol table"},
 { "cb",   cb,	"cb <address> <value>       : change a byte"},
 { "cd",   cd,	"cd <address> <value>       : change 32 bits"},
 { "cq",   cq,	"cq <address> <value>       : change 64 bits"},

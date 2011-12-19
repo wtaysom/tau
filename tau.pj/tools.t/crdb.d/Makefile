@@ -13,11 +13,12 @@
 ############################################################################
 
 CFLAGS += -static
+CFLAGS += -DHAVE_TCGETATTR
 
 include ../../mk/default.mk
 
 #LIBS += -ledit
-LIBS += -lreadline
+#LIBS += -lreadline
 LIBS += -lncurses
 LIBS += -lopcodes -liberty -lbfd
 LIBS += -lc

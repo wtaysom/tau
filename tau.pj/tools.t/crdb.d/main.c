@@ -188,7 +188,7 @@ int main (int argc, char *argv[])
 #else
 		ssize_t	rc;
 		size_t	n;
-		printf("> ");
+		printf("? ");
 		fflush(stdin);
 		line = NULL;
 		rc = getline( &line, &n, stdin);
