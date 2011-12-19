@@ -21,4 +21,6 @@ INC += -Iinclude
 ifeq ($(os),Linux)
 	LIBS += -luuid
 endif
-LIBS += -lm -lpthread
+LIBS += -lm
+LIBS += -lpthread
+LIBS += -lncurses
