@@ -1290,6 +1290,10 @@ PRd(sizeof(CheckTwig));
 	return t;
 }
 
+bool t_compare (Htree_s *a, Htree_s *b)
+{
+}
+
 #if 0
 Htree_s *t_new (char *file, int num_bufs) {
 	warn("Not Implmented");

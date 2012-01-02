@@ -79,4 +79,6 @@ Htree_s *crfs_htree(void);
 Blknum_t get_root(Htree_s *t);
 void set_root(Htree_s *t, Blknum_t blknum);
 
+void pr_stats (Htree_s *t);
+
 #endif
