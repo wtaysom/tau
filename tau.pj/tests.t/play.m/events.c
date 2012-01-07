@@ -14,6 +14,8 @@
 #include <puny.h>
 #include <style.h>
 
+#define ARRAY_SIZE(_x)	(sizeof(_x) / sizeof((_x)[0]))
+
 enum {	EVENT_SHIFT = 4,
 	EVENT_MAX = 1 << EVENT_SHIFT,
 	EVENT_MASK = EVENT_MAX - 1};
@@ -23,11 +25,11 @@ enum {	EVENT_INIT = 1,
 	EVENT_DETACH };
 
 struct History_s {
-	u64		events;
 	pthread_mutex_t	lock;
+	u64		events;
 };
 
-#define HISTORY_INITIALIZER { 0, PTHREAD_MUTEX_INITIALIZER }
+#define HISTORY_INITIALIZER { PTHREAD_MUTEX_INITIALIZER, 0 }
 
 static void set_event (struct History_s *history, unsigned event)
 {
@@ -111,7 +113,7 @@ int main (int argc, char *argv[])
 {
 	punyopt(argc, argv, NULL, NULL);
 	start_threads(Option.numthreads);
-	print_history(&History, sizeof(Event_name) / sizeof(char *), Event_name);
+	print_history(&History, ARRAY_SIZE(Event_name), Event_name);
 	return 0;
 }
 
