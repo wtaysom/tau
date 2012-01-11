@@ -37,6 +37,7 @@ int t_find  (Htree_s *t, Key_t key, Lump_s *val);
 int t_delete(Htree_s *t, Key_t key);
 int t_map   (Htree_s *t, Apply_f func, void *sys, void *user);
 int t_audit (Htree_s *t, Audit_s *audit);
+int t_compare_trees(Htree_s *a, Htree_s *b);
 Stat_s t_get_stats(Htree_s *t);
 void pr_all_records(Htree_s *t);
 #endif

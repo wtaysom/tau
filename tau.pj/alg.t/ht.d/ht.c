@@ -1329,3 +1329,8 @@ int  t_find  (Htree_s *t, Key_t key, Lump_s *val) {
 	warn("Not Implmented");
 	return 0;
 }
+
+int t_compare_trees (Htree_s *a, Htree_s *b) {
+	warn("Not Implmented");
+	return 0;
+}

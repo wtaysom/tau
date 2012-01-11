@@ -265,7 +265,7 @@ int cp (int argc, char *argv[])
 		printf("We have a problem Huston.\n");
 		stp(argc, argv);
 	}
-	return compare_trees(TreeA, TreeB);
+	return t_compare_trees(TreeA, TreeB);
 }
 
 int clearp (int argc, char *argv[])
