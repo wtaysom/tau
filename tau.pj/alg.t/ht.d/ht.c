@@ -89,7 +89,7 @@ void cache_err (Htree_s *t)
 
 static Buf_s *t_get (Htree_s *t, Blknum_t blknum)
 {
-	Buf_s *buf = buf_get(&t->crnode, blknum);
+	Buf_s *buf = buf_get(&t->inode, blknum);
 	buf->user = t;
 	return buf;
 }
@@ -696,7 +696,7 @@ FN;
 static Buf_s *node_new (Htree_s *t, u8 isleaf)
 {
 FN;
-	Buf_s	*buf = t->crnode.type->new(&t->crnode);
+	Buf_s	*buf = t->inode.type->new(&t->inode);
 
 	buf->user = t;
 	init_node(buf->d, isleaf, buf->blknum);
@@ -1292,6 +1292,7 @@ PRd(sizeof(CheckTwig));
 
 bool t_compare (Htree_s *a, Htree_s *b)
 {
+	return TRUE;
 }
 
 #if 0

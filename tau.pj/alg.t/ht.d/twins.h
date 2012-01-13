@@ -20,10 +20,10 @@
 
 enum { MAX_NAME = 20 /*128*/  };
 
-extern Htree_s	*TreeA;
-extern Htree_s	*TreeB;
+extern Volume_s	*VolA;
+extern Volume_s *VolB;
 
-void init_twins   (char *dev_A, char *log_A, char *dev_B, char *log_B);
+void init_twins   (char *dev_A, char *dev_B);
 int  delete_twins (char *s);
 int  find_twins   (char *name);
 int  insert_twins (char *name);

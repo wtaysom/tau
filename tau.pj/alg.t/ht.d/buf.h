@@ -11,15 +11,15 @@
 #include "crfs.h"
 
 struct Buf_s {
-	Buf_s		*next;
-	Crnode_s	*crnode;
-	u64		blknum;
-	u64		crc;
-	int		inuse;
-	bool		dirty;
-	bool		clock;
-	void		*user;
-	void		*d;
+	Buf_s	*next;
+	Inode_s	*inode;
+	u64	blknum;
+	u64	crc;
+	int	inuse;
+	bool	dirty;
+	bool	clock;
+	void	*user;
+	void	*d;
 };
 
 typedef struct CacheStat_s {
@@ -36,9 +36,10 @@ CacheStat_s cache_stats(void);
 void cache_start(u64 numbufs);
 bool cache_balanced(void);
 void cache_pr(void);
+void cache_invalidate(void);
 
-Buf_s *buf_new(Crnode_s *crnode, Blknum_t blknum);
-Buf_s *buf_get(Crnode_s *crnode, Blknum_t blknum);
+Buf_s *buf_new(Inode_s *inode, Blknum_t blknum);
+Buf_s *buf_get(Inode_s *inode, Blknum_t blknum);
 Buf_s *buf_scratch(void);
 
 void buf_free     (Buf_s **bp);

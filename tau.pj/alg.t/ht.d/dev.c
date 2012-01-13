@@ -56,7 +56,7 @@ FN;
 void dev_flush (Buf_s *b)
 {
 //FN;
-	Dev_s	*dev = b->crnode->volume->dev;
+	Dev_s	*dev = b->inode->volume->dev;
 
 	int rc = pwrite(dev->fd, b->d, BLOCK_SIZE,
 			b->blknum * BLOCK_SIZE);
@@ -68,7 +68,7 @@ void dev_flush (Buf_s *b)
 void dev_fill (Buf_s *b)
 {
 FN;
-	Dev_s	*dev = b->crnode->volume->dev;
+	Dev_s	*dev = b->inode->volume->dev;
 
 	int rc = pread(dev->fd, b->d, BLOCK_SIZE,
 			b->blknum * BLOCK_SIZE);

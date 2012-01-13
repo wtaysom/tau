@@ -134,7 +134,7 @@ FN;
 			++b->inuse;
 			++Cache.stat.gets;
 			if (b->blknum) rmv(b->blknum);
-			b->crnode = NULL;
+			b->inode = NULL;
 			b->blknum = 0;
 			b->crc = 0;
 			return b;
@@ -144,19 +144,19 @@ FN;
 	return NULL;
 }
 
-Buf_s *buf_new (Crnode_s *crnode, Blknum_t blknum)
+Buf_s *buf_new (Inode_s *inode, Blknum_t blknum)
 {
 FN;
 	Buf_s		*b;
 
 	b = victim();
-	b->crnode = crnode;
+	b->inode = inode;
 	b->blknum = blknum;
 	if (blknum) add(b);
 	return b;
 }
 
-Buf_s *buf_get (Crnode_s *crnode, Blknum_t blknum)
+Buf_s *buf_get (Inode_s *inode, Blknum_t blknum)
 {
 FN;
 	Buf_s *b;
@@ -164,7 +164,7 @@ FN;
 	assert(blknum != 0);
 	b = lookup(blknum);
 	if (!b) {
-		b = buf_new(crnode, blknum);
+		b = buf_new(inode, blknum);
 		dev_fill(b);
 	}
 	b->clock = TRUE;

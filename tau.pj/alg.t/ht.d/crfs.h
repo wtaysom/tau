@@ -28,30 +28,11 @@ typedef u32 Blknum_t;
 #endif
 
 typedef struct Cache_s	Cache_s;
-typedef struct Crnode_s	Crnode_s;
+typedef struct Inode_s	Inode_s;
 typedef struct Volume_s	Volume_s;
 typedef struct Buf_s	Buf_s;
 typedef struct Dev_s	Dev_s;
 typedef struct Htree_s	Htree_s;
-
-typedef struct Crtype_s {
-	char	name[8];
-	Buf_s	*(*new)(Crnode_s *crnode);
-	void	(*read)(Buf_s *buf);
-	void	(*flush)(Buf_s *buf);
-	void	(*delete)(Buf_s *buf);
-} Crtype_s;
-
-struct Crnode_s {
-	Crtype_s	*type;
-	Volume_s	*volume;
-};
-
-struct Volume_s {
-	Crnode_s	crnode;
-	Dev_s		*dev;
-	Buf_s		*superblock;
-};
 
 typedef struct Stat_s {
 	struct {
@@ -66,15 +47,36 @@ typedef struct Stat_s {
 	u64	join;
 } Stat_s;
 
+typedef struct Inode_type_s {
+	char	name[8];
+	Buf_s	*(*new)(Inode_s *inode);
+	void	(*read)(Buf_s *buf);
+	void	(*flush)(Buf_s *buf);
+	void	(*delete)(Buf_s *buf);
+} Inode_type_s;
+
+struct Inode_s {
+	Inode_type_s	*type;
+	Volume_s	*volume;
+};
+
 struct Htree_s {
-	Crnode_s	crnode;
-	u64		ht_root;
-	Stat_s		stat;
+	Inode_s	inode;
+	u64	ht_root;
+	Stat_s	stat;
+};
+
+struct Volume_s {
+	Inode_s	inode;
+	Dev_s	*dev;
+	Buf_s	*superblock;
+	Htree_s	*tree;
+	Inode_s	*log;
 };
 
 void crfs_start(char *file);
 void crfs_create(char *file);
-Htree_s *crfs_htree(void);
+Htree_s *crfs_htree(Volume_s *v);
 
 Blknum_t get_root(Htree_s *t);
 void set_root(Htree_s *t, Blknum_t blknum);

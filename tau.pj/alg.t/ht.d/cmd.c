@@ -27,8 +27,10 @@
 #include <eprintf.h>
 #include <cmd.h>
 
-#include <ht.h>
-#include <twins.h>
+#include "buf.h"
+#include "ht.h"
+#include "log.h"
+#include "twins.h"
 
 /*
  * Work items:
@@ -184,8 +186,8 @@ int fp (int argc, char *argv[])
 
 int pp (int argc, char *argv[])
 {
-	t_dump(TreeA);
-	t_dump(TreeB);
+	t_dump(VolA->tree);
+	t_dump(VolB->tree);
 	return 0;
 }
 
@@ -248,9 +250,9 @@ void st_tree (Htree_s *tree)
 int stp (int argc, char *argv[])
 {
 	printf("A:\n");
-	pr_stats(TreeA);
+	pr_stats(VolA->tree);
 	printf("B:\n");
-	pr_stats(TreeB);
+	pr_stats(VolB->tree);
 	return 0;
 }
 
@@ -259,25 +261,26 @@ int cp (int argc, char *argv[])
 	Stat_s	a;
 	Stat_s	b;
 
-	a = t_get_stats(TreeA);
-	b = t_get_stats(TreeB);
+	a = t_get_stats(VolA->tree);
+	b = t_get_stats(VolB->tree);
 	if (memcmp( &a, &b, sizeof(a)) != 0) {
 		printf("We have a problem Huston.\n");
 		stp(argc, argv);
 	}
-	return t_compare_trees(TreeA, TreeB);
+	return t_compare_trees(VolA->tree, VolB->tree);
 }
 
 int clearp (int argc, char *argv[])
 {
-	bclear();
+	cache_invalidate();
 	return 0;
 }
 
 int rp (int argc, char *argv[])
 {
-	bclear();
-	return replay_log(TreeA.t_log);
+	cache_invalidate();
+	replay_log(VolA);
+	return 0;
 }
 
 int genp (int argc, char *argv[])
@@ -313,7 +316,7 @@ static int num_recs_cnt (
 	int	*cnt = data;
 
 	++*cnt;
-	return qERR_TRY_NEXT;
+	return HT_TRY_NEXT;
 }
 
 int num_recs (void)
@@ -321,8 +324,8 @@ int num_recs (void)
 	int		sum_a = 0;
 	int		sum_b = 0;
 
-	search( &TreeA, 0, num_recs_cnt, &sum_a);
-	search( &TreeB, 0, num_recs_cnt, &sum_b);
+	t_search(VolA->tree, 0, num_recs_cnt, &sum_a);
+	t_search(VolB->tree, 0, num_recs_cnt, &sum_b);
 	if (sum_a != sum_b) {
 		printf("Sums don't match %d!=%d\n", sum_a, sum_b);
 	}
@@ -348,17 +351,17 @@ static int ith_search (
 		return 0;
 	}
 	++s->sum;
-	return qERR_TRY_NEXT;
+	return HT_TRY_NEXT;
 }
 
-int find_ith (tree_s *tree, int ith, u64 *key)
+int find_ith (Htree_s *tree, int ith, u64 *key)
 {
 	ith_search_s	s;
 
 	s.sum = 0;
 	s.ith = ith;
 	s.key = key;
-	return search( tree, 0, ith_search, &s);
+	return t_search(tree, 0, ith_search, &s);
 }
 
 int del_ith (int ith)
@@ -368,21 +371,21 @@ int del_ith (int ith)
 	u64	key_a;
 	u64	key_b;
 
-	rc_a = find_ith( &TreeA, ith, &key_a);
+	rc_a = find_ith(VolA->tree, ith, &key_a);
 	if (rc_a) {
-		printf("TreeA couldn't find record %d, err = %d\n", ith, rc_a);
+		printf("VolA->tree couldn't find record %d, err = %d\n", ith, rc_a);
 		return rc_a;
 	}
-	rc_b = find_ith( &TreeB, ith, &key_b);
+	rc_b = find_ith(VolB->tree, ith, &key_b);
 	if (rc_b) {
-		printf("TreeA couldn't find record %d, err = %d\n", ith, rc_b);
+		printf("VolA->tree couldn't find record %d, err = %d\n", ith, rc_b);
 		return rc_b;
 	}
 	if (key_a != key_b) {
 		printf("Not the same %llx!=%llx\n", key_a, key_b);
 	}
-	rc_a = delete( &TreeA, key_a);
-	rc_b = delete( &TreeB, key_b);
+	rc_a = t_delete(VolA->tree, key_a);
+	rc_b = t_delete(VolB->tree, key_b);
 	if (rc_a || rc_b) {
 		printf("Problem deleting keys %d:%d %llx:%llx\n",
 			rc_a, rc_b, key_a, key_b);
@@ -410,7 +413,7 @@ int mixp (int argc, char *argv[])
 		if (!sum || random_percent(51)) {
 			do {
 				name = gen_name();
-			} while (find_twins(name) != qERR_NOT_FOUND);
+			} while (find_twins(name) != HT_ERR_NOT_FOUND);
 			rc = insert_twins(name);
 			if (rc != 0) {
 				return rc;
@@ -441,7 +444,7 @@ int fill (int n)
 	for (i = 0; i < n; i++) {
 		do {
 			name = gen_name();
-		} while (find_twins(name) != qERR_NOT_FOUND);
+		} while (find_twins(name) != HT_ERR_NOT_FOUND);
 		rc = insert_twins(name);
 		if (rc != 0) {
 			return rc;
@@ -493,7 +496,7 @@ int t1p (int argc, char *argv[])
 int inusep (int argc, char *argv[])
 {
 	//baudit("cmd line");
-	binuse();
+	cache_balanced();
 	return 0;
 }
 
@@ -516,46 +519,10 @@ void init_cmd (void)
 	CMD(clear,	"       # clear buffer cache");
 }
 
-int main (int argc, char *argv[])
+void cmd (void)
 {
-	char	*devA = ".btreeA";
-	char	*devB = ".btreeB";
-	char	*logA = ".logA";
-	char	*logB = ".logB";
-
-#if 1
-	fdebugon();
-#else
-	fdebugoff();
-#endif
-
-#if 1
-	debugon();
-#else
-	debugoff();
-#endif
-FN;
-	if (argc > 1) {
-		devA = argv[1];
-	}
-	if (argc > 2) {
-		devB = argv[1];
-	}
-	if (argc > 3) {
-		logA = argv[1];
-	}
-	if (argc > 4) {
-		logB = argv[1];
-	}
-#if 1
-	unlink(devA);	/* Development only */
-	unlink(devB);	/* Development only */
-	unlink(logA);	/* Development only */
-	unlink(logB);	/* Development only */
-#endif
-	binit(20);
-	init_twins(devA, logA, devB, logB);
+	init_twins(".devA", ".devB");
 	init_shell(NULL);
 	init_cmd();
-	return shell();
+	if (!shell()) warn("shell error");
 }

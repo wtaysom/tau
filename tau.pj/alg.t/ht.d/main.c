@@ -504,6 +504,17 @@ void myoptions(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
+#if 1
+	fdebugon();
+#else
+	fdebugoff();
+#endif
+
+#if 1
+	debugon();
+#else
+	debugoff();
+#endif
 	myoptions(argc, argv);
 	cache_start(Option.numbufs);
 	crfs_create(".tfile");
