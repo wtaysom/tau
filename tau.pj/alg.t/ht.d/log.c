@@ -3,6 +3,8 @@
  * Distributed under the terms of the GNU General Public License v2
  */
 
+#include <eprintf.h>
+
 #include "crfs.h"
 
 void replay_log (Volume_s *v)

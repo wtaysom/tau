@@ -72,34 +72,50 @@
  *	10. Make printing functions different from the other debug.
  */
 
-char *gen_name (void)
-{
-	static char file_name_char[] =	"abcdefghijklmnopqrstuvwxyz"
-					//"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-					"_0123456789";
-	static char	name[MAX_NAME + 2];
-	char		*c;
-	unsigned	len;
+enum {	MAX_VAL = 32,
+	MAX_KEY = 1 << 31};
 
-	len = (urand(MAX_NAME) + urand(MAX_NAME) + urand(MAX_NAME)) / 5 + 1;
-	for (c = name; len; c++, len--) {
-		*c = file_name_char[urand(sizeof(file_name_char) - 1)];
-	}
-	*c = '\0';
-	return name;
+Key_t gen_key (void)
+{
+	Key_t	key;
+
+	do {
+		key = urand(MAX_KEY);
+	} while (!key);
+	return key;
 }
 
-int apply (int (*fn)(char *, void *), void *data)
+Lump_s gen_val (void)
 {
-	u64	key;
+	static u8 val_char[] =	"abcdefghijklmnopqrstuvwxyz"
+					//"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+					"_0123456789";
+	static u8	name[MAX_VAL + 2];
+	Lump_s		val;
+	u8		*c;
+	unsigned	len;
+
+	len = (urand(MAX_VAL) + urand(MAX_VAL) + urand(MAX_VAL)) / 4 + 1;
+	for (c = name; len; c++, len--) {
+		*c = val_char[urand(sizeof(val_char) - 1)];
+	}
+	*c = '\0';
+	val.d = name;
+	val.size = len + 1;
+	return val;
+}
+
+int apply (int (*fn)(Lump_s, void *), void *data)
+{
+	Key_t	key;
 	int	rc;
-	char	name[MAX_NAME+1];
+	Lump_s	val;
 
 	for (key = 0;;) {
-		if (next_twins(key, &key, name) != 0) {
+		if (next_twins(key, &key, &val) != 0) {
 			break;
 		}
-		rc = fn(name, data);
+		rc = fn(val, data);
 		if (rc) {
 			return rc;
 		}
@@ -107,18 +123,17 @@ int apply (int (*fn)(char *, void *), void *data)
 	return 0;
 }
 
-int expand (char *p, int (fn)(char *))
+int expand (char *p, int (fn)(Key_t))
 {
-	u64	key;
+	Key_t	key;
 	int	rc;
-	char	name[MAX_NAME+1];
+	Lump_s	val;
 FN;
 	for (key = 0;;) {
-		rc = next_twins(key, &key, name);
-PRs(name);
+		rc = next_twins(key, &key, &val);
 		if (rc) break;
-		if (isMatch(p, name)) {
-			rc = fn(name);
+		if (isMatch(p, (char *)val.d)) {
+			rc = fn(key);
 			if (rc) {
 				return rc;
 			}
@@ -129,11 +144,13 @@ PRs(name);
 
 int dp (int argc, char *argv[])
 {
+	Key_t	key;
 	int	i;
 	int	rc;
 
 	for (i = 1; i < argc; ++i) {
-		rc = delete_twins(argv[i]);
+		key = strtoll(argv[i], NULL, 0);
+		rc = delete_twins(key);
 		if (rc != 0) {
 			return rc;
 		}
@@ -143,25 +160,27 @@ int dp (int argc, char *argv[])
 
 int ep (int argc, char *argvp[])
 {
-	u64	key;
-	char	name[MAX_NAME+1];
+	Key_t	key;
+	Lump_s	val;
 	int	rc;
 
-	for (key = 0; key != 0xffffffffffffffffULL;) {
-		rc = next_twins(key, &key, name);
+	for (key = 0; key != MAX_KEY;) {
+		rc = next_twins(key, &key, &val);
 		if (rc) break;
-		printf("%llu %s\n", key-1, name);
+		printf("%llu %s\n", (u64)key, (char *)val.d);
 	}
 	return 0;
 }
 
 int ip (int argc, char *argv[])
 {
+	Key_t	key;
 	int	i;
 	int	rc;
 
 	for (i = 1; i < argc; ++i) {
-		rc = insert_twins(argv[i]);
+		key = strtoll(argv[i], NULL, 0);
+		rc = insert_twins(key);
 		if (rc != 0) {
 			return rc;
 		}
@@ -171,11 +190,13 @@ int ip (int argc, char *argv[])
 
 int fp (int argc, char *argv[])
 {
+	Key_t	key;
 	int	i;
 	int	rc;
 
 	for (i = 1; i < argc; ++i) {
-		rc = find_twins(argv[i]);
+		key = strtoll(argv[i], NULL, 0);
+		rc = find_twins(key);
 		if (rc != 0) {
 			printf("Didn't find string %s\n", argv[i]);
 			return rc;
@@ -197,22 +218,20 @@ int qp (int argc, char *argv[])
 	return 0;
 }
 
-int rmv (char *name)
+int rmv (Key_t key)
 {
-	char	key[1024];
-	// This is kind of dangerous.  Should make a separate copy
-	// of the name.  Actually, shouldn't pass back pointers.
-	strcpy(key, name);
 	return delete_twins(key);
 }
 
 int rmp (int argc, char *argv[])
 {
+	Key_t	key;
 	int	i;
 	int	rc;
 
 	for (i = 1; i < argc; ++i) {
-		rc = expand(argv[i], rmv);
+		key = strtoll(argv[i], NULL, 0);
+		rc = expand(key, rmv);
 		if (rc != 0) {
 			return rc;
 		}
@@ -453,12 +472,12 @@ int fill (int n)
 	return 0;
 }
 
-int rmv_percent (char *name, void *p)
+int rmv_percent (Key_t key, void *p)
 {
 	int	x = *(int *)p;
 
 	if (random_percent(x)) {
-		return delete_twins(name);
+		return delete_twins(key);
 	}
 	return 0;
 }

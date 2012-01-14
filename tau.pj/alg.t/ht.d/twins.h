@@ -18,18 +18,16 @@
 #include <crfs.h>
 #endif
 
-enum { MAX_NAME = 20 /*128*/  };
-
 extern Volume_s	*VolA;
 extern Volume_s *VolB;
 
 void init_twins   (char *dev_A, char *dev_B);
-int  delete_twins (char *s);
-int  find_twins   (char *name);
-int  insert_twins (char *name);
+int  delete_twins (Key_t key);
+int  find_twins   (Key_t key, Lump_s *val);
+int  insert_twins (Key_t key, Lump_s val);
 int  next_twins   (
-	u64	key,
-	u64	*next_key,
-	char	*name);
+	Key_t	key,
+	Key_t	*next_key,
+	Lump_s	*val);
 
 #endif

@@ -6,6 +6,8 @@
 #ifndef _CRFS_H_
 #define _CRFS_H_
 
+#include <style.h>
+
 enum {	BLOCK_SHIFT  = 7,
 	BLOCK_SIZE   = 1 << BLOCK_SHIFT};
 
@@ -74,8 +76,8 @@ struct Volume_s {
 	Inode_s	*log;
 };
 
-void crfs_start(char *file);
-void crfs_create(char *file);
+Volume_s *crfs_start(char *file);
+Volume_s *crfs_create(char *file);
 Htree_s *crfs_htree(Volume_s *v);
 
 Blknum_t get_root(Htree_s *t);

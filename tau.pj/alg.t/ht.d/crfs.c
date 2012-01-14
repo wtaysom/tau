@@ -46,7 +46,7 @@ static Volume_s *new_vol (void)
 	return v;	
 }
 
-void crfs_start (char *file)
+Volume_s *crfs_start (char *file)
 {
 	Volume_s	*v;
 	Buf_s		*b;
@@ -59,9 +59,10 @@ void crfs_start (char *file)
 	sb = b->d;
 	assert(sb->magic == CRFS_MAGIC);
 	buf_pin(b);
+	return v;
 }
 
-void crfs_create (char *file)
+Volume_s *crfs_create (char *file)
 {
 	Volume_s	*v;
 	Buf_s		*b;
@@ -78,7 +79,8 @@ void crfs_create (char *file)
 
 	buf_pin(b);
 	buf_dirty(b);
-	dev_flush(b);	
+	dev_flush(b);
+	return v;	
 }
 
 Htree_s *crfs_htree (Volume_s *v)

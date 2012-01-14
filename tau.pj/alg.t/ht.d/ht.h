@@ -14,6 +14,8 @@
 enum {	HT_ERR_NOT_FOUND = 2000, /* Key not found */
 	HT_ERR_BAD_NODE,  	/* Internal error: bad node */
 	HT_TRY_NEXT,		/* Try searching next record */
+	HT_ERR_HASH_OVERFLOW,	/* Too many hash collisions */
+	HT_ERR_DUP,		/* Key already exits */
 	FAILURE = -1 };
 
 

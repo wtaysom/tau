@@ -18,294 +18,75 @@
 #include <crc.h>
 #include <debug.h>
 #include <eprintf.h>
-#include <ht.h>
-#include <twins.h>
 
-extern tree_species_s	String_species;
+#include "crfs.h"
+#include "ht.h"
+#include "twins.h"
 
 Htree_s	*TreeA;
 Htree_s	*TreeB;
 
-enum {	UNIQUE_SHIFT = 8,
-	UNIQUE_MASK = (1 << UNIQUE_SHIFT) - 1,
-	HASH_MASK = ~UNIQUE_MASK};
-
-u64 hash_string (char *s)
-{
-	/* Make sure sign bit is cleared and
-	 * preserve the most random bits
-	 */
-	return (hash_string_64(s) >> (UNIQUE_SHIFT + 1)) << UNIQUE_SHIFT;
-}
-
-//===================================================================
-
-typedef struct delete_search_s {
-	char	*name;
-	u64	key;
-} delete_search_s;
-
-static int delete_search (
-	void	*data,
-	u64	rec_key,
-	void	*rec,
-	unint	len)
-{
-	delete_search_s	*s = data;
-	char		*name = rec;
-
-	if ((s->key & HASH_MASK) < (rec_key & HASH_MASK)) {
-		return qERR_NOT_FOUND;
-	}
-	assert((s->key & HASH_MASK) == (rec_key & HASH_MASK));
-	if (strcmp(s->name, name) == 0) {
-		s->key = rec_key;
-		return 0;
-	}
-	return qERR_TRY_NEXT;
-}
-
-int delete_string (tree_s *tree, char *name)
-{
-	delete_search_s	s;
-	int	rc;
-
-	s.key = hash_string(name);
-	s.name = name;
-	rc = search(tree, s.key, delete_search, &s);
-	if (rc) {
-		printf("delete_string [%d] couldn't find %s\n", rc, name);
-		return rc;
-	}
-	rc = delete(tree, s.key);
-	if (rc) {
-		printf("Failed to delete string \"%s\" err=%d\n",
-			name, rc);
-	}
-	return 0;
-}
-
-int delete_twins (char *name)
+int delete_twins (Key_t key)
 {
 	int	rc;
 
-	rc = delete_string( &TreeA, name);
+	rc = t_delete(TreeA, key);
 	if (rc) {
-		printf("Failed delete string for TreeA \"%s\" err=%d\n",
-			name, rc);
+		printf("Failed delete key for TreeA \"%llx\" err=%d\n",
+			(u64)key, rc);
 	}
-	rc = delete_string( &TreeB, name);
+	rc = t_delete(TreeB, key);
 	if (rc) {
-		printf("Failed delete string for TreeB \"%s\" err=%d\n",
-			name, rc);
+		printf("Failed delete key for TreeB \"%llx\" err=%d\n",
+			(u64)key, rc);
 	}
 	return rc;
 }
 
-//===================================================================
-
-typedef struct insert_search_s {
-	char	*name;
-	u64	key;
-	u64	set_new_key;
-} insert_search_s;
-
-static int insert_search (
-	void	*data,
-	u64	rec_key,
-	void	*rec,
-	unint	len)
-{
-	insert_search_s	*s = data;
-	char		*name = rec;
-
-	if ((s->key & HASH_MASK) < (rec_key & HASH_MASK)) {
-		return qERR_NOT_FOUND;
-	}
-	assert((s->key & HASH_MASK) == (rec_key & HASH_MASK));
-	if (strcmp(s->name, name) == 0) {
-		return qERR_DUP;
-	}
-	if (!s->set_new_key) {
-		if (s->key != rec_key) {
-			s->set_new_key = TRUE;
-		} else {
-			s->key = rec_key + 1;
-			if ((s->key & UNIQUE_MASK) == 0) {
-printf("OVERFLOW: %s\n", s->name);
-				return qERR_HASH_OVERFLOW;
-			}
-		}
-	}
-	return qERR_TRY_NEXT;
-}
-
-static int pack_string (void *to, void *from, unint len)
-{
-	memcpy(to, from, len);
-	return 0;
-}
-
-int insert_string (tree_s *tree, char *name)
-{
-	insert_search_s	s;
-	unint	len;
-	int	rc;
-
-	len = strlen(name) + 1;
-	s.key = hash_string(name);
-	rc = insert(tree, s.key, name, len);
-	if (rc == 0) {
-		return 0;
-	}
-	if (rc != qERR_DUP) {
-		printf("Failed to insert string \"%s\" err=%d\n",
-			name, rc);
-		return rc;
-	}
-
-	s.name = name;
-	s.set_new_key = FALSE;
-
-	rc = search(tree, s.key, insert_search, &s);
-	if (rc == qERR_DUP) {
-		printf("Duplicate string found \"%s\" err=%d\n",
-			name, rc);
-		return rc;
-	}
-	rc = insert(tree, s.key, name, len);
-	if (rc) {
-		printf("Failed to insert string \"%s\" err=%d\n",
-			name, rc);
-		return rc;
-	}
-	return 0;
-}
-
-int insert_twins (char *name)
+int insert_twins (Key_t key)
 {
 	int	rc;
 
-	rc = insert_string( &TreeA, name);
+	rc = t_insert(TreeA, key);
 	if (rc) {
-		printf("TreeA failed to insert string \"%s\" err=%d\n",
-			name, rc);
+		printf("TreeA failed to insert string \"%llx\" err=%d\n",
+			(u64)key, rc);
 		return rc;
 	}
-	rc = insert_string( &TreeB, name);
+	rc = t_insert(TreeB, key);
 	if (rc) {
-		printf("TreeB failed to insert string \"%s\" err=%d\n",
-			name, rc);
+		printf("TreeB failed to insert string \"%llx\" err=%d\n",
+			(u64)key, rc);
 		return rc;
 	}
 	return rc;
 }
 
-//===================================================================
-
-typedef struct find_search_s {
-	char	*name;
-	u64	key;
-} find_search_s;
-
-static int find_search (
-	void	*data,
-	u64	rec_key,
-	void	*rec,
-	unint	len)
-{
-	find_search_s	*s = data;
-	char		*name = rec;
-
-	if ((s->key & HASH_MASK) < (rec_key & HASH_MASK)) {
-		return qERR_NOT_FOUND;
-	}
-	assert((s->key & HASH_MASK) == (rec_key & HASH_MASK));
-	if (strcmp(s->name, name) == 0) {
-		return 0;
-	}
-	return qERR_TRY_NEXT;
-}
-
-int find_string (tree_s *tree, char *name)
-{
-	int		rc;
-	find_search_s	s;
-
-	s.key = hash_string(name);
-	s.name = name;
-
-	rc = search(tree, s.key, find_search, &s);
-	return rc;
-}
-
-int find_twins (char *name)
+int find_twins (Key_t key)
 {
 	int	rc_a;
 	int	rc_b;
 
-	rc_a = find_string( &TreeA, name);
-	rc_b = find_string( &TreeB, name);
+	rc_a = t_find(TreeA, key);
+	rc_b = t_find(TreeB, key);
 
 	if (rc_a != rc_b) {
-		printf("find_twins \"%s\" %d!=%d\n", name, rc_a, rc_b);
+		printf("find_twins \"%llx\" %d!=%d\n", (u64)key, rc_a, rc_b);
 	}
 	return rc_a;
 }
 
-//===================================================================
-
-typedef struct next_search_s {
-	u64	key;
-	char	*name;
-} next_search_s;
-
-static int next_search (
-	void	*data,
-	u64	rec_key,
-	void	*rec,
-	unint	len)
-{
-	next_search_s	*s = data;
-
-	strncpy(s->name, rec, len);
-	s->name[len] = '\0';
-	s->key = rec_key + 1;
-	return 0;
-}
-
-int next_string (
-	tree_s	*tree,
-	u64	key,
-	u64	*next_key,
-	char	*name)
-{
-	next_search_s	s;
-	int		rc;
-
-	s.key = key;
-	s.name = name;
-	rc = search(tree, s.key, next_search, &s);
-	if (!rc) {
-		*next_key = s.key;
-	}
-	return rc;
-}
-
 int next_twins (
 	u64	key,
-	u64	*next_key,
-	char	*name)
+	u64	*next_key)
 {
-	char	name_a[MAX_NAME+1];
-	char	name_b[MAX_NAME+1];
 	u64	next_a;
 	u64	next_b;
 	int	rc_a;
 	int	rc_b;
 
-	rc_a = next_string( &TreeA, key, &next_a, name_a);
-	rc_b = next_string( &TreeB, key, &next_b, name_b);
+	rc_a = next_string(TreeA, key, &next_a, name_a);
+	rc_b = next_string(TreeB, key, &next_b, name_b);
 
 	if (rc_a && (rc_a == rc_b)) {
 		return rc_a;
@@ -339,14 +120,14 @@ typedef struct super_s {
 } super_s;
 
 
-void dump_string (tree_s *tree, u64 rec_key, void *rec, unint len)
+void dump_string (Htree_s *tree, u64 rec_key, void *rec, unint len)
 {
 	char	*s = rec;
 
 	printf("%s", s);
 }
 
-u64 root_string (tree_s *tree)
+u64 root_string (Htree_s *tree)
 {
 	super_s	*super;
 	buf_s	*buf;
@@ -355,7 +136,7 @@ FN;
 	buf = bget(tree->t_dev, SUPER_BLOCK);
 	if (!buf) {
 		eprintf("root_string: no super block");
-		return qERR_NOT_FOUND;
+		return HT_ERR_NOT_FOUND;
 	}
 	super = buf->b_data;
 	root = super->sp_root;
@@ -363,7 +144,7 @@ FN;
 	return root;
 }
 
-int change_root_string (tree_s *tree, buf_s *root)
+int change_root_string (Htree_s *tree, buf_s *root)
 {
 	super_s	*super;
 	buf_s	*buf;
@@ -371,7 +152,7 @@ FN;
 	buf = bget(tree->t_dev, SUPER_BLOCK);
 	if (!buf) {
 		eprintf("change_root_string: no super block");
-		return qERR_NOT_FOUND;
+		return HT_ERR_NOT_FOUND;
 	}
 	super = buf->b_data;
 	super->sp_root = root->b_blknum;
@@ -399,7 +180,7 @@ FN;
 	return bnew(dev, blknum);
 }
 
-static void init_super_block (tree_s *tree)
+static void init_super_block (Htree_s *tree)
 {
 	super_s	*super;
 	buf_s	*buf;
@@ -420,7 +201,7 @@ static void init_super_block (tree_s *tree)
 	bput(buf);
 }
 
-void init_string (tree_s *tree, log_s *log)
+void init_string (Htree_s *tree, log_s *log)
 {
 	init_tree(tree, &String_species, log->lg_sys, log);
 
@@ -439,13 +220,3 @@ void init_twins (char *dev_A, char *log_A, char *dev_B, char *log_B)
 	init_string( &TreeB, &LogB);
 	blazy(TreeA.t_dev);
 }
-
-//===================================================================
-
-tree_species_s	String_species = {
-	"String",
-	ts_dump:	dump_string,
-	ts_root:	root_string,
-	ts_change_root:	change_root_string,
-	ts_pack:	pack_string};
-

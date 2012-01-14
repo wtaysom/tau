@@ -12,7 +12,7 @@
 
 typedef struct Lump_s {
 	int size;
-	u8 *d;
+	void *d;
 } Lump_s;
 
 typedef struct Rec_s {
