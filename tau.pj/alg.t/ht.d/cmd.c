@@ -105,6 +105,16 @@ Lump_s gen_val (void)
 	return val;
 }
 
+Lump_s mk_val (Key_t key)
+{
+	static u8	name[MAX_VAL + 2];
+	Lump_s	val;
+
+	snprintf(name, "%lld", (u64)key);
+	return lumpmk(strlen(name) + 1, name);
+	return val;
+}
+
 int apply (int (*fn)(Lump_s, void *), void *data)
 {
 	Key_t	key;
@@ -123,9 +133,8 @@ int apply (int (*fn)(Lump_s, void *), void *data)
 	return 0;
 }
 
-int expand (char *p, int (fn)(Key_t))
+int expand (Key_t key, int (fn)(Key_t))
 {
-	Key_t	key;
 	int	rc;
 	Lump_s	val;
 FN;
@@ -175,12 +184,14 @@ int ep (int argc, char *argvp[])
 int ip (int argc, char *argv[])
 {
 	Key_t	key;
+	Lump_s	val;
 	int	i;
 	int	rc;
 
 	for (i = 1; i < argc; ++i) {
 		key = strtoll(argv[i], NULL, 0);
-		rc = insert_twins(key);
+		val = lumpmk(strlen(argv[i]) + 1, argv[i]);
+		rc = insert_twins(key, val);
 		if (rc != 0) {
 			return rc;
 		}
@@ -191,12 +202,13 @@ int ip (int argc, char *argv[])
 int fp (int argc, char *argv[])
 {
 	Key_t	key;
+	Lump_s	val;
 	int	i;
 	int	rc;
 
 	for (i = 1; i < argc; ++i) {
 		key = strtoll(argv[i], NULL, 0);
-		rc = find_twins(key);
+		rc = find_twins(key, &val);
 		if (rc != 0) {
 			printf("Didn't find string %s\n", argv[i]);
 			return rc;
@@ -307,7 +319,8 @@ int genp (int argc, char *argv[])
 	int	n;
 	int	i;
 	int	rc;
-	char	*name;
+	Key_t	key;
+	Lump_s	va;
 
 	if (argc > 1) {
 		n = atoi(argv[1]);
@@ -316,9 +329,9 @@ int genp (int argc, char *argv[])
 	}
 	for (i = 0; i < n; i++) {
 		do {
-			name = gen_name();
-		} while (find_twins(name) == 0);
-		rc = insert_twins(name);
+			key = gen_key();
+		} while (find_twins(key, &val) == 0);
+		rc = insert_twins(key, mk_val());
 		if (rc != 0) {
 			return rc;
 		}
