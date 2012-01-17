@@ -147,12 +147,14 @@ void pr_lump (Lump_s a)
 	enum { MAX_PRINT = 32 };
 	int	i;
 	int	size;
+	char	*d;
 
 	size = a.size;
+	d = (char *)a.d;
 	if (size > MAX_PRINT) size = MAX_PRINT;
 	for (i = 0; i < size; i++) {
-		if (isprint(a.d[i])) {
-			putchar(a.d[i]);
+		if (isprint(d[i])) {
+			putchar(d[i]);
 		} else {
 			putchar('.');
 		}
@@ -294,7 +296,7 @@ void test1 (void)
 
 	for (i = 0; i < n; i++) {
 		val = seq_lump();
-		printf("%s\n", val.d);
+		printf("%s\n", (char *)val.d);
 		freelump(val);
 	}
 }
@@ -348,9 +350,9 @@ void find_find (Key_t key, Lump_s val, void *user)
 	if (rc) {
 		fatal("Didn't find %llu : rc=%d", (u64)key, rc);
 	} else if (cmplump(val, fval) != 0) {
-		fatal("Val not the same %s!=%s", val.d, fval.d);
+		fatal("Val not the same %s!=%s", (char *)val.d, (char *)fval.d);
 	} else {
-		printf("%llu:%s\n", (u64)key, fval.d);
+		printf("%llu:%s\n", (u64)key, (char *)fval.d);
 	}
 	freelump(fval);
 }

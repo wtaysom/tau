@@ -213,7 +213,7 @@ static void pr_buf(Buf_s *buf, int indent)
 	}
 }
 
-static void pr_chars (int n, u8 *a)
+static void pr_chars (int n, char *a)
 {
 	int	i;
 
@@ -242,7 +242,7 @@ static void pr_lump (Lump_s a)
 		size = MAX_PRINT;
 		pr_chars(MAX_PRINT/2 - 3, a.d);
 		printf(" ... ");
-		pr_chars(MAX_PRINT/2 - 2, &a.d[MAX_PRINT/2 + 2]);
+		pr_chars(MAX_PRINT/2 - 2, &((char *)a.d)[MAX_PRINT/2 + 2]);
 	} else {
 		pr_chars(size, a.d);
 	}
@@ -319,7 +319,7 @@ static void lump_dump(Lump_s a)
 		putchar(a.d[i]);
 	}
 #else
-	printf("%.*s", a.size, a.d);
+	printf("%.*s", a.size, (char *)a.d);
 #endif
 }
 
@@ -1327,6 +1327,11 @@ int  t_map   (Htree_s *t, Apply_f func, void *sys, void *user) {
 #endif
 
 int  t_find  (Htree_s *t, Key_t key, Lump_s *val) {
+	warn("Not Implmented");
+	return 0;
+}
+
+int  t_next  (Htree_s *t, Key_t prev_key, Key_t *key, Lump_s *val) {
 	warn("Not Implmented");
 	return 0;
 }

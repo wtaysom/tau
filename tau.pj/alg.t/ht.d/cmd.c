@@ -107,15 +107,15 @@ Lump_s gen_val (void)
 
 Lump_s mk_val (Key_t key)
 {
-	static u8	name[MAX_VAL + 2];
+	static char	name[MAX_VAL + 1];
 	Lump_s	val;
 
-	snprintf(name, "%lld", (u64)key);
+	snprintf(name, MAX_VAL, "%lld", (u64)key);
 	return lumpmk(strlen(name) + 1, name);
 	return val;
 }
 
-int apply (int (*fn)(Lump_s, void *), void *data)
+int apply (int (*fn)(Key_t, void *), void *data)
 {
 	Key_t	key;
 	int	rc;
@@ -125,7 +125,7 @@ int apply (int (*fn)(Lump_s, void *), void *data)
 		if (next_twins(key, &key, &val) != 0) {
 			break;
 		}
-		rc = fn(val, data);
+		rc = fn(key, data);
 		if (rc) {
 			return rc;
 		}
@@ -133,15 +133,16 @@ int apply (int (*fn)(Lump_s, void *), void *data)
 	return 0;
 }
 
-int expand (Key_t key, int (fn)(Key_t))
+int expand (Key_t target_key, int (fn)(Key_t))
 {
 	int	rc;
+	Key_t	key;
 	Lump_s	val;
 FN;
 	for (key = 0;;) {
 		rc = next_twins(key, &key, &val);
 		if (rc) break;
-		if (isMatch(p, (char *)val.d)) {
+		if (key == target_key) {
 			rc = fn(key);
 			if (rc) {
 				return rc;
@@ -320,7 +321,7 @@ int genp (int argc, char *argv[])
 	int	i;
 	int	rc;
 	Key_t	key;
-	Lump_s	va;
+	Lump_s	val;
 
 	if (argc > 1) {
 		n = atoi(argv[1]);
@@ -331,7 +332,7 @@ int genp (int argc, char *argv[])
 		do {
 			key = gen_key();
 		} while (find_twins(key, &val) == 0);
-		rc = insert_twins(key, mk_val());
+		rc = insert_twins(key, mk_val(key));
 		if (rc != 0) {
 			return rc;
 		}
@@ -431,7 +432,8 @@ int mixp (int argc, char *argv[])
 	int	i;
 	int	rc;
 	int	sum;
-	char	*name;
+	Key_t	key;
+	Lump_s	val;
 	int	x;
 
 	if (argc > 1) {
@@ -444,9 +446,9 @@ int mixp (int argc, char *argv[])
 	for (i = 0; i < n; i++) {
 		if (!sum || random_percent(51)) {
 			do {
-				name = gen_name();
-			} while (find_twins(name) != HT_ERR_NOT_FOUND);
-			rc = insert_twins(name);
+				key = gen_key();
+			} while (find_twins(key, &val) != HT_ERR_NOT_FOUND);
+			rc = insert_twins(key, mk_val(key));
 			if (rc != 0) {
 				return rc;
 			}
@@ -471,13 +473,14 @@ int fill (int n)
 {
 	int	i;
 	int	rc;
-	char	*name;
+	Key_t	key;
+	Lump_s	val;
 
 	for (i = 0; i < n; i++) {
 		do {
-			name = gen_name();
-		} while (find_twins(name) != HT_ERR_NOT_FOUND);
-		rc = insert_twins(name);
+			key = gen_key();
+		} while (find_twins(key, &val) != HT_ERR_NOT_FOUND);
+		rc = insert_twins(key, mk_val(key));
 		if (rc != 0) {
 			return rc;
 		}

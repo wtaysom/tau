@@ -26,8 +26,8 @@ int  delete_twins (Key_t key);
 int  find_twins   (Key_t key, Lump_s *val);
 int  insert_twins (Key_t key, Lump_s val);
 int  next_twins   (
-	Key_t	key,
-	Key_t	*next_key,
+	Key_t	prev_key,
+	Key_t	*key,
 	Lump_s	*val);
 
 #endif
