@@ -1296,47 +1296,62 @@ bool t_compare (Htree_s *a, Htree_s *b)
 }
 
 #if 0
-Htree_s *t_new (char *file, int num_bufs) {
+Htree_s *t_new (char *file, int num_bufs)
+{
 	warn("Not Implmented");
 	return 0;
 }
 
-void t_dump (Htree_s *t) {
+void t_dump (Htree_s *t)
+{
 	warn("Not Implmented");
 }
 
-int  t_insert (Htree_s *t, Key_t key, Lump_s val) {
-	warn("Not Implmented");
-	return 0;
-}
-
-int  t_delete (Htree_s *t, Key_t key) {
+int  t_insert (Htree_s *t, Key_t key, Lump_s val)
+{
 	warn("Not Implmented");
 	return 0;
 }
 
-int t_audit (Htree_s *t, Audit_s *audit) {
+int  t_delete (Htree_s *t, Key_t key)
+{
 	warn("Not Implmented");
 	return 0;
 }
 
-int  t_map   (Htree_s *t, Apply_f func, void *sys, void *user) {
+int t_audit (Htree_s *t, Audit_s *audit)
+{
+	warn("Not Implmented");
+	return 0;
+}
+
+int  t_map   (Htree_s *t, Apply_f func, void *sys, void *user)
+{
 	warn("Not Implmented");
 	return 0;
 }
 #endif
 
-int  t_find  (Htree_s *t, Key_t key, Lump_s *val) {
+int t_find (Htree_s *t, Key_t key, Lump_s *val)
+{
 	warn("Not Implmented");
 	return 0;
 }
 
-int  t_next  (Htree_s *t, Key_t prev_key, Key_t *key, Lump_s *val) {
+int t_next (Htree_s *t, Key_t prev_key, Key_t *key, Lump_s *val)
+{
 	warn("Not Implmented");
 	return 0;
 }
 
-int t_compare_trees (Htree_s *a, Htree_s *b) {
+int t_search(Htree_s *t, Key_t key, search_f sf, void *data)
+{
+	warn("Not Implmented");	// Maybe able to implement using t_map
+	return 0;
+}
+
+int t_compare_trees (Htree_s *a, Htree_s *b)
+{
 	warn("Not Implmented");
 	return 0;
 }

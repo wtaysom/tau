@@ -127,5 +127,5 @@ void init_twins (char *devA, char *devB)
 	VolB = crfs_create(devB);
 	TreeA = crfs_htree(VolA);
 	TreeB = crfs_htree(VolB);	
-	blazy(TreeA.t_dev);
+//	blazy(TreeA.t_dev);
 }

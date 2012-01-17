@@ -56,21 +56,22 @@ FN;
 	Cache.hash.bucket = ezalloc(sizeof(Buf_s *) * Cache.hash.numbuckets);
 }
 
-static inline Buf_s *hash (Blknum_t blknum)
+static inline Buf_s *hash (Inode_s *inode, Blknum_t blknum)
 {
-	return (Buf_s *)&Cache.hash.bucket[blknum % Cache.hash.numbuckets];
+	return (Buf_s *)&Cache.hash.bucket[((addr)inode + blknum)
+						% Cache.hash.numbuckets];
 }
 
-Buf_s *lookup (Blknum_t blknum)
+static Buf_s *lookup (Inode_s *inode, Blknum_t blknum)
 {
 FN;
 	Buf_s	*b;
 	Buf_s	*prev;
 
-	prev = hash(blknum);
+	prev = hash(inode, blknum);
 	b = prev->next;
 	while (b) {
-		if (b->blknum == blknum) {
+		if ((b->blknum == blknum) && (b->inode == inode)){
 			++b->inuse;
 			++Cache.stat.gets;
 			++Cache.stat.hits;
@@ -82,16 +83,16 @@ FN;
 	return NULL;
 }
 
-void rmv (Blknum_t blknum)
+static void rmv (Inode_s *inode, Blknum_t blknum)
 {
 FN;
 	Buf_s	*b;
 	Buf_s	*prev;
 
-	prev = hash(blknum);
+	prev = hash(inode, blknum);
 	b = prev->next;
 	while (b) {
-		if (b->blknum == blknum) {
+		if ((b->blknum == blknum) && (b->inode == inode)){
 			b->blknum = 0;
 			prev->next = b->next;
 			b->next = NULL;
@@ -102,10 +103,10 @@ FN;
 	}
 }
 
-void add (Buf_s *b)
+static void add (Buf_s *b)
 {
 FN;
-	Buf_s	*prev = hash(b->blknum);
+	Buf_s	*prev = hash(b->inode, b->blknum);
 
 	assert(b->blknum);
 	assert(b->next == NULL);
@@ -113,7 +114,7 @@ FN;
 	prev->next = b;
 }
 
-Buf_s *victim (void)
+static Buf_s *victim (void)
 {
 FN;
 	Buf_s	*b;
@@ -133,7 +134,7 @@ FN;
 			memset(b->d, 0, BLOCK_SIZE);
 			++b->inuse;
 			++Cache.stat.gets;
-			if (b->blknum) rmv(b->blknum);
+			if (b->blknum) rmv(b->inode, b->blknum);
 			b->inode = NULL;
 			b->blknum = 0;
 			b->crc = 0;
@@ -162,7 +163,7 @@ FN;
 	Buf_s *b;
 
 	assert(blknum != 0);
-	b = lookup(blknum);
+	b = lookup(inode, blknum);
 	if (!b) {
 		b = buf_new(inode, blknum);
 		dev_fill(b);
@@ -246,7 +247,7 @@ FN;
 	++Cache.stat.puts;
 	--b->inuse;
 	if (!b->inuse) {
-		if (b->blknum) rmv(b->blknum);
+		if (b->blknum) rmv(b->inode, b->blknum);
 	}
 	//XXX: Don't know what to do yet with freed block
 }

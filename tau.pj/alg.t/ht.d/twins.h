@@ -20,6 +20,8 @@
 
 extern Volume_s	*VolA;
 extern Volume_s *VolB;
+extern Htree_s	*TreeA;
+extern Htree_s	*TreeB;
 
 void init_twins   (char *dev_A, char *dev_B);
 int  delete_twins (Key_t key);

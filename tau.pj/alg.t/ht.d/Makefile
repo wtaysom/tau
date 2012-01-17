@@ -24,7 +24,7 @@ include ../../mk/default.mk
 ##else
 ##	LIBS += -lxyzzy
 ##endif
-#LIBS += -lreadline
+LIBS += -lreadline
 
 run:$(opus)
 	$(opus)

@@ -220,8 +220,8 @@ int fp (int argc, char *argv[])
 
 int pp (int argc, char *argv[])
 {
-	t_dump(VolA->tree);
-	t_dump(VolB->tree);
+	t_dump(TreeA);
+	t_dump(TreeB);
 	return 0;
 }
 
@@ -282,9 +282,9 @@ void st_tree (Htree_s *tree)
 int stp (int argc, char *argv[])
 {
 	printf("A:\n");
-	pr_stats(VolA->tree);
+	pr_stats(TreeA);
 	printf("B:\n");
-	pr_stats(VolB->tree);
+	pr_stats(TreeB);
 	return 0;
 }
 
@@ -293,13 +293,13 @@ int cp (int argc, char *argv[])
 	Stat_s	a;
 	Stat_s	b;
 
-	a = t_get_stats(VolA->tree);
-	b = t_get_stats(VolB->tree);
+	a = t_get_stats(TreeA);
+	b = t_get_stats(TreeB);
 	if (memcmp( &a, &b, sizeof(a)) != 0) {
 		printf("We have a problem Huston.\n");
 		stp(argc, argv);
 	}
-	return t_compare_trees(VolA->tree, VolB->tree);
+	return t_compare_trees(TreeA, TreeB);
 }
 
 int clearp (int argc, char *argv[])
@@ -357,8 +357,8 @@ int num_recs (void)
 	int		sum_a = 0;
 	int		sum_b = 0;
 
-	t_search(VolA->tree, 0, num_recs_cnt, &sum_a);
-	t_search(VolB->tree, 0, num_recs_cnt, &sum_b);
+	t_search(TreeA, 0, num_recs_cnt, &sum_a);
+	t_search(TreeB, 0, num_recs_cnt, &sum_b);
 	if (sum_a != sum_b) {
 		printf("Sums don't match %d!=%d\n", sum_a, sum_b);
 	}
@@ -404,21 +404,21 @@ int del_ith (int ith)
 	u64	key_a;
 	u64	key_b;
 
-	rc_a = find_ith(VolA->tree, ith, &key_a);
+	rc_a = find_ith(TreeA, ith, &key_a);
 	if (rc_a) {
-		printf("VolA->tree couldn't find record %d, err = %d\n", ith, rc_a);
+		printf("TreeA couldn't find record %d, err = %d\n", ith, rc_a);
 		return rc_a;
 	}
-	rc_b = find_ith(VolB->tree, ith, &key_b);
+	rc_b = find_ith(TreeB, ith, &key_b);
 	if (rc_b) {
-		printf("VolA->tree couldn't find record %d, err = %d\n", ith, rc_b);
+		printf("TreeA couldn't find record %d, err = %d\n", ith, rc_b);
 		return rc_b;
 	}
 	if (key_a != key_b) {
 		printf("Not the same %llx!=%llx\n", key_a, key_b);
 	}
-	rc_a = t_delete(VolA->tree, key_a);
-	rc_b = t_delete(VolB->tree, key_b);
+	rc_a = t_delete(TreeA, key_a);
+	rc_b = t_delete(TreeB, key_b);
 	if (rc_a || rc_b) {
 		printf("Problem deleting keys %d:%d %llx:%llx\n",
 			rc_a, rc_b, key_a, key_b);

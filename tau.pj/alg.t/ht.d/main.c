@@ -506,7 +506,6 @@ void myoptions(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
-	Volume_s	*v;
 #if 1
 	fdebugon();
 #else
@@ -520,10 +519,19 @@ int main(int argc, char *argv[])
 #endif
 	myoptions(argc, argv);
 	cache_start(Option.numbufs);
-	v = crfs_create(".tfile");
+
+#if 0
+	Volume_s *v = crfs_create(".tfile");
 	Htree_s *t = crfs_htree(v);
 
 	test_level(t);
+
+#else
+
+	void cmd(void);
+
+	cmd();
+#endif
 	return 0;
 }
 
