@@ -30,6 +30,8 @@ typedef struct CacheStat_s {
 	s64	miss;
 } CacheStat_s;
 
+#define PRcache()	cache_trace(__FUNCTION__, __LINE__)
+
 static inline void buf_dirty (Buf_s *b) { b->dirty = TRUE; }
 
 CacheStat_s cache_stats(void);
@@ -37,6 +39,7 @@ void cache_start(u64 numbufs);
 bool cache_balanced(void);
 void cache_pr(void);
 void cache_invalidate(void);
+void cache_trace(const char *fn, int line);
 
 Buf_s *buf_new(Inode_s *inode, Blknum_t blknum);
 Buf_s *buf_get(Inode_s *inode, Blknum_t blknum);

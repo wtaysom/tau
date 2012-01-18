@@ -252,6 +252,19 @@ FN;
 	//XXX: Don't know what to do yet with freed block
 }
 
+void cache_trace (const char *fn, int line)
+{
+	if (Cache.stat.gets == Cache.stat.puts) {
+		printf("%s<%d> == %lld\n", fn, line, Cache.stat.gets);
+	} else if (Cache.stat.gets > Cache.stat.puts) {
+		printf("%s<%d> %lld > %lld\n",
+			fn, line, Cache.stat.gets, Cache.stat.puts);
+	} else {
+		printf("BAD %s<%d> %lld < %lld\n",
+			fn, line, Cache.stat.gets, Cache.stat.puts);
+	}
+}
+
 void cache_invalidate (void)
 {
 FN;
@@ -261,6 +274,7 @@ FN;
 		Cache.buf[i].blknum = 0;
 	}
 }
+
 
 bool cache_balanced (void)
 {

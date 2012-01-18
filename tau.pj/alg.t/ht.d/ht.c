@@ -894,9 +894,11 @@ FN;
 
 	x = leaf_eq(node, key);
 	if (x == -1) {
+		buf_put( &buf);
 		return HT_ERR_NOT_FOUND;
 	}
 	if (x == node->numrecs) {
+		buf_put( &buf);
 		return HT_ERR_NOT_FOUND;
 	} else {
 		val = get_val(node, x);
@@ -1103,9 +1105,11 @@ FN;
 
 	x = leaf_eq(node, key);
 	if (x == -1) {
+		buf_put( &buf);
 		return HT_ERR_NOT_FOUND;
 	}
 	if (x == node->numrecs) {
+		buf_put( &buf);
 		return HT_ERR_NOT_FOUND;
 	} else {
 		delete_rec(node, x);
