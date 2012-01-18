@@ -24,6 +24,7 @@ extern Htree_s	*TreeA;
 extern Htree_s	*TreeB;
 
 void init_twins   (char *dev_A, char *dev_B);
+bool inuse_twins  (Key_t key);
 int  delete_twins (Key_t key);
 int  find_twins   (Key_t key, Lump_s *val);
 int  insert_twins (Key_t key, Lump_s val);

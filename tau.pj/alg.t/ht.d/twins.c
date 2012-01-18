@@ -68,14 +68,39 @@ int find_twins (Key_t key, Lump_s *val)
 {
 	int	rc_a;
 	int	rc_b;
+	Lump_s	val_a;
+	Lump_s	val_b;
 
-	rc_a = t_find(TreeA, key, val);
-	rc_b = t_find(TreeB, key, val);
+	rc_a = t_find(TreeA, key, &val_a);
+	rc_b = t_find(TreeB, key, &val_b);
 
 	if (rc_a != rc_b) {
 		printf("find_twins \"%llx\" %d!=%d\n", (u64)key, rc_a, rc_b);
+		if (!rc_a) freelump(val_a);
+		if (!rc_b) freelump(val_b);
+	} else if (!rc_a) {
+		freelump(val_a);
+		*val = val_b;
 	}
 	return rc_a;
+}
+
+bool inuse_twins (Key_t key)
+{
+	int	rc_a;
+	int	rc_b;
+	Lump_s	val_a;
+	Lump_s	val_b;
+
+	rc_a = t_find(TreeA, key, &val_a);
+	rc_b = t_find(TreeB, key, &val_b);
+	if (!rc_a) freelump(val_a);
+	if (!rc_b) freelump(val_b);
+
+	if (rc_a != rc_b) {
+		printf("inuse_twins \"%llx\" %d!=%d\n", (u64)key, rc_a, rc_b);
+	}
+	return rc_a == 0;
 }
 
 int next_twins (

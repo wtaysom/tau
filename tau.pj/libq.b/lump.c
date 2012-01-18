@@ -64,17 +64,19 @@ Lump_s prefixlump(Lump_s a, Lump_s b)
 	Lump_s	p;
 	int	size;
 	int	i;
+	char	*ap = a.d;
+	char	*bp = b.d;
 
 	if (a.size > b.size) {
 		size = b.size;
 	} else {
 		size = a.size;
 	}
-	if (!a.d || !b.d) {
+	if (!ap || !bp) {
 		return Nil;
 	}
 	for (i = 0; i < size; i++) {
-		if (a.d[i] != b.d[i]) break;
+		if (ap++ != bp++) break;
 	}
 	p.size = i;
 	p.d = a.d;
@@ -84,6 +86,7 @@ Lump_s prefixlump(Lump_s a, Lump_s b)
 void freelump(Lump_s a)
 {
 	if (a.d) free(a.d);
+	a.d = NULL;
 }
 
 bool prlump(const char *fn, unsigned line, const char *label, Lump_s a)
@@ -92,12 +95,14 @@ bool prlump(const char *fn, unsigned line, const char *label, Lump_s a)
 	char	buf[MAX_LUMP+1];
 	int	i;
 	int	size;
+	char	*cp;
 
 	size = a.size;
 	if (size > MAX_LUMP) size = MAX_LUMP;
 	for (i = 0; i < size; i++) {
-		if (isprint(a.d[i])) {
-			buf[i] = a.d[i];
+		cp = a.d;
+		if (isprint(cp[i])) {
+			buf[i] = cp[i];
 		} else {
 			buf[i] = '.';
 		}

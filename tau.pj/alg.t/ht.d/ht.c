@@ -123,7 +123,6 @@ static Key_t get_key (Node_s *leaf, unint i)
 	return key;
 }
 
-#if 0
 static Lump_s get_val (Node_s *leaf, unint i)
 {
 	Lump_s	val;
@@ -141,7 +140,6 @@ static Lump_s get_val (Node_s *leaf, unint i)
 	val.d = start;
 	return val;
 }
-#endif
 
 static Hrec_s get_rec (Node_s *leaf, unint i)
 {
@@ -887,91 +885,55 @@ FN;
 	return rc;
 }
 
-#if 0
-static int lf_find(Buf_s *bleaf, Key_t key, Lump_s *val)
+static int lf_find(Buf_s *buf, Key_t key, Lump_s *vp)
 {
 FN;
-	Buf_s *right;
-	Node_s *node = bleaf->d;
-	Lump_s v;
-	int i;
+	Node_s	*node = buf->d;
+	int	x;
+	Lump_s	val;
 
-	for (;;) {
-		i = leaf_eq(node, key);
-		if (i == -1) {
-			return HT_ERR_NOT_FOUND;
-		}
-		if (i == node->numrecs) {
-			if (node->is_split) {
-				right = t_get(bleaf->user, node->last);
-				buf_put( &bleaf);
-				bleaf = right;
-				node = bleaf->d;
-			} else {
-				return HT_ERR_NOT_FOUND;
-			}
-		} else {
-			v = get_val(node, i);
-			*val = duplump(v);
-			buf_put( &bleaf);
-			return 0;
-		}
+	x = leaf_eq(node, key);
+	if (x == -1) {
+		return HT_ERR_NOT_FOUND;
+	}
+	if (x == node->numrecs) {
+		return HT_ERR_NOT_FOUND;
+	} else {
+		val = get_val(node, x);
+		*vp = duplump(val);
+		buf_put( &buf);
+		return 0;
 	}
 }
 
-static int br_find(Buf_s *bparent, Key_t key, Lump_s *val)
-{
-FN;
-	Node_s *parent = bparent->d;
-	Buf_s *buf;
-	Node_s *node;
-	Blknum_t blknum;
-	int x;
-
-	for(;;) {
-		x = leaf_le(parent, key);
-		if (x == parent->numrecs) {
-			blknum = parent->last;
-		} else {
-			blknum = get_blknum(parent, x);
-		}
-		buf = t_get(bparent->user, blknum);
-		node = buf->d;
-		if (node->isleaf) {
-			buf_put_dirty( &bparent);
-			lf_find(buf, key, val);
-			return 0;
-		}
-		buf_put_dirty( &bparent);
-		bparent = buf;
-		parent = bparent->d;
-	}
-}
-
-int t_find(Htree_s *t, Key_t key, Lump_s *val)
+int t_find (Htree_s *t, Key_t key, Lump_s *vp)
 {
 FN;
 	Buf_s		*buf;
 	Node_s		*node;
-	Blknum_t	root;
+	Buf_s		*bchild;
+	Node_s		*child;
+	int		irec;
 	int		rc;
+	Blknum_t	root;
 
 	root = get_root(t);
-	if (!root) {
-		return HT_ERR_NOT_FOUND;
-	}
+	if (!root) return HT_ERR_NOT_FOUND;
 	buf = t_get(t, root);
 	node = buf->d;
-	if (node->isleaf) {
-		rc = lf_find(buf, key, val);
-	} else {
-		rc = br_find(buf, key, val);
+	while (!node->isleaf) {
+		irec = br_lt(node, key);
+		bchild = t_get(t, node->twig[irec - 1].blknum);
+		child = bchild->d;
+		buf_put( &buf);
+		buf = bchild;
+		node = child;
 	}
-	cache_balanced(t->cache);
+	rc = lf_find(buf, key, vp);
+	cache_balanced();
 	if (!rc) ++t->stat.find;
 	return rc;
 }
-#endif
 
 static int node_map(Htree_s *t, Blknum_t blknum, Apply_s apply);
 
@@ -1330,13 +1292,13 @@ int  t_map   (Htree_s *t, Apply_f func, void *sys, void *user)
 	warn("Not Implmented");
 	return 0;
 }
-#endif
 
 int t_find (Htree_s *t, Key_t key, Lump_s *val)
 {
 	warn("Not Implmented");
 	return 0;
 }
+#endif
 
 int t_next (Htree_s *t, Key_t prev_key, Key_t *key, Lump_s *val)
 {

@@ -214,6 +214,11 @@ int fp (int argc, char *argv[])
 			printf("Didn't find string %s\n", argv[i]);
 			return rc;
 		}
+		if (strcmp(argv[i], val.d) != 0) {
+			printf("Val wrong for %llx %s %s\n",
+				(u64)key, argv[i], (char *)val.d);
+		}
+		freelump(val);
 	}
 	return 0;
 }
@@ -321,7 +326,6 @@ int genp (int argc, char *argv[])
 	int	i;
 	int	rc;
 	Key_t	key;
-	Lump_s	val;
 
 	if (argc > 1) {
 		n = atoi(argv[1]);
@@ -331,7 +335,7 @@ int genp (int argc, char *argv[])
 	for (i = 0; i < n; i++) {
 		do {
 			key = gen_key();
-		} while (find_twins(key, &val) == 0);
+		} while (inuse_twins(key));
 		rc = insert_twins(key, mk_val(key));
 		if (rc != 0) {
 			return rc;
@@ -433,7 +437,6 @@ int mixp (int argc, char *argv[])
 	int	rc;
 	int	sum;
 	Key_t	key;
-	Lump_s	val;
 	int	x;
 
 	if (argc > 1) {
@@ -447,7 +450,7 @@ int mixp (int argc, char *argv[])
 		if (!sum || random_percent(51)) {
 			do {
 				key = gen_key();
-			} while (find_twins(key, &val) != HT_ERR_NOT_FOUND);
+			} while (inuse_twins(key));
 			rc = insert_twins(key, mk_val(key));
 			if (rc != 0) {
 				return rc;
