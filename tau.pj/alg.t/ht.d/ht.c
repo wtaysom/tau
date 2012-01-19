@@ -894,16 +894,13 @@ FN;
 
 	x = leaf_eq(node, key);
 	if (x == -1) {
-		buf_put( &buf);
 		return HT_ERR_NOT_FOUND;
 	}
 	if (x == node->numrecs) {
-		buf_put( &buf);
 		return HT_ERR_NOT_FOUND;
 	} else {
 		val = get_val(node, x);
 		*vp = duplump(val);
-		buf_put( &buf);
 		return 0;
 	}
 }
@@ -932,6 +929,39 @@ FN;
 		node = child;
 	}
 	rc = lf_find(buf, key, vp);
+	buf_put( &buf);
+	cache_balanced();
+	if (!rc) ++t->stat.find;
+	return rc;
+}
+
+int t_next (Htree_s *t, Key_t prev_key, Key_t *key, Lump_s *vp)
+{
+FN;
+	Buf_s		*buf;
+	Node_s		*node;
+	Buf_s		*bchild;
+	Node_s		*child;
+	int		irec;
+	int		rc;
+	Blknum_t	root;
+	Blknum_t	nextrt = 0;
+
+	root = get_root(t);
+	if (!root) return HT_ERR_NOT_FOUND;
+	buf = t_get(t, root);
+	node = buf->d;
+	while (!node->isleaf) {
+		irec = br_lt(node, prev_key);
+		nextrt = node->twig[irec].blknum;
+		bchild = t_get(t, node->twig[irec - 1].blknum);
+		child = bchild->d;
+		buf_put( &buf);
+		buf = bchild;
+		node = child;
+	}
+	rc = lf_find(buf, prev_key, vp);
+	buf_put( &buf);
 	cache_balanced();
 	if (!rc) ++t->stat.find;
 	return rc;
@@ -1105,15 +1135,13 @@ FN;
 
 	x = leaf_eq(node, key);
 	if (x == -1) {
-		buf_put( &buf);
 		return HT_ERR_NOT_FOUND;
 	}
 	if (x == node->numrecs) {
-		buf_put( &buf);
 		return HT_ERR_NOT_FOUND;
 	} else {
 		delete_rec(node, x);
-		buf_put_dirty( &buf);
+		buf_dirty(buf);
 		return 0;
 	}
 }
@@ -1223,6 +1251,7 @@ FN;
 		}
 	}
 	rc = lf_delete(buf, key);
+	buf_put( &buf);
 	cache_balanced();
 	if (!rc) ++t->stat.delete;
 	return rc;
@@ -1303,12 +1332,6 @@ int t_find (Htree_s *t, Key_t key, Lump_s *val)
 	return 0;
 }
 #endif
-
-int t_next (Htree_s *t, Key_t prev_key, Key_t *key, Lump_s *val)
-{
-	warn("Not Implmented");
-	return 0;
-}
 
 int t_search(Htree_s *t, Key_t key, search_f sf, void *data)
 {
