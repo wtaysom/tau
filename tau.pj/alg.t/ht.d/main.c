@@ -200,8 +200,9 @@ void pr_stats (Htree_s *t)
 	printf("Num deleted leaves   = %8lld\n", stat.leaf.deleted);
 	printf("Num deleted branches = %8lld\n", stat.branch.deleted);
 	printf("Num insert           = %8lld\n", stat.insert);
-	printf("Num find             = %8lld\n", stat.find);
 	printf("Num delete           = %8lld\n", stat.delete);
+	printf("Num find             = %8lld\n", stat.find);
+	printf("Num next             = %8lld\n", stat.next);
 	printf("Num records          = %8lld\n", records);
 	printf("Records per leaf = %g\n",
 		(double)records / (stat.leaf.new - stat.leaf.deleted));

@@ -622,6 +622,30 @@ FN;
 	return -1;
 }
 
+static int leaf_le (Node_s *leaf, Key_t key)
+{
+FN;
+	int	x;
+	int	left;
+	int	right;
+	int	eq;
+
+	left = 0;
+	right = leaf->numrecs - 1;
+	while (left <= right) {
+		x = (left + right) / 2;
+		eq = isEQ(leaf, key, x);
+		if (eq == 0) {
+			return x;
+		} else if (eq > 0) {
+			left = x + 1;
+		} else {
+			right = x - 1;
+		}
+	}
+	return left;
+}
+
 static void lf_del_rec (Node_s *leaf, unint i)
 {
 FN;
@@ -889,18 +913,20 @@ static int lf_find(Buf_s *buf, Key_t key, Lump_s *vp)
 {
 FN;
 	Node_s	*node = buf->d;
-	int	x;
+	int	irec;
 	Lump_s	val;
 
-	x = leaf_eq(node, key);
-	if (x == -1) {
+	irec = leaf_eq(node, key);
+	if (irec == -1) {
 		return HT_ERR_NOT_FOUND;
 	}
-	if (x == node->numrecs) {
+	if (irec == node->numrecs) {
 		return HT_ERR_NOT_FOUND;
 	} else {
-		val = get_val(node, x);
-		*vp = duplump(val);
+		if (vp) {
+			val = get_val(node, irec);
+			*vp = duplump(val);
+		}
 		return 0;
 	}
 }
@@ -935,6 +961,20 @@ FN;
 	return rc;
 }
 
+static Buf_s *left_most (Htree_s *t, Blknum_t blknum)
+{
+	Buf_s	*buf;
+	Node_s	*node;
+
+	for (;;) {
+		buf = t_get(t, blknum);
+		node = buf->d;
+		if (node->isleaf) return buf;
+		blknum = node->first;
+		buf_put( &buf);
+	}
+}
+
 int t_next (Htree_s *t, Key_t prev_key, Key_t *key, Lump_s *vp)
 {
 FN;
@@ -947,23 +987,54 @@ FN;
 	Blknum_t	root;
 	Blknum_t	nextrt = 0;
 
+PRd(prev_key);
 	root = get_root(t);
 	if (!root) return HT_ERR_NOT_FOUND;
+HERE;
 	buf = t_get(t, root);
+HERE;
 	node = buf->d;
 	while (!node->isleaf) {
+HERE;
 		irec = br_lt(node, prev_key);
 		nextrt = node->twig[irec].blknum;
+HERE;
 		bchild = t_get(t, node->twig[irec - 1].blknum);
+HERE;
 		child = bchild->d;
 		buf_put( &buf);
 		buf = bchild;
 		node = child;
 	}
-	rc = lf_find(buf, prev_key, vp);
+	irec = leaf_le(node, prev_key);
+	if (irec == node->numrecs - 1) {
+		if (nextrt) {
+			buf_put(&buf);
+			buf = left_most(t, nextrt);
+			node = buf->d;
+			irec = 0;
+		} else {
+			rc = HT_ERR_NOT_FOUND;
+			goto exit;
+		}
+	} else {
+		Key_t	next_key = get_key(node, irec);
+		if (next_key == prev_key) {
+PRd(irec);
+			++irec;
+		}
+	}
+PRd(node->numrecs);
+	*key = get_key(node, irec);
+	if (vp) {
+		Lump_s val = get_val(node, irec);
+		*vp = duplump(val);
+	}
+	rc = 0;
+exit:
 	buf_put( &buf);
 	cache_balanced();
-	if (!rc) ++t->stat.find;
+	if (!rc) ++t->stat.next;
 	return rc;
 }
 

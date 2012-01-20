@@ -77,12 +77,18 @@ enum {	MAX_VAL = 32,
 
 Key_t gen_key (void)
 {
+#if 0
 	Key_t	key;
 
 	do {
 		key = urand(MAX_KEY);
 	} while (!key);
 	return key;
+#else
+	static Key_t	key = 0;
+	
+	return ++key;
+#endif
 }
 
 Lump_s gen_val (void)
@@ -477,12 +483,11 @@ int fill (int n)
 	int	i;
 	int	rc;
 	Key_t	key;
-	Lump_s	val;
 
 	for (i = 0; i < n; i++) {
 		do {
 			key = gen_key();
-		} while (find_twins(key, &val) != HT_ERR_NOT_FOUND);
+		} while (inuse_twins(key) != HT_ERR_NOT_FOUND);
 		rc = insert_twins(key, mk_val(key));
 		if (rc != 0) {
 			return rc;

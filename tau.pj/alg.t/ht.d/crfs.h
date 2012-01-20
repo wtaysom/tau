@@ -44,9 +44,10 @@ typedef struct Stat_s {
 		u64	join;
 	} leaf, branch;
 	u64	insert;
-	u64	find;
 	u64	delete;
 	u64	join;
+	u64	find;
+	u64	next;
 } Stat_s;
 
 typedef struct Inode_type_s {
