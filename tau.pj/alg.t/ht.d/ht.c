@@ -87,6 +87,89 @@ void cache_err (Htree_s *t)
 		(double)(cs.hits) / (cs.hits + cs.miss) * 100.);
 }
 
+static void pr_n_u8 (const void *mem, unint n)
+{
+	const u8	*u = mem;
+	unint		i;
+
+	printf(" ");
+	for (i = 4; i > n; i--) printf("  ");
+
+	while (i-- > 0) printf("%.2x", u[i]);
+}
+
+void pr_mem (const void *mem, unsigned n)
+{
+	enum {	NLONGS = 4,
+		NCHARS = NLONGS * sizeof(u32) };
+
+	const u32	*p = mem;
+	const char	*c = mem;
+	unsigned	i, j;
+	unsigned	q, r;
+
+	q = n / NCHARS;
+	r = n % NCHARS;
+	for (i = 0; i < q; i++) {
+		printf("%p:", p);
+		for (j = 0; j < NLONGS; j++) {
+			printf(" %8x", *p++);
+		}
+		printf(" | ");
+		for (j = 0; j < NCHARS; j++, c++) {
+			printf("%c", isprint(*c) ? *c : '.');
+		}
+		printf("\n");
+	}
+	if (!r) return;
+	printf("%8p:", p);
+	for (j = 0; j < r / sizeof(u32); j++) {
+		printf(" %8x", *p++);
+	}
+	i = r % sizeof(u32);
+	if (i) {
+		++j;
+		pr_n_u8(p, i);
+	}
+	for (; j < NLONGS; j++) {
+		printf("         ");
+	}
+	printf(" | ");
+	for (j = 0; j < r; j++, c++) {
+		printf("%c", isprint(*c) ? *c : '.');
+	}
+	printf("\n");
+}
+	
+void pr_mem_leaf (Node_s *node)
+{
+	int	i;
+
+	printf("isleaf %d  unused1 %d  numrecs %d blknum %llx"
+		"  free %d  end %d\n",
+		node->isleaf, node->unused1, node->numrecs,
+		(u64)node->blknum, node->free, node->end);
+	for (i = 0; i < node->numrecs; i++) {
+		printf(" %d", node->rec[i]);
+	}
+	printf("\n");
+	pr_mem(node->rec, MAX_FREE);
+}
+
+void pr_mem_br (Node_s *node)
+{
+	int	i;
+
+	printf("isleaf %d  unused1 %d  numrecs %d blknum %lld"
+		"  first %lld\n",
+		node->isleaf, node->unused1, node->numrecs,
+		(u64)node->blknum, (u64)node->first);
+	for (i = 0; i <= node->numrecs && i < NUM_TWIGS; i++) {
+		printf(" %8lld %8lld\n", (u64)node->twig[i].key,
+			(u64)node->twig[i].blknum);
+	}
+}
+
 static Buf_s *t_get (Htree_s *t, Blknum_t blknum)
 {
 	Buf_s *buf = buf_get(&t->inode, blknum);
@@ -990,24 +1073,30 @@ FN;
 PRd(prev_key);
 	root = get_root(t);
 	if (!root) return HT_ERR_NOT_FOUND;
-HERE;
 	buf = t_get(t, root);
-HERE;
 	node = buf->d;
 	while (!node->isleaf) {
-HERE;
+pr_mem_br(node);
 		irec = br_lt(node, prev_key);
 		nextrt = node->twig[irec].blknum;
-HERE;
+PRd(irec);
+PRd(node->numrecs);
+PRd(nextrt);
+pause();
 		bchild = t_get(t, node->twig[irec - 1].blknum);
-HERE;
 		child = bchild->d;
 		buf_put( &buf);
 		buf = bchild;
 		node = child;
 	}
 	irec = leaf_le(node, prev_key);
-	if (irec == node->numrecs - 1) {
+#if 0
+PRd(irec);
+PRd(node->numrecs);
+PRd(nextrt);
+pause();
+#endif
+	if (irec >= node->numrecs - 1) {
 		if (nextrt) {
 			buf_put(&buf);
 			buf = left_most(t, nextrt);
@@ -1020,11 +1109,9 @@ HERE;
 	} else {
 		Key_t	next_key = get_key(node, irec);
 		if (next_key == prev_key) {
-PRd(irec);
 			++irec;
 		}
 	}
-PRd(node->numrecs);
 	*key = get_key(node, irec);
 	if (vp) {
 		Lump_s val = get_val(node, irec);

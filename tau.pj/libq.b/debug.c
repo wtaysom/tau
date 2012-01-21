@@ -280,3 +280,19 @@ int assertError (const char *what)
 	return 0;
 }
 
+void pause (void)
+{
+	int	c;
+
+	printf("type <cr> to continue:");
+	fflush(stdin);
+	for (;;) {
+		c = getchar();
+		switch (c) {
+		case '\n': return;
+		case 'q' : exit(0); break;
+		case 's' : stacktrace(); break;
+		default: break;
+		}
+	}
+}
