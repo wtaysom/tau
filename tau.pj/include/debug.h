@@ -83,7 +83,7 @@ extern int assertError(const char *what);
 void stacktrace(void);
 void stacktrace_err(void);
 
-void pause (void);
+void Pause (void);
 
 #ifdef __cplusplus
 }

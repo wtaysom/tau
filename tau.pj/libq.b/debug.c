@@ -280,7 +280,7 @@ int assertError (const char *what)
 	return 0;
 }
 
-void pause (void)
+void Pause (void)
 {
 	int	c;
 

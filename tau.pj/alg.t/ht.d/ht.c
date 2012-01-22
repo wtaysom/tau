@@ -1070,19 +1070,15 @@ FN;
 	Blknum_t	root;
 	Blknum_t	nextrt = 0;
 
-PRd(prev_key);
 	root = get_root(t);
 	if (!root) return HT_ERR_NOT_FOUND;
 	buf = t_get(t, root);
 	node = buf->d;
 	while (!node->isleaf) {
-pr_mem_br(node);
 		irec = br_lt(node, prev_key);
-		nextrt = node->twig[irec].blknum;
-PRd(irec);
-PRd(node->numrecs);
-PRd(nextrt);
-pause();
+		if (irec < node->numrecs) {
+			nextrt = node->twig[irec].blknum;
+		}
 		bchild = t_get(t, node->twig[irec - 1].blknum);
 		child = bchild->d;
 		buf_put( &buf);
@@ -1090,12 +1086,6 @@ pause();
 		node = child;
 	}
 	irec = leaf_le(node, prev_key);
-#if 0
-PRd(irec);
-PRd(node->numrecs);
-PRd(nextrt);
-pause();
-#endif
 	if (irec >= node->numrecs - 1) {
 		if (nextrt) {
 			buf_put(&buf);
