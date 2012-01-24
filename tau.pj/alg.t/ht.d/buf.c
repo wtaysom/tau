@@ -122,7 +122,7 @@ FN;
 
 	for (i = 0; i < Cache.stat.numbufs * 2; i++) {
 		++Cache.clock;
-		if (Cache.clock >= Cache.stat.numbufs) {
+		if (Cache.stat.numbufs <= Cache.clock) {
 			Cache.clock = 0;
 		}
 		if (Cache.buf[Cache.clock].clock) {
@@ -196,7 +196,7 @@ FN;
 
 	*bp = NULL;
 	assert(b->blknum == ((Node_s *)b->d)->blknum);
-	assert(b->inuse > 0);
+	assert(0 < b->inuse);
 	++Cache.stat.puts;
 	--b->inuse;
 	if (!b->inuse) {
@@ -231,7 +231,7 @@ FN;
 	Buf_s *b = *bp;
 
 	*bp = NULL;
-	assert(b->inuse > 0);
+	assert(0 < b->inuse);
 	++Cache.stat.puts;
 	--b->inuse;
 }
@@ -243,7 +243,7 @@ FN;
 
 	*bp = NULL;
 	assert(b->blknum == ((Node_s *)b->d)->blknum);
-	assert(b->inuse > 0);
+	assert(0 < b->inuse);
 	++Cache.stat.puts;
 	--b->inuse;
 	if (!b->inuse) {
@@ -256,11 +256,11 @@ void cache_trace (const char *fn, int line)
 {
 	if (Cache.stat.gets == Cache.stat.puts) {
 		printf("%s<%d> == %lld\n", fn, line, Cache.stat.gets);
-	} else if (Cache.stat.gets > Cache.stat.puts) {
-		printf("%s<%d> %lld > %lld\n",
-			fn, line, Cache.stat.gets, Cache.stat.puts);
+	} else if (Cache.stat.puts < Cache.stat.gets) {
+		printf("%s<%d> %lld puts < %lld gets\n",
+			fn, line, Cache.stat.puts, Cache.stat.gets);
 	} else {
-		printf("BAD %s<%d> %lld < %lld\n",
+		printf("BAD %s<%d> %lld gets < %lld puts\n",
 			fn, line, Cache.stat.gets, Cache.stat.puts);
 	}
 }

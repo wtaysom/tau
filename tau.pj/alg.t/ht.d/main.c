@@ -166,7 +166,7 @@ void pr_key (Key_t key)
 	printf("%llu", (u64)key);
 }
 
-static int pr_rec (Hrec_s rec, Htree_s *t, void *user)
+static int pr_rec (Hrec_s rec, void *user)
 {
 	u64 *recnum = user;
 
@@ -183,7 +183,7 @@ void pr_tree (Htree_s *t)
 	u64 recnum = 0;
 
 	printf("\n**************pr_tree****************\n");
-	t_map(t, pr_rec, NULL, &recnum);
+	t_map(t, pr_rec, &recnum);
 }
 
 void pr_stats (Htree_s *t)

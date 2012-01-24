@@ -310,7 +310,7 @@ int cp (int argc, char *argv[])
 		printf("We have a problem Huston.\n");
 		stp(argc, argv);
 	}
-	return t_compare_trees(TreeA, TreeB);
+	return t_compare(TreeA, TreeB);
 }
 
 int clearp (int argc, char *argv[])
@@ -351,15 +351,13 @@ int genp (int argc, char *argv[])
 }
 
 static int num_recs_cnt (
-	void	*data,
-	u64	rec_key,
-	void	*rec,
-	unint	len)
+	Hrec_s	rec,
+	void	*user)
 {
-	int	*cnt = data;
+	int	*cnt = user;
 
 	++*cnt;
-	return HT_TRY_NEXT;
+	return 0;
 }
 
 int num_recs (void)
@@ -367,8 +365,8 @@ int num_recs (void)
 	int		sum_a = 0;
 	int		sum_b = 0;
 
-	t_search(TreeA, 0, num_recs_cnt, &sum_a);
-	t_search(TreeB, 0, num_recs_cnt, &sum_b);
+	t_map(TreeA, num_recs_cnt, &sum_a);
+	t_map(TreeB, num_recs_cnt, &sum_b);
 	if (sum_a != sum_b) {
 		printf("Sums don't match %d!=%d\n", sum_a, sum_b);
 	}
@@ -382,29 +380,33 @@ typedef struct ith_search_s {
 } ith_search_s;
 
 static int ith_search (
-	void	*data,
-	u64	rec_key,
-	void	*rec,
-	unint	len)
+	Hrec_s	rec,
+	void	*user)
 {
-	ith_search_s	*s = data;
+	ith_search_s	*s = user;
 
 	if (s->sum == s->ith) {
-		*s->key = rec_key;
-		return 0;
+		*s->key = rec.key;
+		return HT_DONE;
 	}
 	++s->sum;
-	return HT_TRY_NEXT;
+	return 0;
 }
 
 int find_ith (Htree_s *tree, int ith, u64 *key)
 {
 	ith_search_s	s;
+	int	rc;
 
 	s.sum = 0;
 	s.ith = ith;
 	s.key = key;
-	return t_search(tree, 0, ith_search, &s);
+	rc = t_map(tree, ith_search, &s);
+	if (rc == HT_DONE) {
+		return 0;
+	} else {
+		return HT_ERR_NOT_FOUND;
+	}
 }
 
 int del_ith (int ith)
@@ -421,7 +423,7 @@ int del_ith (int ith)
 	}
 	rc_b = find_ith(TreeB, ith, &key_b);
 	if (rc_b) {
-		printf("TreeA couldn't find record %d, err = %d\n", ith, rc_b);
+		printf("TreeB couldn't find record %d, err = %d\n", ith, rc_b);
 		return rc_b;
 	}
 	if (key_a != key_b) {
@@ -567,5 +569,5 @@ void cmd (void)
 	init_twins(".devA", ".devB");
 	init_shell(NULL);
 	init_cmd();
-	if (!shell()) warn("shell error");
+	if (shell()) warn("shell error");
 }

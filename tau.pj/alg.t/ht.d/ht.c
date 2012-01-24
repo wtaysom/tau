@@ -46,8 +46,6 @@ enum {	MAX_U16 = (1 << 16) - 1,
 
 typedef struct Apply_s {
 	Apply_f	func;
-	Htree_s	*tree;
-	void	*sys;
 	void	*user;
 } Apply_s;
 
@@ -60,14 +58,11 @@ static void pr_branch(Node_s *branch);
 
 bool Dump_buf = FALSE;
 
-static inline Apply_s mk_apply (Apply_f func, Htree_s *t,
-				void *sys, void *user)
+static inline Apply_s mk_apply (Apply_f func, void *user)
 {
 	Apply_s a;
 
 	a.func = func;
-	a.tree = t;
-	a.sys  = sys;
 	a.user = user;
 	return a;
 }
@@ -93,12 +88,12 @@ static void pr_n_u8 (const void *mem, unint n)
 	unint		i;
 
 	printf(" ");
-	for (i = 4; i > n; i--) printf("  ");
+	for (i = 4; n < i; i--) printf("  ");
 
-	while (i-- > 0) printf("%.2x", u[i]);
+	while (0 < i--) printf("%.2x", u[i]);
 }
 
-void pr_mem (const void *mem, unsigned n)
+static void pr_mem (const void *mem, unsigned n)
 {
 	enum {	NLONGS = 4,
 		NCHARS = NLONGS * sizeof(u32) };
@@ -139,35 +134,6 @@ void pr_mem (const void *mem, unsigned n)
 		printf("%c", isprint(*c) ? *c : '.');
 	}
 	printf("\n");
-}
-	
-void pr_mem_leaf (Node_s *node)
-{
-	int	i;
-
-	printf("isleaf %d  unused1 %d  numrecs %d blknum %llx"
-		"  free %d  end %d\n",
-		node->isleaf, node->unused1, node->numrecs,
-		(u64)node->blknum, node->free, node->end);
-	for (i = 0; i < node->numrecs; i++) {
-		printf(" %d", node->rec[i]);
-	}
-	printf("\n");
-	pr_mem(node->rec, MAX_FREE);
-}
-
-void pr_mem_br (Node_s *node)
-{
-	int	i;
-
-	printf("isleaf %d  unused1 %d  numrecs %d blknum %lld"
-		"  first %lld\n",
-		node->isleaf, node->unused1, node->numrecs,
-		(u64)node->blknum, (u64)node->first);
-	for (i = 0; i <= node->numrecs && i < NUM_TWIGS; i++) {
-		printf(" %8lld %8lld\n", (u64)node->twig[i].key,
-			(u64)node->twig[i].blknum);
-	}
 }
 
 static Buf_s *t_get (Htree_s *t, Blknum_t blknum)
@@ -242,6 +208,44 @@ static Hrec_s get_rec (Node_s *leaf, unint i)
 	rec.val.size |= (*start++) << 8;
 	rec.val.d = start;
 	return rec;
+}
+	
+static void pr_mem_leaf (Node_s *node)
+{
+	int	i;
+
+	printf("  free %d  end %d\n",
+		node->free, node->end);
+	for (i = 0; i < node->numrecs; i++) {
+		printf(" %d", node->rec[i]);
+	}
+	printf("\n");
+	for (i = 0; i < node->numrecs; i++) {
+		Hrec_s	rec = get_rec(node, i);
+		printf("%lld %d %s\n",
+			(u64)rec.key, rec.val.size,
+			(char *)rec.val.d);
+	}
+}
+
+static void pr_mem_br (Node_s *node)
+{
+	int	i;
+
+	printf("  first %lld\n", (u64)node->first);
+	for (i = 0; i <= node->numrecs && i < NUM_TWIGS; i++) {
+		printf(" %8lld %8lld\n", (u64)node->twig[i].key,
+			(u64)node->twig[i].blknum);
+	}
+}
+
+void pr_mem_node (Node_s *node)
+{
+	printf("isleaf %d  unused1 %d  numrecs %d blknum %lld",
+		node->isleaf, node->unused1, node->numrecs,
+		(u64)node->blknum);
+	if (node->isleaf) pr_mem_leaf(node);
+	else pr_mem_br(node);
 }
 
 static void pr_indent (int indent)
@@ -319,7 +323,7 @@ static void pr_lump (Lump_s a)
 	int	size;
 
 	size = a.size;
-	if (size > MAX_PRINT) {
+	if (MAX_PRINT < size) {
 		size = MAX_PRINT;
 		pr_chars(MAX_PRINT/2 - 3, a.d);
 		printf(" ... ");
@@ -473,7 +477,7 @@ FN;
 	Key_t	target;
 
 	target = get_key(leaf, i);
-	return target >= key;
+	return key <= target;
 }
 #endif
 
@@ -566,6 +570,8 @@ FN;
 	if (usable(leaf) == leaf->free) {
 		return;
 	}
+HERE;	// TODO(taysom) get rid of extra calls to lf_compact
+	zero(b);
 	init_node(h, TRUE, leaf->blknum);
 	for (i = 0; i < leaf->numrecs; i++) {
 		rec_copy(h, i, leaf, i);
@@ -693,9 +699,9 @@ FN;
 	while (left <= right) {
 		x = (left + right) / 2;
 		eq = isEQ(leaf, key, x);
-		if (eq == 0) {
+		if (0 == eq) {
 			return x;
-		} else if (eq > 0) {
+		} else if (0 < eq) {
 			left = x + 1;
 		} else {
 			right = x - 1;
@@ -718,9 +724,9 @@ FN;
 	while (left <= right) {
 		x = (left + right) / 2;
 		eq = isEQ(leaf, key, x);
-		if (eq == 0) {
+		if (0 == eq) {
 			return x;
-		} else if (eq > 0) {
+		} else if (0 < eq) {
 			left = x + 1;
 		} else {
 			right = x - 1;
@@ -773,7 +779,7 @@ static void lf_move_recs (Node_s *leaf, Node_s *sibling)
 		size |= start[sizeof(Key_t) + 1] << 8;
 		size += sizeof(u16) + sizeof(Key_t);
 		total = size + sizeof(u16);
-		assert(leaf->free >= total);
+		assert(total <= leaf->free);
 		leaf->end -= size;
 		leaf->rec[j] = leaf->end;
 		leaf->free -= total;
@@ -842,7 +848,7 @@ FN;
 	int i;
 
 	LF_AUDIT(leaf);
-	if (size > usable(leaf)) {
+	if (usable(leaf) < size) {
 		lf_compact(leaf);
 	}
 	i = leaf_lt(leaf, key);
@@ -855,7 +861,7 @@ FN;
 static bool is_full (Node_s *node, int size)
 {
 	if (node->isleaf) {
-		return size > node->free;
+		return node->free < size;
 	} else {
 		return node->numrecs == NUM_TWIGS;
 	}
@@ -865,7 +871,7 @@ static bool is_low (Node_s *node)
 {
 FN;
 	if (node->isleaf) {
-		return node->free > LEAF_SPLIT;
+		return LEAF_SPLIT < node->free;
 	} else {
 		return node->numrecs < BRANCH_SPLIT;
 	}
@@ -1086,7 +1092,7 @@ FN;
 		node = child;
 	}
 	irec = leaf_le(node, prev_key);
-	if (irec >= node->numrecs - 1) {
+	if (node->numrecs - 1 <= irec) {
 		if (nextrt) {
 			buf_put(&buf);
 			buf = left_most(t, nextrt);
@@ -1126,7 +1132,7 @@ static int lf_map (Buf_s *buf, Apply_s apply)
 
 	for (i = 0; i < node->numrecs; i++) {
 		rec = get_rec(node, i);
-		rc = apply.func(rec, apply.tree, apply.user);
+		rc = apply.func(rec, apply.user);
 		if (rc) return rc;
 	}
 	return 0;
@@ -1167,21 +1173,20 @@ static int node_map (Htree_s *t, Blknum_t blknum, Apply_s apply)
 	return rc;
 }
 
-int t_map (Htree_s *t, Apply_f func, void *sys, void *user)
+int t_map (Htree_s *t, Apply_f func, void *user)
 {
-	Apply_s	apply = mk_apply(func, t, sys, user);
+	Apply_s	apply = mk_apply(func, user);
 	int	rc = node_map(t, get_root(t), apply);
 
 	cache_balanced();
 	return rc;
 }
 
-static int map_rec_audit (Hrec_s rec, Htree_s *t, void *user)
+static int map_rec_audit (Hrec_s rec, void *user)
 {
 	Key_t	*oldkey = user;
 
 	if (rec.key < *oldkey) {
-		t_dump(t);
 		pr_key(rec.key);
 		printf(" <= ");
 		pr_key(*oldkey);
@@ -1266,7 +1271,7 @@ int t_audit (Htree_s *t, Audit_s *audit)
 	int	rc;
 
 	zero(*audit);
-	rc = t_map(t, map_rec_audit, NULL, &oldkey);
+	rc = t_map(t, map_rec_audit, &oldkey);
 	if (rc) {
 		printf("AUDIT FAILED %d\n", rc);
 		return rc;
@@ -1433,9 +1438,128 @@ PRd(sizeof(CheckTwig));
 	return t;
 }
 
-bool t_compare (Htree_s *a, Htree_s *b)
+static int node_compare(Htree_s *a, Blknum_t a_blk,
+			Htree_s *b, Blknum_t b_blk);
+
+static int leaf_compare (Node_s *a_node, Node_s *b_node)
 {
-	return TRUE;
+	if (a_node->free != b_node->free) {
+		warn("free differ a=%d b=%d",
+			a_node->free, b_node->free);
+		return HT_ERR_DIFFERENT;
+	}
+	if (a_node->end != b_node->end) {
+		warn("end differ a=%d b=%d",
+			a_node->end, b_node->end);
+		return HT_ERR_DIFFERENT;
+	}
+	return 0;
+}
+
+static int br_compare (Htree_s *a, Node_s *a_node,
+		       Htree_s *b, Node_s *b_node)
+{
+	int	i;
+	int	rc;
+
+	rc = node_compare(a, a_node->first,
+			  b, b_node->first);
+	for (i = 0; i < a_node->numrecs; i++) {
+		if (rc) return rc;
+		rc = node_compare(a, a_node->twig[i].blknum,
+				  b, b_node->twig[i].blknum);
+	}
+	return rc;
+}
+
+static int node_compare (Htree_s *a, Blknum_t a_blk,
+			 Htree_s *b, Blknum_t b_blk)
+{
+	Buf_s	*a_buf = t_get(a, a_blk);
+	Buf_s	*b_buf = t_get(b, b_blk);
+	Node_s	*a_node;
+	Node_s	*b_node;
+	int	rc = 0;
+
+	if (a_blk != b_blk) {
+		warn("blknum differ a=%lld b=%lld",
+			(u64)a_blk, (u64)b_blk);
+	}
+	if (a_buf == b_buf) return 0;
+	if (!a_buf) {
+		warn("a_buf NULL %lld", (u64)a_blk);
+		rc = HT_ERR_DIFFERENT;
+		goto exit;
+	}
+	if (!b_buf) {
+		warn("b_buf NULL %lld", (u64)b_blk);
+		rc = HT_ERR_DIFFERENT;
+		goto exit;
+	}
+	a_node = a_buf->d;
+	b_node = b_buf->d;
+	if (memcmp(a_node, b_node, BLOCK_SIZE) != 0) {
+		warn("a %lld and b %lld are not binary identical",
+			(u64)a_blk, (u64)b_blk);
+		printf("a\n");
+		pr_mem(a_node, BLOCK_SIZE);
+//		pr_mem_node(a_node);
+		printf("b\n");
+		pr_mem(b_node, BLOCK_SIZE);
+//		pr_mem_node(b_node);
+		rc = 0;
+		fatal("nodes differ");
+	}
+	if (a_node->isleaf != b_node->isleaf) {
+		warn("Not both leaves a=%d b=%d",
+			a_node->isleaf, b_node->isleaf);
+		rc = HT_ERR_DIFFERENT;
+	}
+	if (a_node->unused1 != b_node->unused1) {
+		warn("unused differ a=%d b=%d",
+			a_node->unused1, b_node->unused1);
+		rc = HT_ERR_DIFFERENT;
+	}
+	if (a_node->numrecs != b_node->numrecs) {
+		warn("numrecs differ a=%d b=%d",
+			a_node->numrecs, b_node->numrecs);
+		rc = HT_ERR_DIFFERENT;
+	}
+	if (a_node->blknum != b_node->blknum) {
+		warn("blknum differ a=%lld b=%lld",
+			(u64)a_node->blknum, (u64)b_node->blknum);
+		rc = HT_ERR_DIFFERENT;
+	}
+	if (rc) goto exit;
+	
+	if (a_node->isleaf) {
+		rc = leaf_compare(a_node, b_node);
+	} else {
+		rc = br_compare(a, a_node, b, b_node);
+	}
+exit:
+	if (a_buf) buf_put( &a_buf);
+	if (b_buf) buf_put( &b_buf);
+	return rc;	
+}
+
+int t_compare (Htree_s *a, Htree_s *b)
+{
+	int	rc;
+	Blknum_t	a_root = get_root(a);
+	Blknum_t	b_root = get_root(b);
+
+	if (a_root != b_root) {
+		warn("root block nums differ %lld %lld",
+			(u64)a_root, (u64)b_root);
+		return HT_ERR_DIFFERENT;
+	}
+	if (!a_root) return 0;
+
+	rc = node_compare(a, a_root, b, b_root);
+
+	cache_balanced();
+	return rc;
 }
 
 #if 0
@@ -1468,7 +1592,7 @@ int t_audit (Htree_s *t, Audit_s *audit)
 	return 0;
 }
 
-int  t_map   (Htree_s *t, Apply_f func, void *sys, void *user)
+int  t_map   (Htree_s *t, Apply_f func, void *user)
 {
 	warn("Not Implmented");
 	return 0;
@@ -1480,15 +1604,3 @@ int t_find (Htree_s *t, Key_t key, Lump_s *val)
 	return 0;
 }
 #endif
-
-int t_search(Htree_s *t, Key_t key, search_f sf, void *data)
-{
-	warn("Not Implmented");	// Maybe able to implement using t_map
-	return 0;
-}
-
-int t_compare_trees (Htree_s *a, Htree_s *b)
-{
-	warn("Not Implmented");
-	return 0;
-}
