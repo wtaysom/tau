@@ -570,7 +570,6 @@ FN;
 	if (usable(leaf) == leaf->free) {
 		return;
 	}
-HERE;	// TODO(taysom) get rid of extra calls to lf_compact
 	zero(b);
 	init_node(h, TRUE, leaf->blknum);
 	for (i = 0; i < leaf->numrecs; i++) {
@@ -583,7 +582,6 @@ static void store_rec (Node_s *leaf, Key_t key, Lump_s val, unint i)
 {
 FN;
 	assert(leaf->isleaf);
-	lf_compact(leaf);	// XXX: not sure if needed and expensive
 	store_lump(leaf, val);
 	store_key(leaf, key);
 	store_end(leaf, i);
@@ -1443,6 +1441,10 @@ static int node_compare(Htree_s *a, Blknum_t a_blk,
 
 static int leaf_compare (Node_s *a_node, Node_s *b_node)
 {
+	Hrec_s	a_rec;
+	Hrec_s	b_rec;
+	int	i;
+
 	if (a_node->free != b_node->free) {
 		warn("free differ a=%d b=%d",
 			a_node->free, b_node->free);
@@ -1452,6 +1454,25 @@ static int leaf_compare (Node_s *a_node, Node_s *b_node)
 		warn("end differ a=%d b=%d",
 			a_node->end, b_node->end);
 		return HT_ERR_DIFFERENT;
+	}
+	for (i = 0; i < a_node->numrecs; i++) {
+		a_rec = get_rec(a_node, i);
+		b_rec = get_rec(b_node, i);
+		if (a_rec.key != b_rec.key) {
+			warn("keys differ a=%lld b=%lld",
+				(u64)a_rec.key, (u64)b_rec.key);
+			return HT_ERR_DIFFERENT;
+		}
+		if (a_rec.val.size != b_rec.val.size) {
+			warn("val size differ a=%d b=%d",
+				a_rec.val.size, b_rec.val.size);
+			return HT_ERR_DIFFERENT;
+		}
+		if (memcmp(a_rec.val.d, b_rec.val.d, a_rec.val.size)) {
+			warn("val d differ a=%s b=%s",
+				(char *)a_rec.val.d, (char *)b_rec.val.d);
+			return HT_ERR_DIFFERENT;
+		}
 	}
 	return 0;
 }
