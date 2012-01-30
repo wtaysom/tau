@@ -10,7 +10,9 @@
 #include <eprintf.h>
 #include <style.h>
 
-enum {	MAX_RECS = 4,
+enum {	MAX_LEVEL   = 4,
+	MAX_RECS    = 4,
+	SPLIT       = MAX_RECS / 2,
 	NUM_BUCKETS = 17 };
 
 typedef struct Rec_s {
@@ -87,8 +89,8 @@ void add_ant (Ant_s *a)
 Ant_s *new_ant (void)
 {
 	static u32	id = 0;
-
 	Ant_s	*a = ezalloc(sizeof(*a));
+
 	a->id = ++id;
 	add_ant(a);
 	return a;
@@ -96,19 +98,38 @@ Ant_s *new_ant (void)
 
 void split (Ant_s *a)
 {
-	fatal("Not implemented");
+	Ant_s	*b = new_ant();
+	Rec_s	r;
+	
+	b->level = a->level;
+	for (i = 0; i < a->n - SPLIT; i++) {
+		b->r[i] = a->r[SPLIT + i];
+	}
+	b->n = i;
+	a->n = SPLIT;
+	r.key = b->r[0].key;
+	r.val = b->id;
+	insert(Root, b->level - 1, r);
 }
 
-void insert (u32 id, Rec_s r)
+Ant_s *new_root (Ant_s *a)
 {
+	Ant_s	*root = new_ant();
+}
+
+void insert (u32 id, unint level, Rec_s r)
+{
+	Ant_s	*a;
 	u32	i;
 
-	if (a == 0) {
+	if (id == 0) {
 		a = new_ant();
 		Root = a->id;
 	} else {
 		a = find_ant(id);
 	}
+	if (a->level < level) {	/* Need a new root */
+		
 	if (level < a->level) {
 		for (i = 0; i < a->n; i++) {
 			if (r.key < a->r[i].key) {
@@ -119,7 +140,7 @@ void insert (u32 id, Rec_s r)
 	}
 	if (a->n == MAX_RECS) {
 		split(a);
-		insert(Root, r);
+		insert(Root, level, r);
 		return;
 	}
 	for (i = 0; i < a->n; i++) {
@@ -128,8 +149,35 @@ void insert (u32 id, Rec_s r)
 			break;
 		}
 	}
+	// Check equality
 	a->r[i] = r;
 	++a->n;
+}
+
+static void pr_level (unint level)
+{
+	unint	i;
+
+	for (i = level; i < MAX_LEVEL; i++) {
+		printf("  ");
+	}
+}
+
+void print (u32 id)
+{
+	Ant_s	*a = find_ant(id);
+	unint	i;
+
+	if (!a) return;
+	pr_level(a->level);
+	printf("id=%d level=%d n=%d\n", a->id, a->level, a->n);
+	for (i = 0; i < a->n; i++) {
+		pr_level(a->level);
+		printf("%3ld. %d %d\n", i, a->r[i].key, a->r[i].val);
+		if (a->level) {
+			print(a->r[i].val);
+		}
+	}
 }
 
 int main (int argc, char *argv[])
@@ -137,10 +185,11 @@ int main (int argc, char *argv[])
 	Rec_s	r;
 	u32	i;
 
-	for (i = 0; i < 10; i++) {
+	for (i = 0; i < 4; i++) {
 		r.key = genkey();
 		r.val = genval();
-		insert(Root, r);
+		insert(Root, 0, r);
 	}
+	print(Root);
 	return 0;
 }

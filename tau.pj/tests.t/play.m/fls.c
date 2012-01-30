@@ -4,9 +4,10 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <strings.h>
 
-unsigned flsl (unsigned long x)
+unsigned Flsl (unsigned long x)
 {
 	unsigned	b = 1;
 	unsigned long	t;
@@ -66,10 +67,14 @@ int main (int argc, char *argv[])
 	unsigned long	x = 0;
 	unsigned long	b;
 	unsigned	i;
+	unsigned	n;
 
-	for (i = 0; i < 10; i++) {
+	if (argc > 1) {
+		n = strtol(argv[1], NULL, 0);
+	}
+	for (i = 0; i < n; i++) {
 		x = fib(i);
-		b = flsl(x);
+		b = Flsl(x);
 		printf("%ld %ld\n", x, b);
 	}
 	return 0;
