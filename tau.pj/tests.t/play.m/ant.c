@@ -13,12 +13,19 @@
 enum {	MAX_LEVEL   = 4,
 	MAX_RECS    = 4,
 	SPLIT       = MAX_RECS / 2,
-	NUM_BUCKETS = 17 };
+	NUM_BUCKETS = 17,
+	MAX_MSG_Q   = 7 };
 
 typedef struct Rec_s {
 	u32	key;
 	u32	val;
 } Rec_s;
+
+typedef struct Msg_s {
+	u32	id;
+	u32	op;
+	Rec_s	r;
+} Msg_s;
 
 typedef struct Ant_s	Ant_s;
 struct Ant_s {
@@ -26,10 +33,37 @@ struct Ant_s {
 	u32	id;
 	u16	level;
 	u16	n;
+	u32	first;
 	Rec_s	r[MAX_RECS];
 };
 	
 u32 Root;
+Msg_s	Msg_q[MAX_MSG_Q];
+Msg_s	*In_msg = Msg_q;
+Msg_s	*Out_msg = Msg_q;
+Msg_s	NilMsg = { 0 };
+
+void send (Msg_s msg)
+{
+	Msg_s	*next = In_msg + 1;
+
+	if (next == &Msg_q[MAX_MSG_Q]) next = Msg_q;
+	if (next == Out_msg) fatal("full");
+	*next = msg;
+	In_msg = next;
+}
+
+Msg_s recv (void)
+{
+	Msg_s	msg;
+
+	if (In_msg == Out_msg) return NilMsg;
+	msg = *Out_msg;
+	++Out_msg;
+	if (Out_msg == &Msg_q[MAX_MSG_Q]) Out_msg = Msg_q;
+	return msg;
+}
+
 
 u32 genkey (void)
 {
@@ -96,10 +130,13 @@ Ant_s *new_ant (void)
 	return a;
 }
 
+void insert (u32 id, unint level, Rec_s r);
+
 void split (Ant_s *a)
 {
 	Ant_s	*b = new_ant();
 	Rec_s	r;
+	unint	i;
 	
 	b->level = a->level;
 	for (i = 0; i < a->n - SPLIT; i++) {
@@ -112,9 +149,12 @@ void split (Ant_s *a)
 	insert(Root, b->level - 1, r);
 }
 
-Ant_s *new_root (Ant_s *a)
+void new_root (Ant_s *a)
 {
 	Ant_s	*root = new_ant();
+	
+	root->first = Root;
+	Root = root->id;
 }
 
 void insert (u32 id, unint level, Rec_s r)
@@ -129,7 +169,10 @@ void insert (u32 id, unint level, Rec_s r)
 		a = find_ant(id);
 	}
 	if (a->level < level) {	/* Need a new root */
-		
+		new_root(a);
+		insert(Root, level, r);
+		return;
+	}	
 	if (level < a->level) {
 		for (i = 0; i < a->n; i++) {
 			if (r.key < a->r[i].key) {
@@ -177,6 +220,20 @@ void print (u32 id)
 		if (a->level) {
 			print(a->r[i].val);
 		}
+	}
+}
+
+void recv_loop (void)
+{
+	Msg_s	msg;
+	Ant_s	*ant;
+
+	for (;;) {
+		msg = recv();
+		if (!msg.id) return;
+		a = find_ant(msg.id);
+		if (!a) fatal("can't find ant %d", msg.id);
+		a->type->op[msg.op](a, msg);
 	}
 }
 

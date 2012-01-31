@@ -67,7 +67,7 @@ int main (int argc, char *argv[])
 	unsigned long	x = 0;
 	unsigned long	b;
 	unsigned	i;
-	unsigned	n;
+	unsigned	n = 10;
 
 	if (argc > 1) {
 		n = strtol(argv[1], NULL, 0);
