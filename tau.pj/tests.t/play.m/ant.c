@@ -12,70 +12,75 @@
 
 enum {	MAX_LEVEL   = 4,
 	MAX_RECS    = 4,
-	SPLIT       = MAX_RECS / 2,
+	MAX_TWIGS   = MAX_RECS - 1,
+	SPLIT_RECS  = MAX_RECS / 2,
+	SPLIT_TWIGS = MAX_TWIGS / 2,
 	NUM_BUCKETS = 17,
 	MAX_MSG_Q   = 7 };
+
+enum {	PRINT_OP = 0,
+	INSERT_OP,
+	NUM_OPS };
+
+typedef struct Ant_s	Ant_s;
+typedef struct Msg_s	Msg_s;
+
+typedef void (*op_f)(Ant_s *a, Msg_s m);
 
 typedef struct Rec_s {
 	u32	key;
 	u32	val;
 } Rec_s;
 
-typedef struct Msg_s {
+typedef struct Twig_s {
+	u32	key;
 	u32	id;
-	u32	op;
-	Rec_s	r;
-} Msg_s;
+} Twig_s;
 
-typedef struct Ant_s	Ant_s;
+struct Msg_s {
+	u32	id;
+	u32	reply;
+	u16	op;
+	u16	level;
+	Rec_s	r;
+};
+
+typedef struct Type_s {
+	u32	numops;
+	op_f	op[];
+} Type_s;
+
 struct Ant_s {
 	Ant_s	*next;
+	Type_s	*type;
 	u32	id;
-	u16	level;
-	u16	n;
-	u32	first;
-	Rec_s	r[MAX_RECS];
+	union {
+		struct {
+			u16	n;
+			u16	level;
+			u32	first;
+			Twig_s	twig[MAX_TWIGS];
+		};
+		struct {
+			u16	n;
+			Rec_s	rec[MAX_RECS];
+		};
+	};
 };
-	
+
+void print_leaf   (Ant_s *a, Msg_s m);
+void print_branch (Ant_s *a, Msg_s m);
+void insert_leaf  (Ant_s *a, Msg_s m);
+void insert_branch(Ant_s *a, Msg_s m);
+
+Type_s Leaf   = { NUM_OPS, { print_leaf,   insert_leaf   }};
+Type_s Branch = { NUM_OPS, { print_branch, insert_branch }};
+
 u32 Root;
 Msg_s	Msg_q[MAX_MSG_Q];
 Msg_s	*In_msg = Msg_q;
 Msg_s	*Out_msg = Msg_q;
 Msg_s	NilMsg = { 0 };
-
-void send (Msg_s msg)
-{
-	Msg_s	*next = In_msg + 1;
-
-	if (next == &Msg_q[MAX_MSG_Q]) next = Msg_q;
-	if (next == Out_msg) fatal("full");
-	*next = msg;
-	In_msg = next;
-}
-
-Msg_s recv (void)
-{
-	Msg_s	msg;
-
-	if (In_msg == Out_msg) return NilMsg;
-	msg = *Out_msg;
-	++Out_msg;
-	if (Out_msg == &Msg_q[MAX_MSG_Q]) Out_msg = Msg_q;
-	return msg;
-}
-
-
-u32 genkey (void)
-{
-	static u32	key = 0;
-	return ++key;
-}
-
-u32 genval (void)
-{
-	static u32	val = 7;
-	return ++val;
-}
 
 static Ant_s	*Bucket[NUM_BUCKETS];
 
@@ -120,113 +125,44 @@ void add_ant (Ant_s *a)
 	prev->next = a;
 }
 
-Ant_s *new_ant (void)
+Ant_s *new_ant (Type_s *type)
 {
 	static u32	id = 0;
 	Ant_s	*a = ezalloc(sizeof(*a));
 
 	a->id = ++id;
+	a->type = type;
 	add_ant(a);
 	return a;
 }
 
-void insert (u32 id, unint level, Rec_s r);
-
-void split (Ant_s *a)
+void send (Msg_s msg)
 {
-	Ant_s	*b = new_ant();
-	Rec_s	r;
-	unint	i;
-	
-	b->level = a->level;
-	for (i = 0; i < a->n - SPLIT; i++) {
-		b->r[i] = a->r[SPLIT + i];
-	}
-	b->n = i;
-	a->n = SPLIT;
-	r.key = b->r[0].key;
-	r.val = b->id;
-	insert(Root, b->level - 1, r);
+	Msg_s	*next = In_msg + 1;
+
+	if (next == &Msg_q[MAX_MSG_Q]) next = Msg_q;
+	if (next == Out_msg) fatal("full");
+	*next = msg;
+	In_msg = next;
+printf("Send %d\n", msg.id);
 }
 
-void new_root (Ant_s *a)
+Msg_s recv (void)
 {
-	Ant_s	*root = new_ant();
-	
-	root->first = Root;
-	Root = root->id;
-}
+	Msg_s	msg;
 
-void insert (u32 id, unint level, Rec_s r)
-{
-	Ant_s	*a;
-	u32	i;
-
-	if (id == 0) {
-		a = new_ant();
-		Root = a->id;
-	} else {
-		a = find_ant(id);
-	}
-	if (a->level < level) {	/* Need a new root */
-		new_root(a);
-		insert(Root, level, r);
-		return;
-	}	
-	if (level < a->level) {
-		for (i = 0; i < a->n; i++) {
-			if (r.key < a->r[i].key) {
-				insert(a->r[i].val, level, r);
-				return;
-			}
-		}
-	}
-	if (a->n == MAX_RECS) {
-		split(a);
-		insert(Root, level, r);
-		return;
-	}
-	for (i = 0; i < a->n; i++) {
-		if (r.key < a->r[i].key) {
-			memmove( &a->r[i+1], &a->r[i], a->n - i);
-			break;
-		}
-	}
-	// Check equality
-	a->r[i] = r;
-	++a->n;
-}
-
-static void pr_level (unint level)
-{
-	unint	i;
-
-	for (i = level; i < MAX_LEVEL; i++) {
-		printf("  ");
-	}
-}
-
-void print (u32 id)
-{
-	Ant_s	*a = find_ant(id);
-	unint	i;
-
-	if (!a) return;
-	pr_level(a->level);
-	printf("id=%d level=%d n=%d\n", a->id, a->level, a->n);
-	for (i = 0; i < a->n; i++) {
-		pr_level(a->level);
-		printf("%3ld. %d %d\n", i, a->r[i].key, a->r[i].val);
-		if (a->level) {
-			print(a->r[i].val);
-		}
-	}
+	if (In_msg == Out_msg) return NilMsg;
+	msg = *Out_msg;
+	++Out_msg;
+	if (Out_msg == &Msg_q[MAX_MSG_Q]) Out_msg = Msg_q;
+printf("Recv %d\n", msg.id);
+	return msg;
 }
 
 void recv_loop (void)
 {
 	Msg_s	msg;
-	Ant_s	*ant;
+	Ant_s	*a;
 
 	for (;;) {
 		msg = recv();
@@ -237,6 +173,158 @@ void recv_loop (void)
 	}
 }
 
+void insert_send (u32 id, unint level, Rec_s r);
+
+void split_leaf (Ant_s *a)
+{
+	Ant_s	*b = new_ant( &Leaf);
+	Rec_s	r;
+	unint	i;
+
+	b->level = a->level;
+	for (i = 0; i < a->n - SPLIT_RECS; i++) {
+		b->rec[i] = a->rec[SPLIT_RECS + i];
+	}
+	b->n = i;
+	a->n = SPLIT_RECS;
+	r.key = b->rec[0].key;
+	r.val = b->id;
+	insert_send(Root, b->level - 1, r);
+}
+
+void split_branch (Ant_s *a)
+{
+	Ant_s	*b = new_ant( &Branch);
+	Rec_s	r;
+	unint	i;
+
+	b->level = a->level;
+	for (i = 0; i < a->n - SPLIT_TWIGS; i++) {
+		b->rec[i] = a->rec[SPLIT_TWIGS + i];
+	}
+	b->n = i;
+	a->n = SPLIT_TWIGS;
+	r.key = b->rec[0].key;
+	r.val = b->id;
+	insert_send(Root, b->level - 1, r);
+}
+
+void insert_send (u32 id, unint level, Rec_s r)
+{
+	Msg_s	m;
+
+	m.id    = id;
+	m.reply = 0;
+	m.op    = INSERT_OP;
+	m.level = 0;
+	m.r     = r;
+	send(m);
+}
+
+void insert_leaf (Ant_s *a, Msg_s m)
+{
+	u32	i;
+
+	if (a->n == MAX_RECS) {
+		split_leaf(a);
+		insert_send(Root, m.level, m.r);
+		return;
+	}
+	for (i = 0; i < a->n; i++) {
+		if (m.r.key < a->rec[i].key) {
+			memmove( &a->rec[i+1], &a->rec[i], a->n - i);
+			break;
+		}
+	}
+	// Check equality
+	a->rec[i] = m.r;
+	++a->n;
+}
+
+void insert_branch (Ant_s *a, Msg_s m)
+{
+	unint	i;
+
+	for (i = 0; i < a->n; i++) {
+		if (m.r.key < a->rec[i].key) {
+			break;
+		}
+	}
+	m.id = a->rec[i - 1].val;
+	send(m);
+}
+
+void insert (Rec_s r)
+{
+	if (!Root) {
+		Ant_s *a = new_ant( &Leaf);
+		Root = a->id;
+	}
+	insert_send(Root, 0, r);
+	recv_loop();
+}
+
+void print(u32 id);
+
+static void pr_level (unint level)
+{
+	unint	i;
+
+	for (i = level; i < MAX_LEVEL; i++) {
+		printf("  ");
+	}
+}
+
+void print_leaf (Ant_s *a, Msg_s m)
+{
+	unint	i;
+
+	pr_level(a->level);
+	printf("LEAF id=%d level=%d n=%d\n", a->id, a->level, a->n);
+	for (i = 0; i < a->n; i++) {
+		printf("%3ld. %d %d\n", i, a->rec[i].key, a->rec[i].val);
+	}
+}
+
+void print_branch (Ant_s *a, Msg_s m)
+{
+	unint	i;
+
+	pr_level(a->level);
+	printf("id=%d level=%d n=%d\n", a->id, a->level, a->n);
+	for (i = 0; i < a->n; i++) {
+		pr_level(a->level);
+		printf("%3ld. %d %d\n", i, a->rec[i].key, a->rec[i].val);
+		if (a->level) {
+			print(a->rec[i].val);
+		}
+	}
+}
+
+void print (u32 id)
+{
+	Msg_s	m;
+
+	m.id    = id;
+	m.reply = 0;
+	m.op    = PRINT_OP;
+	m.level = 0;
+	send(m);
+	recv_loop();
+}
+
+u32 genkey (void)
+{
+	static u32	key = 0;
+	return ++key;
+}
+
+u32 genval (void)
+{
+	static u32	val = 7;
+	return ++val;
+}
+
 int main (int argc, char *argv[])
 {
 	Rec_s	r;
@@ -245,7 +333,7 @@ int main (int argc, char *argv[])
 	for (i = 0; i < 4; i++) {
 		r.key = genkey();
 		r.val = genval();
-		insert(Root, 0, r);
+		insert(r);
 	}
 	print(Root);
 	return 0;
