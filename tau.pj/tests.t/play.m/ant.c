@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <debug.h>
 #include <eprintf.h>
 #include <style.h>
 
@@ -39,10 +40,14 @@ typedef struct Twig_s {
 
 struct Msg_s {
 	u32	id;
-	u32	reply;
 	u16	op;
-	u16	level;
-	Rec_s	r;
+	union {
+		struct {
+			u16	level;
+			u32	root;
+			Rec_s	r;
+		};
+	};
 };
 
 typedef struct Type_s {
@@ -84,6 +89,8 @@ Msg_s	Msg_q[MAX_MSG_Q];
 Msg_s	*In_msg = Msg_q;
 Msg_s	*Out_msg = Msg_q;
 Msg_s	NilMsg = { 0 };
+
+bool Msg_trace = TRUE;
 
 static Ant_s	*Bucket[NUM_BUCKETS];
 
@@ -139,55 +146,54 @@ Ant_s *new_ant (Type_s *type)
 	return a;
 }
 
-void prmsg (char *label, Msg_s *m)
+void prmsg (char *label, Msg_s m)
 {
-	printf("%s %3d %3d  op %2d  level %2d  key %4d  val %4d\n",
-		label, m->id, m->reply, m->op, m->level, m->r.key, m->r.val);
+	printf("%s %3d  op %2d  level %2d  root %3d  key %4d  val %4d\n",
+		label, m.id, m.op, m.level, m.root, m.r.key, m.r.val);
 }
 
-void send (Msg_s msg)
+void send (u32 id, Msg_s m)
 {
 	Msg_s	*next = In_msg + 1;
 
+	m.id = id;
 	if (next == &Msg_q[MAX_MSG_Q]) next = Msg_q;
 	if (next == Out_msg) fatal("full");
-	*In_msg = msg;
+	*In_msg = m;
 	In_msg = next;
-prmsg("Send", &msg);
+	if (Msg_trace) prmsg("Send", m);
 }
 
 Msg_s recv (void)
 {
-	Msg_s	msg;
+	Msg_s	m;
 
 	if (In_msg == Out_msg) return NilMsg;
-	msg = *Out_msg;
+	m = *Out_msg;
 	++Out_msg;
 	if (Out_msg == &Msg_q[MAX_MSG_Q]) Out_msg = Msg_q;
-prmsg("Recv", &msg);
-	return msg;
+	if (Msg_trace) prmsg("Recv", m);
+	return m;
 }
 
 void recv_loop (void)
 {
-	Msg_s	msg;
+	Msg_s	m;
 	Ant_s	*a;
 
 	for (;;) {
-		msg = recv();
-		if (!msg.id) return;
-		a = find_ant(msg.id);
-		if (!a) fatal("can't find ant %d", msg.id);
-		a->type->op[msg.op](a, msg);
+		m = recv();
+		if (!m.id) return;
+		a = find_ant(m.id);
+		if (!a) fatal("can't find ant %d", m.id);
+		a->type->op[m.op](a, m);
 	}
 }
 
-void insert_send (u32 id, unint level, Rec_s r);
-
-void split_leaf (Ant_s *a)
+void split_leaf (Ant_s *a, Msg_s m)
 {
+FN;
 	Ant_s	*b = new_ant( &Leaf);
-	Rec_s	r;
 	unint	i;
 
 	b->level = a->level;
@@ -196,15 +202,16 @@ void split_leaf (Ant_s *a)
 	}
 	b->n = i;
 	a->n = SPLIT_RECS;
-	r.key = b->rec[0].key;
-	r.val = b->id;
-	insert_send(Root, b->level - 1, r);
+	m.level = b->level - 1;
+	m.r.key = b->rec[0].key;
+	m.r.val = b->id;
+	send(m.root, m);
 }
 
-void split_branch (Ant_s *a)
+void split_branch (Ant_s *a, Msg_s m)
 {
+FN;
 	Ant_s	*b = new_ant( &Branch);
-	Rec_s	r;
 	unint	i;
 
 	b->level = a->level;
@@ -213,30 +220,20 @@ void split_branch (Ant_s *a)
 	}
 	b->n = i;
 	a->n = SPLIT_TWIGS;
-	r.key = b->rec[0].key;
-	r.val = b->id;
-	insert_send(Root, b->level - 1, r);
-}
-
-void insert_send (u32 id, unint level, Rec_s r)
-{
-	Msg_s	m;
-
-	m.id    = id;
-	m.reply = 0;
-	m.op    = INSERT_OP;
-	m.level = 0;
-	m.r     = r;
-	send(m);
+	m.level = b->level - 1;
+	m.r.key = b->rec[0].key;
+	m.r.val = b->id;
+	send(m.root, m);
 }
 
 void insert_leaf (Ant_s *a, Msg_s m)
 {
+FN;
 	u32	i;
 
 	if (a->n == MAX_RECS) {
-		split_leaf(a);
-		insert_send(Root, m.level, m.r);
+		split_leaf(a, m);
+		send(m.root, m);
 		return;
 	}
 	for (i = 0; i < a->n; i++) {
@@ -252,6 +249,7 @@ void insert_leaf (Ant_s *a, Msg_s m)
 
 void insert_branch (Ant_s *a, Msg_s m)
 {
+FN;
 	unint	i;
 
 	for (i = 0; i < a->n; i++) {
@@ -259,31 +257,33 @@ void insert_branch (Ant_s *a, Msg_s m)
 			break;
 		}
 	}
-	m.id = a->rec[i - 1].val;
-	send(m);
+	send(a->rec[i - 1].val, m);
 }
 
 void insert_root (Ant_s *a, Msg_s m)
 {
+FN;
 	if (!a->root) {
-		Ant_s *a = new_ant( &Leaf);
-		a->root = a->id;
+		Ant_s *leaf = new_ant( &Leaf);
+		a->root = leaf->id;
 	}
-	insert_send(a->root, 0, r);
-	recv_loop();
+	send(a->root, m);
 }
 
-void insert (Rec_s r)
+void insert (u32 id, Rec_s r)
 {
-	if (!Root) {
-		Ant_s *a = new_ant( &Leaf);
-		Root = a->id;
-	}
-	insert_send(Root, 0, r);
+FN;
+	Msg_s	m;
+
+	m.op    = INSERT_OP;
+	m.level = 0;
+	m.root  = id;
+	m.r     = r;
+	send(id, m);
 	recv_loop();
 }
 
-void print(u32 id);
+void print_tree(u32 id);
 
 static void pr_level (unint level)
 {
@@ -296,6 +296,7 @@ static void pr_level (unint level)
 
 void print_leaf (Ant_s *a, Msg_s m)
 {
+FN;
 	unint	i;
 
 	pr_level(a->level);
@@ -308,30 +309,31 @@ void print_leaf (Ant_s *a, Msg_s m)
 
 void print_branch (Ant_s *a, Msg_s m)
 {
+FN;
 	unint	i;
 
 	pr_level(a->level);
 	printf("id=%d level=%d n=%d\n", a->id, a->level, a->n);
-	print(a->first);
+	print_tree(a->first);
 	for (i = 0; i < a->n; i++) {
-		print(a->rec[i].val);
+		print_tree(a->rec[i].val);
 	}
 }
 
 void print_root (Ant_s *a, Msg_s m)
 {
-	print(a->root);
+FN;
+	print_tree(a->root);
 }
 
-void print (u32 id)
+void print_tree (u32 id)
 {
 	Msg_s	m;
 
-	m.id    = id;
-	m.reply = 0;
+	zero(m);
 	m.op    = PRINT_OP;
 	m.level = 0;
-	send(m);
+	send(id, m);
 	recv_loop();
 }
 
@@ -349,15 +351,16 @@ u32 genval (void)
 
 int main (int argc, char *argv[])
 {
+	Ant_s	*root;
 	Rec_s	r;
 	u32	i;
 
-	root = new_ant(Root);
+	root = new_ant( &Root);
 	for (i = 0; i < 5; i++) {
 		r.key = genkey();
 		r.val = genval();
-		insert(r);
+		insert(root->id, r);
 	}
-	print(root.id);
+	print_tree(root->id);
 	return 0;
 }
