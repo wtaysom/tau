@@ -3,6 +3,7 @@
  * found in the LICENSE file.
  */
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,9 +11,10 @@
 #include <debug.h>
 #include <eprintf.h>
 #include <style.h>
-#include <token.h>
 
 /*
+ * Syntax taken from www.json.org
+ *
  * object
  *	{}
  *	{ members }
@@ -81,22 +83,59 @@
  *	E-
  */
 
+enum {	MAX_STRING = 4096 };
+
 enum {	T_STRING = 256,
 	T_NUMBER,
 	T_TRUE,
 	T_FALSE,
 	T_NULL,
-	T_EOF };
+	T_EOF,
+	T_ERR };
 
 typedef struct Token_s {
 	int	type;
 	union {
 		char	*string;
-		double	real;
+		double	number;
 	};
-} Token_s;	
+} Token_s;
+
+typedef struct Id_s {
+	int	type;
+	char	*name;
+} Id_s;
+
+static Id_s	Id[] = {
+	{ T_NULL, "null" },
+	{ T_TRUE, "true" },
+	{ T_FALSE, "false" },
+	{ 0, NULL }};	
 
 static FILE *Fp;
+
+static Token_s token (unint type, char *string)
+{
+	Token_s	t;
+	
+	t.type = type;
+	t.string = string;
+	return t;
+}
+
+static Token_s a_number (char *string)
+{
+	Token_s	t;
+	
+	t.type = T_NUMBER;
+	t.number = atof(string);
+	return t;
+}
+
+static Token_s t_err (char *err)
+{
+	return token(T_ERR, err);
+}
 
 static void open_file (char *file)
 {
@@ -121,67 +160,222 @@ void unget (int c)
 	ungetc(c, Fp);
 }
 
-static Token_s get_string (void)
+static bool get_unicode (char **sp)
 {
-	Token_s	t;
+	char	*s = *sp;
+	unint	x = 0;
+	int	c;
+	int	i;
 
-	char	string[MAX_STRING];
+	for (i = 0; i < 4; i++) {
+		c = get();
+		if (isxdigit(c)) {
+			x <<= 4;
+			if (isdigit(c)) {
+				x |= c - '0';
+			} else if (isupper(c)) {
+				x |= c - 'A';
+			} else {
+				x |= c - 'a';
+			}
+		} else {
+			warn("Expected hex digit");
+			unget(c);
+			return FALSE;
+		}
+	}
+	if (x < 128) {
+		*s++ = x;
+	} else {
+		warn("Unicode %lu", x);
+		return FALSE;
+	}
+	*sp = s;
+	return TRUE;
+}
+
+static Token_s get_id (void)
+{
+	char	string[MAX_STRING+6];
 	char	*s = string;
+	char	*end = &string[MAX_STRING];
+	int	c;
+	int	i;
 
 	for (;;) {
+		if (s >= end) {
+			*s = '\0';
+			warn("string too long %s", string);
+			return t_err("string too long");
+		}
 		c = get();
 		switch (c) {
 		case EOF:
-			t.type = T_EOF;
-			t.string = NULL;
-			bad("Unexpected EOF, looking for '\"');
-			return t;
+			warn("Unexpected EOF, looking for '\"'");
+			return t_err("Unexpected EOF");
+		default:
+			if (isspace(c)) {
+				*s = '\0';
+				for (i = 0; Id[i].name; i++) {
+					if (strcmp(Id[i].name, string) == 0) {
+						return token(Id[i].type, NULL);
+					}
+				}
+				warn("expecting null, true or fals: %s", string);
+				return t_err("unknow id");
+			} else {
+				*s++ = c;
+			}
+		}
+	}
+}
+		
+static Token_s get_number (void)
+{
+	char	string[MAX_STRING+6];
+	char	*s = string;
+	char	*end = &string[MAX_STRING];
+	int	c;
+
+	for (;;) {
+		if (s >= end) {
+			*s = '\0';
+			warn("string too long %s", string);
+			return t_err("string too long");
+		}
+		c = get();
+		if (isdigit(c)) {
+			*s++ = c;
+		} else {
+			*s = '\0';
+			unget(c);
+			return a_number(string);
+		}
+	}
+}			
+	
+
+static Token_s get_string (void)
+{
+	Token_s	t;
+	char	string[MAX_STRING+6];
+	char	*s = string;
+	char	*end = &string[MAX_STRING];
+	int	c;
+
+	for (;;) {
+		if (s >= end) {
+			*s = '\0';
+			warn("string too long %s", string);
+			return t_err("string too long");
+		}
+		c = get();
+		switch (c) {
+		case EOF:
+			warn("Unexpected EOF, looking for '\"'");
+			return t_err("Unexpected EOF");
 		case '"':
 			*s = '\0';
 			t.type = T_STRING;
 			t.string = strdup(s);
 			return t;
 		case '\\':
+			c = get();
+			switch (c) {
+			case EOF:
+				warn("Unexpected EOF");
+				return t_err("Unexpected EOF");
+			case '"':  *s++ = '"';  break;
+			case '\\': *s++ = '\\'; break;
+			case '/':  *s++ = '/';  break;
+			case 'b':  *s++ = '\b'; break;
+			case 'f':  *s++ = '\f'; break;
+			case 'n':  *s++ = '\n'; break;
+			case 'r':  *s++ = '\r'; break;
+			case 't':  *s++ = '\t'; break;
+			case 'u':
+				if (get_unicode(&s)) {
+					break;
+				} else {
+					return t_err("Expected hex digit");
+				}
+			default:
+				*s++ = c;
+				break;
+			}
 		default:
+			*s++ = c;
+			break;
 		}
 	}
 }
 
 static Token_s get_token (void)
 {
-	Token_t	t;
+	int	c;
 
 	for (;;) {
 		c = get();
 		switch (c) {
 		case EOF:
-			t.type = T_EOF;
-			t.string = NULL;
-			return t;
+			return token(T_EOF, NULL);
 		case '{':
 		case '}':
 		case '[':
 		case ']':
 		case ',':
 		case ':':
-			t.type = c;
-			t.string = NULL;
-			return t;
+			return token(c, NULL);
 		case '"':
 			return get_string();
 		default:
+			unget(c);
 			if (isdigit(c) || (c == '-')) {
-				return get_number(c);
+				return get_number();
 			} else {
-				return get_id(c);
+				return get_id();
 			}
 		}
 	}
 }
 
+static bool get_value (void)
+{
+	Token_s	t;
+	
+	t = get_token();
+	switch (t.type) {
+	}
+	return TRUE;
+}
+
+static bool pair (void)
+{
+	Token_s	t;
+
+	t = get_string();
+	if (t.type != T_STRING) {
+		return FALSE;
+	}
+	t = get_token();
+	if (t.type != ':') {
+		warn("Expecting ':'");
+		return FALSE;
+	}
+	t = get_value();
+	if (t.type == T_ERR) {
+		warn("Expecting value");
+		return FALSE;
+	}
+	return TRUE;
+}
+
 static bool members (void)
 {
-	return TRUE;
+	for (;;) {
+		pair();
+		return TRUE;
+	}
 }
 
 static bool object (void)
