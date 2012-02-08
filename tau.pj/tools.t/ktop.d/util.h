@@ -8,5 +8,6 @@
 
 int release_to_int(char *r);
 int kernel_release(void);
+char *getpidname(int pid);
 
 #endif /* _UTIL_H_ */

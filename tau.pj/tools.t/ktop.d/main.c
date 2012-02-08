@@ -24,6 +24,7 @@ bool Trace_exit = TRUE;
 bool Trace_self = FALSE;
 bool Pause = FALSE;
 bool Help = FALSE;
+char *Log_file = NULL;
 
 Display_s Display;
 
@@ -113,7 +114,7 @@ static void init(int argc, char *argv[])
 	setprogname(argv[0]);
 	set_signals();
 
-	while ((c = getopt(argc, argv, "dhs")) != -1) {
+	while ((c = getopt(argc, argv, "dhsl:")) != -1) {
 		switch (c) {
 		case 'd':
 			Dump = TRUE;
@@ -123,6 +124,9 @@ static void init(int argc, char *argv[])
 			break;
 		case 'h':
 			usage();
+			break;
+		case 'l':
+			Log_file = optarg;
 			break;
 		default:
 			fprintf(stderr, "unknown flag '%c'\n", c);
@@ -207,6 +211,7 @@ int main(int argc, char **argv)
 	if (!Dump) {
 		rc = pthread_create(&reduce_thread, NULL, reduce, NULL);
 		if (rc) fatal("creating reduce thread:");
+		open_log();
 	}
 	commander();
 

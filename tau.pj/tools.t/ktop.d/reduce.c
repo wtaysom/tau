@@ -17,6 +17,7 @@
 #include "reduce.h"
 #include "syscall.h"
 #include "tickcounter.h"
+#include "util.h"
 
 extern pthread_mutex_t Count_lock;
 
@@ -66,12 +67,11 @@ static void fill_top_pidcall(TopPidcall_s *tc, Pidcall_s *pc)
 	tc->count   = pc->snap.count;
 	tc->tick    = Num_ticks;
 	tc->time    = pc->snap.total_time;
-	if (pc->name) {
-		strncpy(tc->name, pc->name, MAX_THREAD_NAME);
-		tc->name[MAX_THREAD_NAME - 1] = '\0';
-	} else {
-		tc->name[0] = '\0';
+	if (!pc->name) {
+		pc->name = getpidname(get_pid(pc->pidcall));
 	}
+	strncpy(tc->name, pc->name, MAX_THREAD_NAME);
+	tc->name[MAX_THREAD_NAME - 1] = '\0';
 }
 
 static void replace_top_pidcall(TopPidcall_s *insert_here, Pidcall_s *pc)
@@ -233,6 +233,7 @@ void *reduce(void *arg)
 			if (Help) Display.help();
 			else Display.normal();
 		}
+		if (Log_file) log_pidcalls();
 		nanosleep(&Sleep, NULL);
 	}
 }

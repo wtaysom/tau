@@ -8,7 +8,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 #include <debug.h>
 #include <eprintf.h>
@@ -19,6 +18,7 @@
 #include "reduce.h"
 #include "syscall.h"
 #include "tickcounter.h"
+#include "util.h"
 
 enum {	HELP_ROW = 0,
 	HELP_COL = 0,
@@ -142,25 +142,6 @@ static void top_pid(void)
 	mvprintw(MAX_ROW, MAX_COL, "max: %d %d", pid, max);
 }
 
-static char *getpidname(int pid)
-{
-	char path[100];
-	static char name[4096];
-	int rc;
-
-	snprintf(path, sizeof(path), "/proc/%d/exe", pid);
-	rc = readlink(path, name, sizeof(name));
-	if (rc == -1) {
-		return NULL;
-	}
-	if (rc == sizeof(name)) {
-		fatal("pid name too long");
-	}
-	name[rc] = '\0';
-
-	return strdup(name);
-}
-
 static void display_pidcall(void)
 {
 	Pidcall_s *pc;
@@ -175,9 +156,6 @@ static void display_pidcall(void)
 		pid = get_pid(pc->pidcall);
 		if (!pc->name) {
 			pc->name = getpidname(pid);
-			if (!pc->name) {
-				pc->name = strdup("(unknown)");
-			}
 		}
 		mvprintw(row, col, "%3d. %5d %6d %10lld %-22.22s %-28.28s",
 			i + 1, pid, pc->snap.count,
@@ -318,9 +296,6 @@ static void summary (void)
 		pid = get_pid(pc->pidcall);
 		if (!pc->name) {
 			pc->name = getpidname(pid);
-			if (!pc->name) {
-				pc->name = strdup("(unknown)");
-			}
 		}
 		num_intervals = Current_interval - pc->start_interval;
 		avg_count = ROUNDED_DIVIDE(pc->summary.total_count, num_intervals);

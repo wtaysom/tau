@@ -5,6 +5,9 @@
 
 #include <sys/utsname.h>
 #include <ctype.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 
 #include <eprintf.h>
 
@@ -32,4 +35,23 @@ int kernel_release (void)
 	int rc = uname(&buf);
 	if (rc) fatal("rc=%d:", rc);
 	return release_to_int(buf.release);
+}
+
+char *getpidname (int pid)
+{
+	char path[100];
+	static char name[4096];
+	int rc;
+
+	snprintf(path, sizeof(path), "/proc/%d/exe", pid);
+	rc = readlink(path, name, sizeof(name));
+	if (rc == -1) {
+		return strdup("<unknown>");
+	}
+	if (rc == sizeof(name)) {
+		fatal("pid name too long");
+	}
+	name[rc] = '\0';
+
+	return strdup(name);
 }

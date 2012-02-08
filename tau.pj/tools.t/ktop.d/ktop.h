@@ -80,6 +80,7 @@ extern bool Trace_exit;	/* Trace sys_exit events */
 extern bool Trace_self;	/* Trace myself and ignore others */
 extern bool Pause;	/* Pause display */
 extern bool Help;	/* Display help screen */
+extern char *Log_file;	/* If set, use this file for logging */
 
 extern Display_s Display;
 
@@ -128,6 +129,10 @@ void ignore_pid(int pid);
 bool do_ignore_pid(int pid);
 
 void graph(void);
+
+void open_log(void);
+void close_log(void);
+void log_pidcalls(void);
 
 /* Rounded integer divide - x/y -> (x + y/2) / y */
 #define ROUNDED_DIVIDE(x, y)	((y) ? (((x) + (y) / 2) / (y)) : 0)
