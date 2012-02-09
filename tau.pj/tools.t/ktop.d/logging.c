@@ -4,6 +4,8 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "eprintf.h"
 #include "ktop.h"
@@ -11,19 +13,27 @@
 #include "util.h"
 
 static FILE	*Fp;
+static char	*File;
 
-void open_log (void)
+void open_log (const char *file)
 {
-	if (Log_file) {
-		Fp = fopen(Log_file, "w");
-		if (!Fp) fatal("Couldn't open log file %s:", Log_file);
+	if (Fp) {
+		warn("Log file already inuse %s", file);
+	} else {
+		Fp = fopen(file, "w");
+		if (!Fp) fatal("Couldn't open log file %s:", file);
+		File = strdup(file);
 	}
 }
 
 void close_log (void)
 {
-	if (Fp) fclose(Fp);
-	Fp = NULL;
+	if (Fp) {
+		fclose(Fp);
+		free(File);
+		Fp = NULL;
+		File = NULL;
+	}
 }
 
 void log_pidcalls (void)
@@ -32,6 +42,7 @@ void log_pidcalls (void)
 	Pidcall_s	*pc;
 	int		pid;
 	int		i;
+	int		rc;
 
 	if (!Fp) return;
 	++interval;
@@ -39,13 +50,17 @@ void log_pidcalls (void)
 		pc = Rank_pidcall[i];
 		pid = get_pid(pc->pidcall);
 		if (!pc->name) {
-			pc->name = getpidname(pid);
+			pc->name = get_exe_path(pid);
 		}
-		fprintf(Fp, "%ld,%d,%d,%lld,%s,%s\n",
+		rc = fprintf(Fp, "%ld,%d,%d,%lld,%s,%s\n",
 			interval, pid, pc->snap.count,
 			pc->snap.total_time,
 			Syscall[get_call(pc->pidcall)],
 			pc->name);
+		if (rc < 0) {
+			warn("Log failed %s:", File);
+			close_log();
+		}
 	}
 }
 

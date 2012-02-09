@@ -211,7 +211,7 @@ int main(int argc, char **argv)
 	if (!Dump) {
 		rc = pthread_create(&reduce_thread, NULL, reduce, NULL);
 		if (rc) fatal("creating reduce thread:");
-		open_log();
+		if (Log_file) open_log(Log_file);
 	}
 	commander();
 

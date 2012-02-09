@@ -37,7 +37,7 @@ int kernel_release (void)
 	return release_to_int(buf.release);
 }
 
-char *getpidname (int pid)
+char *get_exe_path (int pid)
 {
 	char path[100];
 	static char name[4096];

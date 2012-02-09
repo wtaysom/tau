@@ -68,7 +68,7 @@ static void fill_top_pidcall(TopPidcall_s *tc, Pidcall_s *pc)
 	tc->tick    = Num_ticks;
 	tc->time    = pc->snap.total_time;
 	if (!pc->name) {
-		pc->name = getpidname(get_pid(pc->pidcall));
+		pc->name = get_exe_path(get_pid(pc->pidcall));
 	}
 	strncpy(tc->name, pc->name, MAX_THREAD_NAME);
 	tc->name[MAX_THREAD_NAME - 1] = '\0';

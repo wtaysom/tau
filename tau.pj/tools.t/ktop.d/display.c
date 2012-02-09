@@ -155,7 +155,7 @@ static void display_pidcall(void)
 		pc = Rank_pidcall[i];
 		pid = get_pid(pc->pidcall);
 		if (!pc->name) {
-			pc->name = getpidname(pid);
+			pc->name = get_exe_path(pid);
 		}
 		mvprintw(row, col, "%3d. %5d %6d %10lld %-22.22s %-28.28s",
 			i + 1, pid, pc->snap.count,
@@ -295,7 +295,7 @@ static void summary (void)
 		pc = Pidcall_summary[i];
 		pid = get_pid(pc->pidcall);
 		if (!pc->name) {
-			pc->name = getpidname(pid);
+			pc->name = get_exe_path(pid);
 		}
 		num_intervals = Current_interval - pc->start_interval;
 		avg_count = ROUNDED_DIVIDE(pc->summary.total_count, num_intervals);

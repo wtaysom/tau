@@ -130,7 +130,7 @@ bool do_ignore_pid(int pid);
 
 void graph(void);
 
-void open_log(void);
+void open_log(const char *file);
 void close_log(void);
 void log_pidcalls(void);
 
