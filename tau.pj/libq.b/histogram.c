@@ -23,7 +23,7 @@ void incHistogram (Histogram_s *histogram)
 	unint	level = ++histogram->currentCount;
 
 	++histogram->totalCount;
-	++histogram->bucket[ffsBit(level)];
+	++histogram->bucket[flsl(level)];
 
 	if (level > histogram->highWaterMark)
 	{
@@ -36,7 +36,7 @@ void eventHistogram (Histogram_s *histogram, unint event)
 	histogram->currentCount = event;
 	histogram->eventSum += event;
 	++histogram->totalCount;
-	++histogram->bucket[ffsBit(event)];
+	++histogram->bucket[flsl(event)];
 
 	if (event > histogram->highWaterMark)
 	{

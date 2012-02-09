@@ -37,7 +37,7 @@
  *
  * hashInit - initializes the hash table
  *	numBuckets - number of buckets to use (we take the first power of
- *		2 less than numBuckets).
+ *		2 >= numBuckets).
  *	isMatch - returns True if the key for the record mathes the key
  *		passed in.
  *	hash - generates a hash of the key (see crc.c and crc.h).
@@ -67,7 +67,7 @@ HashTable_s *hashInit (
 	{
 		return NULL;
 	}
-	highBit = ffsBit(numBuckets);
+	highBit = flsl(numBuckets);
 	if (highBit > 28)	// You've got to be kidding
 	{
 		return NULL;
@@ -246,7 +246,7 @@ HashTable_s *hashGrow (HashTable_s *ht, unint factor)
 	unint		newNumBuckets;
 	unint		bucket;
 
-	highBit = ffsBit(factor);
+	highBit = flsl(factor);
 	factor = (1 << highBit);
 
 	newNumBuckets = numBuckets * factor;
@@ -294,7 +294,7 @@ HashTable_s *hashShrink (HashTable_s *ht, unint factor)
 	unint		newNumBuckets;
 	unint		bucket;
 
-	highBit = ffsBit(factor);
+	highBit = flsl(factor);
 	factor = (1 << highBit);
 
 	newNumBuckets = numBuckets / factor;

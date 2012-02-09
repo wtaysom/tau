@@ -23,7 +23,7 @@ extern "C" {
 /* Pre-define struct(s) so Linux compiler doesn't complain */
 struct ScreenStruct;
 
-#define NUM_BUCKETS	32
+#define NUM_BUCKETS	33
 
 typedef struct Histogram_s
 {

@@ -14,9 +14,9 @@
 #ifndef _BIT_H_
 #define _BIT_H_
 
-#define lowBit(_x)	((_x) & ~((_x) - 1))
-#define highBit(_x)	(1 << ffsBit(_x))
-
-extern unsigned ffsBit (unsigned long word);
+/*
+ * Can get the low bit bit set, ffs, with fls(((_x) & ~((_x) - 1)))
+ */
+extern unsigned flsl (unsigned long word);
 
 #endif
