@@ -13,31 +13,8 @@
 #include <style.h>
 
 /*
- * Syntax taken from www.json.org
+ * Lexicon taken from www.json.org
  *
- * object
- *	{}
- *	{ members }
- * members
- *	pair
- *	pair , members
- * pair
- *	string : value
- * array
- *	[]
- *	[ elements ]
- * elements
- *	value 
- *	value , elements
- * value
- *	string
- *	number
- *	object
- *	array
- *	true
- *	false
- *	null
- * ------------
  * string
  *	""
  *	" chars "
@@ -85,22 +62,6 @@
 
 enum {	MAX_STRING = 4096 };
 
-enum {	T_STRING = 256,
-	T_NUMBER,
-	T_TRUE,
-	T_FALSE,
-	T_NULL,
-	T_EOF,
-	T_ERR };
-
-typedef struct Token_s {
-	int	type;
-	union {
-		char	*string;
-		double	number;
-	};
-} Token_s;
-
 typedef struct Id_s {
 	int	type;
 	char	*name;
@@ -110,9 +71,8 @@ static Id_s	Id[] = {
 	{ T_NULL, "null" },
 	{ T_TRUE, "true" },
 	{ T_FALSE, "false" },
-	{ 0, NULL }};	
+	{ 0, NULL }};
 
-static FILE *Fp;
 
 static Token_s token (unint type, char *string)
 {
@@ -337,80 +297,4 @@ static Token_s get_token (void)
 			}
 		}
 	}
-}
-
-static bool get_value (void)
-{
-	Token_s	t;
-	
-	t = get_token();
-	switch (t.type) {
-	}
-	return TRUE;
-}
-
-static bool pair (void)
-{
-	Token_s	t;
-
-	t = get_string();
-	if (t.type != T_STRING) {
-		return FALSE;
-	}
-	t = get_token();
-	if (t.type != ':') {
-		warn("Expecting ':'");
-		return FALSE;
-	}
-	t = get_value();
-	if (t.type == T_ERR) {
-		warn("Expecting value");
-		return FALSE;
-	}
-	return TRUE;
-}
-
-static bool members (void)
-{
-	for (;;) {
-		pair();
-		return TRUE;
-	}
-}
-
-static bool object (void)
-{
-	int c = get();
-	if (c == '{') {
-		members();
-		c = get();
-		if (c == '}') return TRUE;
-		return FALSE;
-	}
-	return FALSE;
-}
-
-void json (char *file)
-{
-	open_file(file);
-	if (object()) {
-		printf("is Object\n");
-	} else {
-		printf("is not object\n");
-	}
-	close_file();
-}
-	
-int main (int argc, char *argv[])
-{
-	int	i;
-
-	if (argc == 1) {
-		json("/dev/tty");
-	} else {
-		for (i = 1; i < argc; i++) {
-			json(argv[i]);
-		}
-	}
-	return 0;
 }
