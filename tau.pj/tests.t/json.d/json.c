@@ -12,6 +12,8 @@
 #include <eprintf.h>
 #include <style.h>
 
+#include "json.h"
+
 /*
  * Syntax taken from www.json.org
  *
@@ -39,80 +41,147 @@
  *	null
  */
 
-typedef struct Tree_s	Tree_s;
-struct Tree_s {
-	Token_s	token;
-	Tree_s	*left;
-	Tree_s	*right;
-};	
-
-static bool get_value (void)
+Tree_s *new_tree (void)
 {
+FN;
+	Tree_s	*tree = ezalloc(sizeof(*tree));
+	return tree;
+}
+	
+static Tree_s *value(void);
+static Tree_s *object(void);
+
+static Tree_s *array (void)
+{
+FN;
+	Tree_s	*tree = NULL;
 	Token_s	t;
+	Tree_s	*v;
+	Tree_s	*a;
+
+	for (;;) {
+		t = get_token();
+		if (t.type == ']') break;
+		unget_token(t);
+		v = value();
+		if (tree) {
+			tree->right = v;
+		} else {
+			tree = v;
+		}
+		t = get_token();
+		if (t.type == ',') continue;
+	}
+	a = new_tree();
+	a->token.type = T_ARRAY;
+	a->left = tree;
+	return a;
+}
+
+static Tree_s *value (void)
+{
+FN;
+	Token_s	t;
+	Tree_s	*tree;
 	
 	t = get_token();
 	switch (t.type) {
+	case T_STRING:
+	case T_NUMBER:
+	case T_TRUE:
+	case T_FALSE:
+	case T_NULL:
+		tree = new_tree();
+		tree->token = t;
+		return tree;
+	case '[':
+		return array();
+	case '{':
+		unget_token(t);
+		return object();
+	default:
+		return NULL;
 	}
-	return TRUE;
 }
 
 static Tree_s *pair (void)
 {
+FN;
+	Tree_s	*tree;
+	Token_s	s;
 	Token_s	t;
+	Tree_s	*v;
+	Tree_s	*p;
 
-	t = get_token();
-	if (t.type != T_STRING) {
-		unget_token(t);
+	s = get_token();
+	if (s.type != T_STRING) {
+		unget_token(s);
 		return NULL;
 	}
 	t = get_token();
 	if (t.type != ':') {
+		unget_token(t);
 		warn("Expecting ':'");
-		return FALSE;
+		return NULL;
 	}
-	t = get_value();
-	if (t.type == T_ERR) {
+	v = value();
+	if (!v) {
 		warn("Expecting value");
-		return FALSE;
+		return NULL;
 	}
-	return TRUE;
-}
-
-static Tree_s *members (void)
-{
-	Tree_s	*tree = NULL;
-
-	for (;;) {
-		pair();
-		return TRUE;
-	}
+	tree = new_tree();
+	tree->token = s;
+	tree->right = v;
+	p = new_tree();
+	p->token.type = T_PAIR;
+	p->left = tree;
+	return p;
 }
 
 static Tree_s *object (void)
 {
-	Tree_s	*tree;
+FN;
+	Tree_s	*tree = NULL;
+	Tree_s	*obj;
+	Tree_s	*p;
+	Token_s	t;
 
-	Token_s t = get_token();
+	t = get_token();
 	if (t.type != '{') return NULL;
-	root = new_tree(T_OBJECT);
 	for (;;) {
-		members();
-		c = get();
-		if (c == '}') return TRUE;
-		return FALSE;
+		p = pair();
+		if (!p) break;
+		if (tree) {
+			tree->right = p;
+		} else {
+			tree = p;
+		}
+		t = get_token();
+		if (t.type == ',') continue;
 	}
-	return FALSE;
+	t = get_token();
+	assert(t.type == '}');
+	obj = new_tree();
+	obj->token.type = T_OBJECT;
+	obj->left = tree;
+	return obj;
 }
 
 void json (char *file)
 {
+FN;
+	Tree_s	*tree;
+
 	open_file(file);
-	if (object()) {
+	tree = object();
+	if (tree) {
 		printf("is Object\n");
 	} else {
 		printf("is not object\n");
 	}
 	close_file();
+	dump_json(tree);
+	pr_json(tree);
 }
 	
 int main (int argc, char *argv[])

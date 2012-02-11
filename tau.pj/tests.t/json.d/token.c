@@ -12,6 +12,8 @@
 #include <eprintf.h>
 #include <style.h>
 
+#include "json.h"
+
 /*
  * Lexicon taken from www.json.org
  *
@@ -73,8 +75,20 @@ static Id_s	Id[] = {
 	{ T_FALSE, "false" },
 	{ 0, NULL }};
 
+void pr_token (Token_s t)
+{
+	if (t.type < T_STRING) {
+		printf("%c\n", t.type);
+	} else if (t.type == T_STRING) {
+		printf("\"%s\"\n", t.string);
+	} else if (t.type == T_NUMBER) {
+		printf("%g\n", t.number);
+	} else {
+		printf("%d\n", t.type);
+	}
+}
 
-static Token_s token (unint type, char *string)
+static Token_s mk_token (unint type, char *string)
 {
 	Token_s	t;
 	
@@ -83,7 +97,7 @@ static Token_s token (unint type, char *string)
 	return t;
 }
 
-static Token_s a_number (char *string)
+static Token_s mk_number (char *string)
 {
 	Token_s	t;
 	
@@ -94,30 +108,7 @@ static Token_s a_number (char *string)
 
 static Token_s t_err (char *err)
 {
-	return token(T_ERR, err);
-}
-
-static void open_file (char *file)
-{
-	if (Fp) fatal("File already open");
-	Fp = fopen(file, "r");
-	if (!Fp) fatal("couldn't open %s", file);
-}
-
-static void close_file (void)
-{
-	fclose(Fp);
-	Fp = NULL;
-}
-
-static int get (void)
-{
-	return getc(Fp);
-}
-
-void unget (int c)
-{
-	ungetc(c, Fp);
+	return mk_token(T_ERR, err);
 }
 
 static bool get_unicode (char **sp)
@@ -178,10 +169,10 @@ static Token_s get_id (void)
 				*s = '\0';
 				for (i = 0; Id[i].name; i++) {
 					if (strcmp(Id[i].name, string) == 0) {
-						return token(Id[i].type, NULL);
+						return mk_token(Id[i].type, NULL);
 					}
 				}
-				warn("expecting null, true or fals: %s", string);
+				warn("expecting null, true or false: %s", string);
 				return t_err("unknow id");
 			} else {
 				*s++ = c;
@@ -192,6 +183,7 @@ static Token_s get_id (void)
 		
 static Token_s get_number (void)
 {
+FN;
 	char	string[MAX_STRING+6];
 	char	*s = string;
 	char	*end = &string[MAX_STRING];
@@ -209,7 +201,7 @@ static Token_s get_number (void)
 		} else {
 			*s = '\0';
 			unget(c);
-			return a_number(string);
+			return mk_number(string);
 		}
 	}
 }			
@@ -237,7 +229,7 @@ static Token_s get_string (void)
 		case '"':
 			*s = '\0';
 			t.type = T_STRING;
-			t.string = strdup(s);
+			t.string = strdup(string);
 			return t;
 		case '\\':
 			c = get();
@@ -270,25 +262,33 @@ static Token_s get_string (void)
 	}
 }
 
-static Token_s get_token (void)
+static Token_s	Last;
+static bool	Have_last = FALSE;
+
+Token_s get_token (void)
 {
 	int	c;
 
+	if (Have_last) {
+		Have_last = FALSE;
+		return Last;
+	}
 	for (;;) {
 		c = get();
 		switch (c) {
 		case EOF:
-			return token(T_EOF, NULL);
+			return mk_token(T_EOF, NULL);
 		case '{':
 		case '}':
 		case '[':
 		case ']':
 		case ',':
 		case ':':
-			return token(c, NULL);
+			return mk_token(c, NULL);
 		case '"':
 			return get_string();
 		default:
+			if (isspace(c)) break;
 			unget(c);
 			if (isdigit(c) || (c == '-')) {
 				return get_number();
@@ -297,4 +297,12 @@ static Token_s get_token (void)
 			}
 		}
 	}
+}
+
+void unget_token (Token_s t)
+{
+pr_token(t);
+	if (Have_last) fatal("Tried to unget token twice");
+	Last = t;
+	Have_last = TRUE;
 }
