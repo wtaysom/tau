@@ -17,6 +17,11 @@
 /*
  * Can get the low bit bit set, ffs, with fls(((_x) & ~((_x) - 1)))
  */
+
+#ifdef __APPLE__
+#include <strings.h>
+#else
 extern unsigned flsl (unsigned long word);
+#endif
 
 #endif

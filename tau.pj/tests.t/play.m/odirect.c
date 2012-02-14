@@ -90,8 +90,15 @@ void* writer (void *arg)
 	snprintf(file, MAX_NAME-1, "file_%ld", a->id);
 	buf = prepare_buf();
 	for (loops = 0; loops < Option.loops; loops++) {
+#ifdef __APPLE__
+		fd = open(file, O_WRONLY | O_CREAT | O_TRUNC, 0700);
+		if (fd == -1) fatal("open %s:", file);
+		rc = fcntl(fd, F_NOCACHE);
+		if (rc == -1) fatal("fcntl %s:", file);
+#else
 		fd = open(file, O_WRONLY | O_CREAT | O_TRUNC | O_DIRECT, 0700);
 		if (fd == -1) fatal("open %s:", file);
+#endif
 		unlink(file);
 		nanosleep(&sleep, NULL);
 		u64 start = nsecs();

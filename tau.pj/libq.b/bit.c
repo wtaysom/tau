@@ -24,6 +24,13 @@
  * Coverted my code to work the same as ffs and fls. (I would use them except
  * fls is not always supported).
  */
+
+#ifdef __APPLE__
+
+char must_have_at_least_one_symbol_defined;
+
+#else
+
 unsigned flsl (register unsigned long word)
 {
 	register unsigned	bit;
@@ -62,3 +69,5 @@ unsigned flsl (register unsigned long word)
 
 	return bit;
 }
+
+#endif
