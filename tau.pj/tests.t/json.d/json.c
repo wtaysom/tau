@@ -64,6 +64,7 @@ FN;
 		if (t.type == ']') break;
 		unget_token(t);
 		v = value();
+		if (!v) break;
 		if (tree) {
 			tree->right = v;
 		} else {
@@ -100,6 +101,7 @@ FN;
 		unget_token(t);
 		return object();
 	default:
+PRd(t.type);
 		return NULL;
 	}
 }
