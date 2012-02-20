@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <title>Canvas from scratch</title>
+        <meta charset="utf-8">
+
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
+
+        <script>
+            $(document).ready(function() {
+                var canvas = document.getElementById("myCanvas");
+                var ctx = canvas.getContext("2d");
+                var degrees = 270;
+		var radians = degrees * (Math.PI / 180);
+
+		switch (17) {
+		case 1:	// Rectangle
+			ctx.fillRect(50, 50, 100, 100);
+			ctx.strokeRect(50, 50, 100, 100);
+			break;
+		case 2:	// Triangle
+			ctx.strokeStyle = "rgb(255, 0, 0)";
+			ctx.fillStyle = "rgb(0, 255, 0)";
+			ctx.lineWidth = 20;
+			ctx.beginPath();
+			ctx.moveTo(50, 50);
+			ctx.lineTo(50, 250);
+			ctx.lineTo(250, 250);
+			ctx.closePath();
+			if (false) {
+				ctx.stroke();
+			} else {
+				ctx.fill();
+			}
+			break;
+		case 3:	// Color
+			ctx.fillStyle = "rgb(255, 0, 0)";
+			ctx.fillRect(50, 50, 100, 100);
+			break;
+		case 4:	// Fat lines
+			ctx.lineWidth = 20;
+			ctx.strokeStyle = "rgb(255, 0, 0)";
+			ctx.strokeRect(50, 50, 100, 100);
+ 			break;
+ 		case 5:	// Using clear to clear part of the drawing
+ 			ctx.fillRect(50, 50, 100, 100);
+			ctx.fillStyle = "rgb(255, 0, 0)";
+			ctx.fillRect(200, 50, 100, 100);
+			if (true) ctx.clearRect(50, 50, 100, 100);
+ 			break;
+ 		case 6:	// Circles
+ 			ctx.beginPath();
+			ctx.arc(100, 100, 50, 0, Math.PI * 2, false);
+			ctx.closePath();
+			ctx.stroke();
+ 			break;
+ 		case 7:	// Bezier Paths
+ 			ctx.lineWidth = 8;
+			ctx.beginPath();
+			ctx.moveTo(50, 150);
+			ctx.quadraticCurveTo(250, 50, 450, 150);
+			ctx.stroke();
+			break;
+		case 8:	// Quadratic Bezier Paths
+			ctx.lineWidth = 8;
+			ctx.beginPath();
+			ctx.moveTo(50, 150);
+			ctx.bezierCurveTo(150, 50, 350, 250, 450, 150);
+			ctx.stroke();
+			break;
+		case 9:	// Drawing state
+			ctx.fillStyle = "rgb(0, 0, 255)";
+			ctx.save();
+			ctx.fillRect(50, 50, 100, 100);
+			ctx.fillStyle = "rgb(255, 0, 0)";
+			ctx.fillRect(200, 50, 100, 100);
+			ctx.restore()
+			ctx.fillRect(350, 50, 100, 100);
+			break;
+		case 10:	// Translation
+			ctx.fillRect(0, 0, 100, 100);
+			ctx.save();
+			ctx.translate(100, 100);
+			ctx.fillStyle = "rgb(0, 0, 255)";
+			ctx.fillRect(0, 0, 100, 100);
+			ctx.restore();
+			break;
+		case 11:	// Scaling - multiplies everything by scalling factors
+			ctx.save();
+			ctx.translate(100, 100);
+			ctx.scale(2, 2);
+			ctx.fillRect(0, 0, 100, 100);
+			ctx.restore();
+			break;
+		case 12:	// Rotation - rotates around origin
+			ctx.save();
+			ctx.translate(150, 150); // Translate to centre of square
+			ctx.rotate(Math.PI/4); // Rotate 45 degrees (in radians)
+			ctx.fillRect(-50, -50, 100, 100); // Centre at the rotation point
+			ctx.restore();
+			break;
+		case 13:	// Shadows
+			ctx.save();
+			ctx.shadowBlur = 15;
+			ctx.shadowColor = "rgb(0, 0, 0)";
+			ctx.fillRect(100, 100, 100, 100);
+			ctx.restore();
+			ctx.save();
+			ctx.shadowBlur = 0;
+			ctx.shadowOffsetX = 6;
+			ctx.shadowOffsetY = 6;
+			ctx.shadowColor = "rgba(125, 125, 125, 0.5)"; // Transparent grey
+			ctx.fillRect(300, 100, 100, 100);
+			ctx.restore();
+			break;
+		case 14:	// Gradients
+			var gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+			gradient.addColorStop(0, "rgb(255, 255, 255)");
+			gradient.addColorStop(1, "rgb(0, 0, 0)");
+
+			ctx.save();
+			ctx.fillStyle = gradient;
+			ctx.fillRect(0, 0, canvas.width, canvas.height);
+			ctx.restore();
+  			break;
+		case 15:	// Radial Gradients
+			var gradient = ctx.createRadialGradient(350, 350, 0, 50, 50, 100);
+			gradient.addColorStop(0, "rgb(0, 0, 0)");
+			gradient.addColorStop(1, "rgb(125, 125, 125)");
+
+			ctx.save();
+			ctx.fillStyle = gradient;
+			ctx.fillRect(0, 0, canvas.width, canvas.height);
+			ctx.restore();
+  			break;
+		case 16:	// Radial Gradients
+			var canvasCentreX = canvas.width/2;
+			var canvasCentreY = canvas.height/2;
+
+			var gradient = ctx.createRadialGradient(canvasCentreX, canvasCentreY, 250, canvasCentreX, canvasCentreY, 0);
+			gradient.addColorStop(0, "rgb(0, 0, 0)");
+			gradient.addColorStop(1, "rgb(125, 125, 125)");
+
+			ctx.save();
+			ctx.fillStyle = gradient;
+			ctx.fillRect(0, 0, canvas.width, canvas.height);
+			ctx.restore();
+  			break;
+		case 17:	// Images
+			var image = new Image();
+			image.src = "sample.jpg";
+			$(image).load(function() {});
+			
+			$(image).load(function() {  
+				ctx.drawImage(image, 0, 0, 2000, 2000, 0, 0, 500, 500);  
+			}); 
+  			break;
+		}
+		if (false) ctx.clearRect(0, 0, canvas.width, canvas.height);
+           });
+        </script>
+    </head>
+
+    <body>
+    	<p>This is my canvas</p>
+        <canvas id="myCanvas" width="500" height="500">
+            <!-- Insert fallback content here -->
+        </canvas>
+    </body>
+</html>
+
