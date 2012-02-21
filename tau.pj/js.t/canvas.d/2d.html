@@ -150,11 +150,25 @@
 		case 17:	// Images
 			var image = new Image();
 			image.src = "sample.jpg";
-			$(image).load(function() {});
-			
+			//var image = document.getElementById(‘sample’);
 			$(image).load(function() {  
-				ctx.drawImage(image, 0, 0, 2000, 2000, 0, 0, 500, 500);  
+				ctx.drawImage(image, 0, 0, 300, 400);
 			}); 
+			$("body").css("backgroundColor", "rgb(255, 0, 0)");
+			//alert(show("clicked")); 
+			$(canvas).click(function(e) { 
+				var canvasOffset = $(canvas).offset();  
+				var canvasX = Math.floor(e.pageX-canvasOffset.left);  
+				var canvasY = Math.floor(e.pageY-canvasOffset.top);  
+
+				var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);  
+				var pixels = imageData.data;  
+				var pixelRedIndex = ((canvasY - 1) * (imageData.width * 4)) + ((canvasX - 1) * 4);  
+				var pixelcolor = "rgba("+pixels[pixelRedIndex]+", "+pixels[pixelRedIndex+1]+", "+pixels[pixelRedIndex+2]+", "+pixels[pixelRedIndex+3]+")";
+				$("body").css("backgroundColor",  "rgb(0, 0, 240)"); 
+			});
+			/*
+			*/
   			break;
 		}
 		if (false) ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -163,8 +177,7 @@
     </head>
 
     <body>
-    	<p>This is my canvas</p>
-        <canvas id="myCanvas" width="500" height="500">
+        <canvas id="myCanvas" width="1000" height="1000">
             <!-- Insert fallback content here -->
         </canvas>
     </body>
