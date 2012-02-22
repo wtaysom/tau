@@ -41,8 +41,8 @@ defTest(function() { // Rectangle
 });
 
 defTest(function() { // Triangle
-	ctx.strokeStyle = "rgb(255, 0, 0)";
-	ctx.fillStyle = "rgb(0, 255, 0)";
+	ctx.strokeStyle = 'rgb(255, 0, 0)';
+	ctx.fillStyle = 'rgb(0, 255, 0)';
 	ctx.lineWidth = 20;
 	ctx.beginPath();
 	ctx.moveTo(50, 50);
@@ -57,20 +57,20 @@ defTest(function() { // Triangle
 });
 
 defTest(function() { // Color
-	ctx.fillStyle = "rgb(255, 0, 0)";
+	ctx.fillStyle = 'rgb(255, 0, 0)';
 	ctx.fillRect(50, 50, 100, 100);
 });
 
 
 defTest(function() { // Fat lines
 	ctx.lineWidth = 20;
-	ctx.strokeStyle = "rgb(255, 0, 0)";
+	ctx.strokeStyle = 'rgb(255, 0, 0)';
 	ctx.strokeRect(50, 50, 100, 100);
 });
 
 defTest(function() { // Using clear to clear part of the drawing
 	ctx.fillRect(50, 50, 100, 100);
-	ctx.fillStyle = "rgb(255, 0, 0)";
+	ctx.fillStyle = 'rgb(255, 0, 0)';
 	ctx.fillRect(200, 50, 100, 100);
 	if (true) ctx.clearRect(50, 50, 100, 100);
 });
@@ -99,12 +99,12 @@ defTest(function() { // Quadratic Bezier Paths
 });
 
 defTest(function() { // Drawing state
-	ctx.fillStyle = "rgb(0, 0, 255)";
+	ctx.fillStyle = 'rgb(0, 0, 255)';
 	ctx.save();
 	ctx.fillRect(50, 50, 100, 100);
-	ctx.fillStyle = "rgb(255, 0, 0)";
+	ctx.fillStyle = 'rgb(255, 0, 0)';
 	ctx.fillRect(200, 50, 100, 100);
-	ctx.restore()
+	ctx.restore();
 	ctx.fillRect(350, 50, 100, 100);
 });
 
@@ -112,7 +112,7 @@ defTest(function() { // Translation
 	ctx.fillRect(0, 0, 100, 100);
 	ctx.save();
 	ctx.translate(100, 100);
-	ctx.fillStyle = "rgb(0, 0, 255)";
+	ctx.fillStyle = 'rgb(0, 0, 255)';
 	ctx.fillRect(0, 0, 100, 100);
 	ctx.restore();
 });
@@ -136,23 +136,23 @@ defTest(function() { // Rotation - rotates around origin
 defTest(function() { // Shadows
 	ctx.save();
 	ctx.shadowBlur = 15;
-	ctx.shadowColor = "rgb(0, 0, 0)";
+	ctx.shadowColor = 'rgb(0, 0, 0)';
 	ctx.fillRect(100, 100, 100, 100);
 	ctx.restore();
 	ctx.save();
 	ctx.shadowBlur = 0;
 	ctx.shadowOffsetX = 6;
 	ctx.shadowOffsetY = 6;
-	ctx.shadowColor = "rgba(125, 125, 125, 0.5)"; // Transparent grey
+	ctx.shadowColor = 'rgba(125, 125, 125, 0.5)'; // Transparent grey
 	ctx.fillRect(300, 100, 100, 100);
 	ctx.restore();
 });
 
 defTest(function() { // Gradients
 	var gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-	gradient.addColorStop(0, "rgb(255, 255, 255)");
-	gradient.addColorStop(1, "rgb(0, 0, 0)");
-
+	gradient.addColorStop(0, 'rgb(255, 255, 255)');
+	gradient.addColorStop(1, 'rgb(0, 0, 0)');
+	
 	ctx.save();
 	ctx.fillStyle = gradient;
 	ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -163,7 +163,7 @@ defTest(function() { // Radial Gradients
 	var gradient = ctx.createRadialGradient(350, 350, 0, 50, 50, 100);
 	gradient.addColorStop(0, 'rgb(0, 0, 0)');
 	gradient.addColorStop(1, 'rgb(125, 125, 125)');
-
+	
 	ctx.save();
 	ctx.fillStyle = gradient;
 	ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -175,8 +175,8 @@ defTest(function() { // Radial Gradients
 	var canvasCentreY = canvas.height/2;
 
 	var gradient = ctx.createRadialGradient(
-			canvasCentreX, canvasCentreY, 250,
-			canvasCentreX, canvasCentreY, 0);
+		canvasCentreX, canvasCentreY, 250,
+		canvasCentreX, canvasCentreY, 0);
 	gradient.addColorStop(0, 'rgb(0, 0, 0)');
 	gradient.addColorStop(1, 'rgb(125, 125, 125)');
 
@@ -198,16 +198,26 @@ defTest(function() { // Images
 		var canvasOffset = $(canvas).offset();
 		var canvasX = Math.floor(e.pageX-canvasOffset.left);
 		var canvasY = Math.floor(e.pageY-canvasOffset.top);
+		
+		/* To avoid SECURITY_ERR, run through:
+		
+			canvas.d> python -m SimpleHTTPServer
 
+		pointing your browser to:
+
+			http://127.0.0.1:8000/2d.html
+		
+		*/
 		var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 		var pixels = imageData.data;
 		var pixelRedIndex = ((canvasY - 1) * (imageData.width * 4))
-											+ ((canvasX - 1) * 4);
-		var pixelcolor = 'rgba('+pixels[pixelRedIndex]+','
-									 + ''+pixels[pixelRedIndex+1]+','
-									 + ''+pixels[pixelRedIndex+2]+','
-									 + ''+pixels[pixelRedIndex+3]+')';
-		$("body").css("backgroundColor",	pixelcolor);
+			+ ((canvasX - 1) * 4);
+		var r = pixels[pixelRedIndex];
+		var g = pixels[pixelRedIndex+1];
+		var b = pixels[pixelRedIndex+2];
+		var a = pixels[pixelRedIndex+3];
+		var pixelcolor = 'rgba('+r+','+g+','+b+','+a+')';
+		$('body').css('backgroundColor', pixelcolor);
 	});
 });
 
