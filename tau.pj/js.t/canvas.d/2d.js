@@ -11,17 +11,17 @@ function defTest(fn) {
 var canvas;
 var ctx;
 
-function runTests(n) {
+function runTests() {
 	canvas = $('#myCanvas').get(0);
 	ctx = canvas.getContext('2d');
 	
 	var count = 0;
 	step();
 	
-	function step() {		
+	function step() {
 		var test = tests[count++];
 		if (test) {
-			if (false) {
+			if (true) {
 				ctx.clearRect(0, 0, canvas.width, canvas.height);
 			}
 			
