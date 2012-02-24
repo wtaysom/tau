@@ -2,6 +2,7 @@
 
 /** Implementation of Per Bak's Sand Piles **/
 
+var random = false;
 var grainSize = 5;
 var grainsPerInterval = 10;
 var interval = 1;
@@ -52,8 +53,10 @@ function inc(x, y) {
 }
 
 function dribble() {
-	var x = Math.floor(Math.random() * sandPile.length);
-	var y = Math.floor(Math.random() * sandPile[x].length);
+	var x = Math.floor(random ? Math.random() * sandPile.length
+	                          : sandPile.length / 2);
+	var y = Math.floor(random ? Math.random() * sandPile[x].length
+	                          : sandPile[x].length / 2);
 	inc(x, y);
 }
 
