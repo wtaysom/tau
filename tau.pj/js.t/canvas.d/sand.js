@@ -2,9 +2,9 @@
 
 /** Implementation of Per Bak's Sand Piles **/
 
-var random = false;
+var random = true;
 var grainSize = 5;
-var grainsPerInterval = 10;
+var grainsPerInterval = 10;	// 10,000 still looks interesting by 100,000 doesn't
 var interval = 1;
 var color = [
 		'#320', '#640', '#960',
