@@ -46,7 +46,7 @@ Graph.prototype = {
 	min: function() {
 		return this.values.reduce(function(m, v) {
 			return Math.min(m, v);
-		}, 0);
+		}, 1000);
 	},
 	
 	draw: function() {
