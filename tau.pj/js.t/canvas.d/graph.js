@@ -5,6 +5,22 @@
 var canvas;
 var ctx;
 
+var axisColor = '#08F';
+var axisWidth = 1;
+var gridWidth = axisWidth / 2;
+var numXTicks = 6;
+var numYTicks = 5;
+
+function pr(msg) {	// For debug messages at top of screen
+	ctx.save();
+	ctx.strokeStyle = '#F00';
+	ctx.clearRect(0, 0, canvas.width, 20);
+	ctx.lineWidth = 1;
+	ctx.strokeText(msg.toString(), 10, 10);
+	ctx.restore();
+}
+	
+
 function clear() {
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
@@ -38,23 +54,19 @@ Graph.prototype = {
 	},
 	
 	max: function() {
-		return this.values.reduce(function(m, v) {
-			return Math.max(m, v);
-		}, 0);
+		return Math.max.apply(null, this.values);
 	},
 	
 	min: function() {
-		return this.values.reduce(function(m, v) {
-			return Math.min(m, v);
-		}, 1000);
+		return Math.min.apply(null, this.values);
 	},
 	
 	draw: function() {
 		var values = this.values;
 		
-		var leftMargin = 40;
+		var leftMargin = 60;
 		var rightMargin = 10;
-		var topMargin = 10;
+		var topMargin = 20;
 		var bottomMargin = 40;
 		var mx = new Point(values.length, this.max());
 		var mn = new Point(0, this.min());
@@ -64,22 +76,10 @@ Graph.prototype = {
 		var yscale;
 		
 		plot();
-		/*
-		xlabel(mx.y.toString());
-		ctx.strokeStyle = 'rgb(255, 0, 0)';
-		ctx.lineWidth = 1;
-		ctx.beginPath();
-		ctx.moveTo(50, 50);
-		ctx.lineTo(50, 250);
-		ctx.lineTo(250, 250);
-		ctx.moveTo(60, 60);
-		ctx.lineTo(160, 160);
-		ctx.stroke();
-		*/
 		
 		function plot() {
+			yaxis();
 			if (values.length == 0) return;
-			xaxis();
 			ctx.save();
 			ctx.strokeStyle = '#F00';
 			ctx.lineWidth = 1;
@@ -89,34 +89,56 @@ Graph.prototype = {
 				ctx.lineTo(xScale(i), yScale(values[i]));
 			}
 			ctx.stroke();
-			ctx.closePath();
 			ctx.restore();
+			xaxis();
 			/*
 			*/
 		}
+
+		function drawLine(xstart, ystart, xend, yend, color, width) {
+			ctx.save();
+			ctx.strokeStyle = color;
+			ctx.lineWidth = width;
+			ctx.beginPath();
+			ctx.moveTo(xScale(xstart), yScale(ystart));
+			ctx.lineTo(xScale(xend), yScale(yend));
+			ctx.stroke();
+			ctx.restore();
+		}
 		
 		function xScale(x) {
-			return leftMargin +
+			return Math.round(leftMargin +
 				(x - mn.x) / (mx.x - mn.x) * 
-				(canvas.width - leftMargin - rightMargin);
+				(canvas.width - leftMargin - rightMargin));
 		}
 		
 		function yScale(y) {
-			return canvas.height - bottomMargin -
+			return Math.round(canvas.height - bottomMargin -
 				(y - mn.y) / (mx.y - mn.y) *
-				(canvas.height - topMargin - bottomMargin);
+				(canvas.height - topMargin - bottomMargin));
 		}
 		
 		function xaxis() {
-			ctx.save();
-			ctx.strokeStyle = '#00F';
-			ctx.lineWidth = 1;
-			ctx.beginPath();
-			ctx.moveTo(xScale(0), yScale(0));
-			ctx.lineTo(xScale(mx.x), yScale(0));
-			ctx.closePath();
-			ctx.stroke();
-			ctx.restore();
+			drawLine(mn.x, mn.y, mx.x, mn.y, axisColor, axisWidth);
+			var dtick = (mx.y - mn.y) / numYTicks;
+			var tick = dtick + mn.y;
+			for (var i = 0; i < numYTicks; i++) {
+			pr([dtick, tick, mx.y, mn.y, numYTicks]);
+				drawLine(mn.x, tick, mx.x, tick,
+					'#0F0', gridWidth);
+				tick += dtick;
+			}
+		}
+		
+		function yaxis() {
+			drawLine(mn.x, mn.y, mn.x, mx.y, axisColor, axisWidth);
+			var dtick = (mx.x - mn.x) / numXTicks;
+			var tick = dtick;
+			for (var i = 0; i < numXTicks; i++) {
+				drawLine(tick, mn.y, tick, mx.y,
+					'#0F0', gridWidth);
+				tick += dtick;
+			}
 		}
 	
 		function xlabel(text) {
