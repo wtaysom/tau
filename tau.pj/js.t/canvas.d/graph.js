@@ -68,7 +68,7 @@ Graph.prototype = {
 		var rightMargin = 10;
 		var topMargin = 20;
 		var bottomMargin = 40;
-		var mx = new Point(values.length, this.max());
+		var mx = new Point(values.length - 1, this.max());
 		var mn = new Point(0, this.min());
 		var xtrans;
 		var xscale;
@@ -78,6 +78,7 @@ Graph.prototype = {
 		plot();
 		
 		function plot() {
+			xaxis();
 			yaxis();
 			if (values.length == 0) return;
 			ctx.save();
@@ -90,7 +91,6 @@ Graph.prototype = {
 			}
 			ctx.stroke();
 			ctx.restore();
-			xaxis();
 			/*
 			*/
 		}
@@ -123,7 +123,6 @@ Graph.prototype = {
 			var dtick = (mx.y - mn.y) / numYTicks;
 			var tick = dtick + mn.y;
 			for (var i = 0; i < numYTicks; i++) {
-			pr([dtick, tick, mx.y, mn.y, numYTicks]);
 				drawLine(mn.x, tick, mx.x, tick,
 					'#0F0', gridWidth);
 				tick += dtick;
