@@ -11,6 +11,15 @@ var gridWidth = axisWidth / 2;
 var numXTicks = 6;
 var numYTicks = 5;
 
+function label(msg, x, y) {
+	ctx.save();
+	ctx.strokeStyle = '#FFF';
+	ctx.lineWidth = 1;
+	ctx.textAlign = 'right';
+	ctx.strokeText(msg.toString(), x, y);
+	ctx.restore();
+}
+
 function pr(msg) {	// For debug messages at top of screen
 	ctx.save();
 	ctx.strokeStyle = '#F00';
@@ -67,7 +76,7 @@ Graph.prototype = {
 		var leftMargin = 60;
 		var rightMargin = 10;
 		var topMargin = 20;
-		var bottomMargin = 40;
+		var bottomMargin = 50;
 		var mx = new Point(values.length - 1, this.max());
 		var mn = new Point(0, this.min());
 		var xtrans;
@@ -78,8 +87,8 @@ Graph.prototype = {
 		plot();
 		
 		function plot() {
-			xaxis();
-			yaxis();
+			xAxis();
+			yAxis();
 			if (values.length == 0) return;
 			ctx.save();
 			ctx.strokeStyle = '#F00';
@@ -118,42 +127,48 @@ Graph.prototype = {
 				(canvas.height - topMargin - bottomMargin));
 		}
 		
-		function xaxis() {
+		function xAxis() {
+			xLabel('x axis');
 			drawLine(mn.x, mn.y, mx.x, mn.y, axisColor, axisWidth);
+			label(Math.round(mn.x), leftMargin, yScale(mn.y));
 			var dtick = (mx.y - mn.y) / numYTicks;
 			var tick = dtick + mn.y;
 			for (var i = 0; i < numYTicks; i++) {
+				label(Math.round(tick), leftMargin, yScale(tick));
 				drawLine(mn.x, tick, mx.x, tick,
 					'#0F0', gridWidth);
 				tick += dtick;
 			}
 		}
 		
-		function yaxis() {
+		function yAxis() {
+			yLabel('y axis');
 			drawLine(mn.x, mn.y, mn.x, mx.y, axisColor, axisWidth);
+			label(Math.round(tick), xScale(tick), canvas.height - bottomMargin + 10);
 			var dtick = (mx.x - mn.x) / numXTicks;
-			var tick = dtick;
+			var tick = mn.x + dtick;
 			for (var i = 0; i < numXTicks; i++) {
+				label(Math.round(tick), xScale(tick), canvas.height - bottomMargin + 10);
 				drawLine(tick, mn.y, tick, mx.y,
 					'#0F0', gridWidth);
 				tick += dtick;
 			}
 		}
 	
-		function xlabel(text) {
+		function xLabel(text) {
 			ctx.save();
 			ctx.strokeStyle = '#0F0';
 			ctx.lineWidth = 1;
-			ctx.strokeText(text, 150, 150);
+			ctx.strokeText(text, canvas.width / 2, canvas.height - bottomMargin / 2);
 			ctx.restore();
 		}
 		
-		function ylabel(text) {
+		function yLabel(text) {
 			ctx.save();
 			ctx.strokeStyle = '#0F0';
 			ctx.lineWidth = 1;
-			ctx.translate(20, 150);
-			ctx.rotate(Math.PI/2);
+			ctx.translate(leftMargin / 2, canvas.height / 2);
+			ctx.rotate(-Math.PI/2);
 			ctx.strokeText(text, 0, 0);
 			ctx.restore();
 		}
