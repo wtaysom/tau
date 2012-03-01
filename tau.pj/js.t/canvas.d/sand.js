@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
+ * Distributed under the terms of the GNU General Public License v2
+ */
+
 (function() {
 
 /** Implementation of Per Bak's Sand Piles **/
@@ -39,7 +44,7 @@ function overflow() {
 	overflowQueue.push(arguments);
 }
 
-function inc(x, y) {	
+function inc(x, y) {
 	if (x < 0 || x >= sandPile.length) return;
 	if (y < 0 || y >= sandPile[x].length) return;
 	if (++sandPile[x][y] >= 4) {
@@ -83,7 +88,7 @@ function resume() {
 function run() {
 	canvas = $('#canvas').get(0);
 	ctx = canvas.getContext('2d');
-	
+
 	$('body').click(function(e) {
 		if (paused) {
 			resume();
@@ -91,11 +96,11 @@ function run() {
 			pause();
 		}
 	});
-	
+
 	var pileWidth = Math.floor(canvas.width / grainSize);
 	var pileHeight = Math.floor(canvas.height / grainSize);
 	initSandPile(pileWidth, pileHeight);
-	
+
 	resume();
 }
 

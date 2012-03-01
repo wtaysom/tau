@@ -13,11 +13,11 @@ Just.extend = function(Child, methods) {
 	Child.prototype = new J;
 	Child.extend = this.extend;
 	Child.parent = this;
-	
+
 	for (var m in methods) {
 		Child.prototype[m] = methods[m];
 	}
-	
+
 	return Child;
 };
 

@@ -65,7 +65,6 @@ int main (int argc, char *argv[])
 	n = Option.iterations;
 	size = Option.file_size;
 	bufsize = 1 << Bufsize_log2;
-	buf = emalloc(bufsize);
 
 	buf = emalloc(bufsize);
 	for (i = 0; i < bufsize; ++i) {
@@ -75,7 +74,7 @@ int main (int argc, char *argv[])
 		startTimer();
 		for (i = 0; i < n; i++) {
 			/* Because eCryptfs has to decrypt a page before
-			 * over writing it, recreating the file on each
+			 * overwriting it, recreating the file on each
 			 * iteration gives a more realistic value.
 			 */
 			fd = open(Option.file,

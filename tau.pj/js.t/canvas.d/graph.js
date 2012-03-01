@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
+ * Distributed under the terms of the GNU General Public License v2
+ */
+
 (function() {
 
 /** Simple Graphs **/
@@ -28,7 +33,7 @@ function pr(msg) {	// For debug messages at top of screen
 	ctx.strokeText(msg.toString(), 10, 10);
 	ctx.restore();
 }
-	
+
 
 function clear() {
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -61,18 +66,18 @@ Graph.prototype = {
 	addRandomValue: function() {
 		this.values.push(Math.random() * 1000);
 	},
-	
+
 	max: function() {
 		return Math.max.apply(null, this.values);
 	},
-	
+
 	min: function() {
 		return Math.min.apply(null, this.values);
 	},
-	
+
 	draw: function() {
 		var values = this.values;
-		
+
 		var leftMargin = 60;
 		var rightMargin = 10;
 		var topMargin = 20;
@@ -83,9 +88,9 @@ Graph.prototype = {
 		var xscale;
 		var ytrans;
 		var yscale;
-		
+
 		plot();
-		
+
 		function plot() {
 			xAxis();
 			yAxis();
@@ -114,19 +119,19 @@ Graph.prototype = {
 			ctx.stroke();
 			ctx.restore();
 		}
-		
+
 		function xScale(x) {
 			return Math.round(leftMargin +
-				(x - mn.x) / (mx.x - mn.x) * 
+				(x - mn.x) / (mx.x - mn.x) *
 				(canvas.width - leftMargin - rightMargin));
 		}
-		
+
 		function yScale(y) {
 			return Math.round(canvas.height - bottomMargin -
 				(y - mn.y) / (mx.y - mn.y) *
 				(canvas.height - topMargin - bottomMargin));
 		}
-		
+
 		function xAxis() {
 			xLabel('x axis');
 			drawLine(mn.x, mn.y, mx.x, mn.y, axisColor, axisWidth);
@@ -140,7 +145,7 @@ Graph.prototype = {
 				tick += dtick;
 			}
 		}
-		
+
 		function yAxis() {
 			yLabel('y axis');
 			drawLine(mn.x, mn.y, mn.x, mx.y, axisColor, axisWidth);
@@ -154,7 +159,7 @@ Graph.prototype = {
 				tick += dtick;
 			}
 		}
-	
+
 		function xLabel(text) {
 			ctx.save();
 			ctx.strokeStyle = '#0F0';
@@ -162,7 +167,7 @@ Graph.prototype = {
 			ctx.strokeText(text, canvas.width / 2, canvas.height - bottomMargin / 2);
 			ctx.restore();
 		}
-		
+
 		function yLabel(text) {
 			ctx.save();
 			ctx.strokeStyle = '#0F0';
@@ -203,7 +208,7 @@ function resume() {
 function run() {
 	canvas = $('#canvas').get(0);
 	ctx = canvas.getContext('2d');
-	
+
 	$('body').click(function(e) {
 		if (paused) {
 			resume();
@@ -211,14 +216,14 @@ function run() {
 			pause();
 		}
 	});
-	
+
 /*
 	$('body').click(function(e) {
 		g.push(Math.random() * 1000); // g = genGraph(100);
 		drawGraph(g);
 	});
 */
-	
+
 	resume();
 }
 

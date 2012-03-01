@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
+ * Distributed under the terms of the GNU General Public License v2
+ */
+
 (function() {
 
 /** Test Running **/
@@ -14,17 +19,17 @@ var ctx;
 function runTests() {
 	canvas = $('#myCanvas').get(0);
 	ctx = canvas.getContext('2d');
-	
+
 	var count = 0;
 	step();
-	
+
 	function step() {
 		var test = tests[count++];
 		if (test) {
 			if (true) {
 				ctx.clearRect(0, 0, canvas.width, canvas.height);
 			}
-			
+
 			test();
 			setTimeout(step, 500);
 		}
@@ -152,7 +157,7 @@ defTest(function() { // Gradients
 	var gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
 	gradient.addColorStop(0, 'rgb(255, 255, 255)');
 	gradient.addColorStop(1, 'rgb(0, 0, 0)');
-	
+
 	ctx.save();
 	ctx.fillStyle = gradient;
 	ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -163,7 +168,7 @@ defTest(function() { // Radial Gradients
 	var gradient = ctx.createRadialGradient(350, 350, 0, 50, 50, 100);
 	gradient.addColorStop(0, 'rgb(0, 0, 0)');
 	gradient.addColorStop(1, 'rgb(125, 125, 125)');
-	
+
 	ctx.save();
 	ctx.fillStyle = gradient;
 	ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -198,15 +203,15 @@ defTest(function() { // Images
 		var canvasOffset = $(canvas).offset();
 		var canvasX = Math.floor(e.pageX-canvasOffset.left);
 		var canvasY = Math.floor(e.pageY-canvasOffset.top);
-		
+
 		/* To avoid SECURITY_ERR, run through:
-		
+
 			canvas.d> python -m SimpleHTTPServer
 
 		pointing your browser to:
 
 			http://127.0.0.1:8000/2d.html
-		
+
 		*/
 		var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 		var pixels = imageData.data;
