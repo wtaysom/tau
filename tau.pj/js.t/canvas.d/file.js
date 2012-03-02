@@ -18,18 +18,18 @@ function sendRequest(url,callback) {
 	req.send();
 }
 
-//sendRequest('file.txt',handleRequest);
+sendRequest('file.txt',handleRequest);
 
 function handleRequest(req) {
 	alert('came back ' + req.responseText.toString());
-	var v = req.responseText;
-	alert(v);
+	eval("var v = ("+req.responseText+")");
+	alert(v.toString());
 	var sum = 0;
 	for (i in v) {
 		alert(i.toString());
 		sum += i;
 	}
-	alert('sum = ', sum);
+	alert('sum = ' + sum.toString());
 }
 
 var ajaxRequest = new XMLHttpRequest();
@@ -43,5 +43,5 @@ ajaxRequest.onreadystatechange = function(){
 	}
 }
 
-ajaxRequest.open('GET', 'file.txt', true);
-ajaxRequest.send();
+//ajaxRequest.open('GET', 'file.txt', true);
+//ajaxRequest.send();
