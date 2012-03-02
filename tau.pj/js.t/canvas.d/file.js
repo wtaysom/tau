@@ -26,8 +26,8 @@ function handleRequest(req) {
 	alert(v.toString());
 	var sum = 0;
 	for (i in v) {
-		alert(i.toString());
-		sum += i;
+		alert(v[i].toString());
+		sum += v[i];
 	}
 	alert('sum = ' + sum.toString());
 }
