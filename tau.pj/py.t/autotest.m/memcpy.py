@@ -1,31 +1,28 @@
+#! /usr/bin/env python
+
 import re
 import string
 import subprocess
 
-# size = '0x4000000'
-size = '0x400'
-loops = '4'
-# iterations = '10'
-iterations = '2'
+re_float = r"[+-]? *(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?"
 
-cmd = 'memcpy' + ' -z' + size + ' -i' + iterations + ' -l' +loops
+def find_max(tag, text):
+    r1 = re.search(tag + ".*\n(\d.*sec\n)+", text)
+    r2 = re.findall(r"\d+\. (" + re_float + r") M.*\n", r1.group(0))
+    print r2
+    return max(float(result) for result in r2)
+
+
+size = 4 * 1024
+loops = 4
+iterations = 4
+cmd  = 'memcpy -z %d -i %d -l %d' % (size, iterations, loops)
 
 subprocess.call(cmd + ' >memcpy.txt', shell=True)
 f = open('memcpy.txt')
 t = f.read()
 
-def find_max(tag, text):
-    r1 = re.search(tag + ".*\n(\d.*\n)+", text)
-    r2 = re.search(r"(\d+\. \d+\.\d+.*\n)+", r1.group(0))
-    runs = string.split(r2.group(0), '\n')
-    max = 0.0
-    for r in runs:
-        a = re.search('\d+.\d+', r)
-        if (a):
-            b = float(a.group(0))
-            if (b > max):
-                max = b
-    return max
+print t
 
-for tag in ['memcpy', '32bit', '64bit']:	
+for tag in ['memcpy', '32bit', '64bit']:
     print tag, find_max(tag, t)

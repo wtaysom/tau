@@ -2,56 +2,46 @@
  * Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
  * Distributed under the terms of the GNU General Public License v2
  */
-
-/*
-    <input type="file" id="files" name="files[]" multiple />
-    <output id="list"></output>
-
-function handleFileSelect(evt) {
-	var files = evt.target.files; // FileList object
-
-	// files is a FileList of File objects. List some properties.
-	var output = [];
-	for (var i = 0, f; f = files[i]; i++) {
-		output.push('<li><strong>', escape(f.name), '</strong> (',
-			f.type || 'n/a', ') - ',
-			f.size, ' bytes, last modified: ',
-			f.lastModifiedDate ? f.lastModifiedDate.toLocaleDateString()
-					   : 'n/a',
-			'</li>');
+function sendRequest(url,callback) {
+	var req = new XMLHttpRequest();
+	if (!req) return;
+	req.open("GET", url, true);
+	req.onreadystatechange = function () {
+		if (req.readyState != 4) return;
+		if (req.status != 200 && req.status != 304) {
+			alert('HTTP error ' + req.status);
+			return;
+		}
+		callback(req);
 	}
-	document.getElementById('list').innerHTML = '<ul>' + output.join('') + '</ul>';
+	if (req.readyState == 4) return;
+	req.send();
 }
 
-document.getElementById('files').addEventListener('change', handleFileSelect, false);
+//sendRequest('file.txt',handleRequest);
 
-
-function handleFileSelect(evt) {
-	evt.stopPropagation();
-	evt.preventDefault();
-
-	var files = evt.dataTransfer.files; // FileList object.
-
-	// files is a FileList of File objects. List some properties.
-	var output = [];
-	for (var i = 0, f; f = files[i]; i++) {
-		output.push('<li><strong>', escape(f.name), '</strong> (',
-			f.type || 'n/a', ') - ',
-			f.size, ' bytes, last modified: ',
-			f.lastModifiedDate ? f.lastModifiedDate.toLocaleDateString() : 'n/a',
-			'</li>');
+function handleRequest(req) {
+	alert('came back ' + req.responseText.toString());
+	var v = req.responseText;
+	alert(v);
+	var sum = 0;
+	for (i in v) {
+		alert(i.toString());
+		sum += i;
 	}
-	document.getElementById('list').innerHTML = '<ul>' + output.join('') + '</ul>';
+	alert('sum = ', sum);
 }
 
-function handleDragOver(evt) {
-	evt.stopPropagation();
-	evt.preventDefault();
-	evt.dataTransfer.dropEffect = 'copy'; // Explicitly show this is a copy.
+var ajaxRequest = new XMLHttpRequest();
+
+// Create a function that will receive data sent from the server
+ajaxRequest.onreadystatechange = function(){
+	if(ajaxRequest.readyState == 4){
+		var cType = this.getResponseHeader('Content-Type');
+		alert(cType);
+		alert(ajaxRequest.responseText);
+	}
 }
 
-// Setup the dnd listeners.
-var dropZone = document.getElementById('drop_zone');
-dropZone.addEventListener('dragover', handleDragOver, false);
-dropZone.addEventListener('drop', handleFileSelect, false);
-*/
+ajaxRequest.open('GET', 'file.txt', true);
+ajaxRequest.send();
