@@ -1,22 +1,24 @@
+#! /usr/bin/env python
+
+import os
 import re
 import subprocess
 
-iterations = '4'
-tasks = '2'
-width = '3'
-depth = '5'
-
-cmd = 'threadtree' + ' -w' + width + ' -k' + depth + ' -t' + tasks + \
-    ' -i' + iterations
-
-numerator = int(tasks) * pow(int(width), int(depth) + 1)
+dir = '_Dir/'
+iterations = 4
+tasks = 2
+width = 3
+depth = 2
+cmd = ('threadtree -d %s -i %d -t %d -w %d -k %d' %
+	(dir, iterations, tasks, width, depth))
 
 subprocess.call(cmd + ' >tree.txt', shell=True)
 file = open('tree.txt')
-text = file.read()
+result = file.read()
 
-r1 = re.search("timer avg=\d*.\d*.*$", text)
-r2 = re.search("\d*\.\d*", r1.group(0))
-
-print numerator / float(r2.group(0))
-
+r1 = re.search(r"timer avg= *([^\s]*).*$", result)
+print r1.groups()[0]
+print r1.group(1)
+timer_avg = float(r1.group(1))
+p = tasks * pow(width, depth + 1) / timer_avg
+print 'threadtree_ops', p

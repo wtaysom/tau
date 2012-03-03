@@ -56,9 +56,11 @@ Point.prototype = {
 
 function Graph(n) {
 	this.values = [];
+/*
 	for (var i = 0; i < n; i++) {
 		this.addRandomValue();
 	}
+*/
 	return graph;
 }
 
@@ -227,6 +229,37 @@ function run() {
 	resume();
 }
 
-$(run);
+//$(run);
+
+function log(message) {
+	var text = document.createTextNode(
+		message.toString()+"\n");
+	$('#output').append(text);
+}
+
+function handleResponse(response) {
+	log("response " + response.toString());
+	eval("var v = ("+response+")");
+	log(v.toString());
+/*
+	var sum = 0;
+	for (i in v) {
+		log(v[i].toString());
+		sum += v[i];
+	}
+	log("sum = " + sum.toString());
+*/
+	graph.values = v;
+	graph.draw();
+}
+
+function plot() {
+	canvas = $('#canvas').get(0);
+	ctx = canvas.getContext('2d');
+
+	$.get("graph.txt", handleResponse);
+}
+
+$(plot);
 
 })();
