@@ -192,8 +192,9 @@ var intervalId;
 
 function step() {
 	clear();
-	graph.addRandomValue();
-	graph.draw();
+//	graph.addRandomValue();
+//	graph.draw();
+	$.get("proc", handleResponse);
 }
 
 function pause() {
@@ -229,7 +230,7 @@ function run() {
 	resume();
 }
 
-//$(run);
+$(run);
 
 function log(message) {
 	var text = document.createTextNode(
@@ -237,9 +238,11 @@ function log(message) {
 	$('#output').append(text);
 }
 
+var oldv;
+
 function handleResponse(response) {
 	log("response " + response.toString());
-	eval("var v = ("+response+")");
+	eval("var v = " + response);
 	log(v.toString());
 /*
 	var sum = 0;
@@ -249,17 +252,22 @@ function handleResponse(response) {
 	}
 	log("sum = " + sum.toString());
 */
-	graph.values = v;
-	graph.draw();
+	if (oldv == undefined) {
+		oldv = v;
+	} else {
+		graph.values.push(v - oldv);
+		oldv = v;
+		graph.draw();
+	}
 }
 
 function plot() {
 	canvas = $('#canvas').get(0);
 	ctx = canvas.getContext('2d');
 
-	$.get("graph.txt", handleResponse);
+	$.get("data", handleResponse);
 }
 
-$(plot);
+//$(plot);
 
 })();
