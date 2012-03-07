@@ -189,12 +189,27 @@ var graph = new Graph(1);
 var interval = 1000;
 var paused = false;
 var intervalId;
+var plots = ['rand', 'data', 'proc'];
+var thePlot = 'data';
+
+function pickAplot() {
+	$("#pickplot").append("Pick: ");
+	
+	for (i in plots) {
+		$("#pickplot").append("<a href='#'>" + plots[i] + "</a> ");
+	}
+	
+	$("#pickplot a").click(function(e) {
+		$("#pickplot").append("<p>Clicked " + $(this).html() + "</p>");
+		thePlot = $(this).html();
+	});
+}
 
 function step() {
 	clear();
 //	graph.addRandomValue();
 //	graph.draw();
-	$.get("proc", handleResponse);
+	$.get(thePlot, handleResponse);
 }
 
 function pause() {
@@ -212,13 +227,15 @@ function run() {
 	canvas = $('#canvas').get(0);
 	ctx = canvas.getContext('2d');
 
-	$('body').click(function(e) {
+	$('#canvas').click(function(e) {
 		if (paused) {
 			resume();
 		} else {
 			pause();
 		}
 	});
+	
+	pickAplot();
 
 /*
 	$('body').click(function(e) {
@@ -241,17 +258,7 @@ function log(message) {
 var oldv;
 
 function handleResponse(response) {
-	log("response " + response.toString());
 	eval("var v = " + response);
-	log(v.toString());
-/*
-	var sum = 0;
-	for (i in v) {
-		log(v[i].toString());
-		sum += v[i];
-	}
-	log("sum = " + sum.toString());
-*/
 	if (oldv == undefined) {
 		oldv = v;
 	} else {
