@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  </head>
+    <title>Fixed left-sidebar</title>
+    <style type="text/css">
+     body{
+      margin:0;
+      padding:0 0 0 <length>;
+     }
+     div#left-sidebar{
+      position:absolute;
+      top:0;
+      left:0;
+      width:200px;
+      height:100%;
+     }
+     @media screen{
+      body>div#left-sidebar{
+       position:fixed;
+      }
+     }
+    </style>
+    <div id="left-sidebar"> left-sidebar </div>
+    <div id="content"> content </div>
+  
+    <body>
+  </body>
+<html>

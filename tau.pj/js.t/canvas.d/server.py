@@ -7,7 +7,7 @@ import SocketServer
 import SimpleHTTPServer
 import string
 
-PORT = 8080
+PORT = 8000
 
 x1 = 0
 x2 = 1
@@ -63,7 +63,7 @@ class CustomHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
       #current working directory
       SimpleHTTPServer.SimpleHTTPRequestHandler.do_GET(self)
 
-httpd = SocketServer.ThreadingTCPServer(('localhost', PORT),CustomHandler)
+httpd = SocketServer.ThreadingTCPServer(('', PORT),CustomHandler)
 
 print "serving at port", PORT
 httpd.serve_forever()

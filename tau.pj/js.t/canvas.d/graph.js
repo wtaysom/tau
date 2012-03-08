@@ -190,7 +190,7 @@ var interval = 1000;
 var paused = false;
 var intervalId;
 var plots = ['rand', 'data', 'proc'];
-var thePlot = 'data';
+var thePlot = 'proc';
 
 function pickAplot() {
 	$("#pickplot").append("Pick: ");
