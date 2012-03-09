@@ -17,6 +17,8 @@
         background: #99c;
       }
       #header {
+        padding: 5px 10px;
+        height: 30px;
         background: #ddd;
       }
       h1 {
@@ -27,6 +29,7 @@
         background: #c99;
       }
       #main {
+        width: 80%;
         float: right;
         background: #9c9;
       }
@@ -34,9 +37,9 @@
         margin: 0 0 lem;
       }
       #sidebar {
-        width: 230px;
-        padding: 10px;
         position: fixed;
+        width: 20%;
+        float: left;
         margin-left: 0;
         background: #900;
       }
@@ -45,6 +48,7 @@
         background: #cc9;
       }
       #footer p {
+        clear: both;
         margin: 0;
       }
       #nav ul {
@@ -73,7 +77,16 @@
       </div>
       <div id="main">
         <h2>Main</h2>
-        <p>Lorem ipsum dolor sit amet, consectetuer adipiscing elit...</p>
+        <canvas id="canvas" width="800" height="600">
+          You need an browser with HTML canvas my friend.
+        </canvas>
+        <p>This is the main paragraph and I'm going to make it so it
+           takes at least two lines. This requires me to type a bunch
+           of random nonsense but that is ok. The CSS seems to be some
+           what random anyway. Maybe, once I get the correct model
+           in my head it will work better. But getting the first
+           think to work seem to be a challenge. To think the future
+           of computing is build on this.</p>
       </div>
       <div id="sidebar">
         <h2>Sidebar</h2>
@@ -84,7 +97,8 @@
         </ul>
       </div>
       <div id="footer">
-        <p>Footer</p>
+        <p>Footer - make it long enough that I can see it peak out</p>
       </div>
     </div>
   </body>
+</html>

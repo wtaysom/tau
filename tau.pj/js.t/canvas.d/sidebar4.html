@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Sidebar</title>
+    <meta charset="utf-8">
+    <style type="text/css">
+      body {
+        background: black;
+        color: white;
+      }
+      #header {
+        position: fixed;
+        height: 80px;
+        top: 0;
+        left: 140px;
+        right: 0;
+        padding: 0 10px;
+        background: blue;
+      }
+      #main {
+        position: absolute;
+        top: 100px;
+        bottom: 0;
+        left: 140px;
+        padding: 10px;
+        right: 0;
+        overflow: scroll;
+        background: green;
+      }
+      #sidebar {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        width: 120px;
+        padding: 10px;
+        background: red;
+      }
+      #nav {
+        position: fixed;
+        top: 80px;
+        height: 20px;
+        left: 140px;
+        right: 0;
+        padding: 0 10px;
+        background: #c99;
+      }
+      #nav ul {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      #nav li {
+        display: inline;
+        margin: 0;
+        padding: 0;
+        font-size: 10px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="header"><h1>Document Heading</h1></div>
+    <div id="nav">
+      <ul>
+        <li><a href="#">Option 1</a></li>
+        <li><a href="#">Option 2</a></li>
+        <li><a href="#">Option 3</a></li>
+      </ul>
+    </div>
+    <div id="main">
+      <h2>Main</h2>
+      <canvas id="canvas" width="800" height="600">
+        You need an browser with HTML canvas my friend.
+      </canvas>
+      <p>This is the main paragraph and I'm going to make it so it
+         takes at least two lines. This requires me to type a bunch
+         of random nonsense but that is ok. The CSS seems to be some
+         what random anyway. Maybe, once I get the correct model
+         in my head it will work better. But getting the first
+         think to work seem to be a challenge. To think the future
+         of computing is build on this.</p>
+    </div>
+    <div id="sidebar">
+      <h2>Sidebar</h2>
+      <p>Lorem ipsum dolor sit amet, consectetuer adipiscing elit...</p>
+      <ul>
+        <li><a href="#">Link 1</a></li>
+        <li><a href="#">Link 2</a></li>
+      </ul>
+    </div>
+    <!--
+    -->
+  </body>
+</html>
