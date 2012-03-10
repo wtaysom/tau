@@ -56,11 +56,6 @@ Point.prototype = {
 
 function Graph(n) {
 	this.values = [];
-/*
-	for (var i = 0; i < n; i++) {
-		this.addRandomValue();
-	}
-*/
 	return graph;
 }
 
@@ -108,8 +103,6 @@ Graph.prototype = {
 			}
 			ctx.stroke();
 			ctx.restore();
-			/*
-			*/
 		}
 
 		function drawLine(xstart, ystart, xend, yend, color, width) {
@@ -142,7 +135,8 @@ Graph.prototype = {
 			var dtick = (mx.y - mn.y) / numYTicks;
 			var tick = dtick + mn.y;
 			for (var i = 0; i < numYTicks; i++) {
-				label(Math.round(tick), leftMargin, yScale(tick));
+				label(Math.round(tick), leftMargin,
+					yScale(tick));
 				drawLine(mn.x, tick, mx.x, tick,
 					'#0F0', gridWidth);
 				tick += dtick;
@@ -152,11 +146,13 @@ Graph.prototype = {
 		function yAxis() {
 			yLabel('y axis');
 			drawLine(mn.x, mn.y, mn.x, mx.y, axisColor, axisWidth);
-			label(Math.round(tick), xScale(tick), canvas.height - bottomMargin + 10);
+			label(Math.round(tick), xScale(tick),
+				canvas.height - bottomMargin + 10);
 			var dtick = (mx.x - mn.x) / numXTicks;
 			var tick = mn.x + dtick;
 			for (var i = 0; i < numXTicks; i++) {
-				label(Math.round(tick), xScale(tick), canvas.height - bottomMargin + 10);
+				label(Math.round(tick), xScale(tick),
+					canvas.height - bottomMargin + 10);
 				drawLine(tick, mn.y, tick, mx.y,
 					'#0F0', gridWidth);
 				tick += dtick;
@@ -167,7 +163,8 @@ Graph.prototype = {
 			ctx.save();
 			ctx.strokeStyle = '#0F0';
 			ctx.lineWidth = 1;
-			ctx.strokeText(text, canvas.width / 2, canvas.height - bottomMargin / 2);
+			ctx.strokeText(text, canvas.width / 2,
+				canvas.height - bottomMargin / 2);
 			ctx.restore();
 		}
 
@@ -207,8 +204,6 @@ function pickAplot() {
 }
 
 function step() {
-//	graph.addRandomValue();
-//	graph.draw();
 	$.get(thePlot, handleResponse);
 }
 
@@ -237,13 +232,6 @@ function run() {
 	
 	pickAplot();
 
-/*
-	$('body').click(function(e) {
-		g.push(Math.random() * 1000); // g = genGraph(100);
-		drawGraph(g);
-	});
-*/
-
 	resume();
 }
 
@@ -267,14 +255,5 @@ function handleResponse(response) {
 		graph.draw();
 	}
 }
-
-function plot() {
-	canvas = $('#canvas').get(0);
-	ctx = canvas.getContext('2d');
-
-	$.get("data", handleResponse);
-}
-
-//$(plot);
 
 })();

@@ -57,7 +57,7 @@ Lump_s prefix(Lump_s a, Lump_s b) {
 		size = a.size;
 	}
 	for (i = 0; i < size; i++) {
-		if (a.d[i] != b.d[i]) {
+		if (((u8 *)a.d)[i] != ((u8 *)b.d)[i]) {
 			++i;
 			break;
 		}
@@ -67,7 +67,7 @@ Lump_s prefix(Lump_s a, Lump_s b) {
 	return p;
 }
 
-#define LUMP(_x)	(_x).size, (_x).d
+#define LUMP(_x)	(_x).size, ((u8 *)(_x).d)
 int main (int argc, char *argv[]) {
 	Lump_s	a;
 	Lump_s	b;
