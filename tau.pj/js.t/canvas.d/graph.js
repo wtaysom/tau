@@ -94,6 +94,7 @@ Graph.prototype = {
 		plot();
 
 		function plot() {
+			clear();
 			xAxis();
 			yAxis();
 			if (values.length == 0) return;
@@ -206,7 +207,6 @@ function pickAplot() {
 }
 
 function step() {
-	clear();
 //	graph.addRandomValue();
 //	graph.draw();
 	$.get(thePlot, handleResponse);
