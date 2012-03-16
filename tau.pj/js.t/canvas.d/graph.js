@@ -5,6 +5,12 @@
 
 (function() {
 
+function log(message) {
+	var text = document.createTextNode(
+		message.toString()+"\n");
+	$('#log').append(text);
+}
+
 /** Simple Graphs **/
 
 var canvas;
@@ -56,6 +62,7 @@ Point.prototype = {
 
 function Graph(n) {
 	this.values = [];
+	log(n);
 	return graph;
 }
 
@@ -75,7 +82,7 @@ Graph.prototype = {
 	draw: function() {
 		var values = this.values;
 
-		var leftMargin = 60;
+		var leftMargin = 100;
 		var rightMargin = 10;
 		var topMargin = 20;
 		var bottomMargin = 50;
@@ -187,19 +194,23 @@ var graph = new Graph(1);
 var interval = 1000;
 var paused = false;
 var intervalId;
-var plots = ['rand', 'data', 'proc'];
-var thePlot = 'proc';
+var plots = ['rand', 'fib', 'sine', 'proc'];
+var thePlot = 'sine';
 
 function pickAplot() {
-	$("#pickplot").append("Pick: ");
+	$("#sidebar").append("<h2>Pick:</h2> <ul>");
 	
 	for (i in plots) {
-		$("#pickplot").append("<a href='#'>" + plots[i] + "</a> ");
+		$("#sidebar").append("<li><a href='#'>" + plots[i] + "</a></li>");
 	}
+	$("#sidebar").append("</ul>");
 	
-	$("#pickplot a").click(function(e) {
-		$("#pickplot").append("<p>Clicked " + $(this).html() + "</p>");
+	$("#sidebar a").click(function(e) {
+		$("#sidebar").append("<p>Clicked " + $(this).html() + "</p>");
 		thePlot = $(this).html();
+		delete graph.oldy;
+		graph.values = [];
+		log(thePlot);
 	});
 }
 
@@ -237,23 +248,18 @@ function run() {
 
 $(run);
 
-function log(message) {
-	var text = document.createTextNode(
-		message.toString()+"\n");
-	$('#output').append(text);
-}
-
 var oldv;
 
 function handleResponse(response) {
 	eval("var v = " + response);
-	if (oldv == undefined) {
-		oldv = v;
+	if (graph.oldy == undefined) {
+		graph.oldy = v;
 	} else {
-		graph.values.push(v - oldv);
-		oldv = v;
+		graph.values.push(v - graph.oldy);
+		graph.oldy = v;
 		graph.draw();
 	}
+	log(v);
 }
 
 })();

@@ -11,23 +11,83 @@ Distributed under the terms of the GNU General Public License v2
 
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js">
     </script>
+    <style type="text/css">
+      body {
+        background: green;
+        color: blue;
+      }
+      #header {
+        position: fixed;
+        height: 80px;
+        top: 0;
+        left: 140px;
+        right: 0;
+        padding: 0 10px;
+        background: #efe;
+        color: #000;
+      }
+      #main {
+        position: absolute;
+        top: 100px;
+        bottom: 0;
+        left: 140px;
+        padding: 10px;
+        right: 0;
+        overflow: scroll;
+        background: black;
+        color: white;
+      }
+      #sidebar {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        width: 120px;
+        padding: 10px;
+        background: #fee;
+      }
+      #nav {
+        position: fixed;
+        top: 80px;
+        height: 20px;
+        left: 140px;
+        right: 0;
+        padding: 0 10px;
+        background: yellow;
+      }
+      #nav ul {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      #nav li {
+        display: inline;
+        margin: 0;
+        padding: 0;
+        font-size: 10px;
+      }
+    </style>
   </head>
 
-  <style type="text/css">
-	body {
-		background-color: #000;
-		color: #CCC;
-	}
-  </style>
-
   <body>
-    <canvas id="canvas" width="800" height="600">
-      You need an browser with HTML canvas my friend.
-    </canvas>
-    <p>
-    Click to pause/resume.
-    <div id="pickplot">My</div>
-    <pre id="output"></pre>
+    <div id="header"><h1>Graph</h1></div>
+    <div id="nav">
+      <ul>
+        <li><a href="#">Option 1</a></li>
+        <li><a href="#">Option 2</a></li>
+        <li><a href="#">Option 3</a></li>
+      </ul>
+    </div>
+    <div id="main">
+      <h2>Main</h2>
+      <canvas id="canvas" width="800" height="600">
+        You need an browser with HTML canvas my friend.
+      </canvas>
+      <p>Click to pause/resume.
+      <pre id="log"></pre>
+    </div>
+    <div id="sidebar">
+    </div>
     <script src="graph.js"></script>
   </body>
 </html>

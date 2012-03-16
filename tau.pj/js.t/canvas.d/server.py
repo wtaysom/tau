@@ -6,6 +6,7 @@ Doesn't handle POST requests.
 import SocketServer
 import SimpleHTTPServer
 import string
+import math
 
 PORT = 8000
 
@@ -24,13 +25,20 @@ def proc():
     return cpu[1]
 
 
-def data():
-  """Return some simple data"""
+def fib():
+  """Return next Fibonacci number """
   global x1, x2
   y = x1 + x2
   x1 = x2
   x2 = y
   return y
+
+x = 0;
+def sine():
+  """Return a sequence based on sine"""
+  global x;
+  x += 0.3;
+  return 5 * math.sin(x) + 10;
 
 
 class CustomHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
@@ -52,11 +60,17 @@ class CustomHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
       self.end_headers()
       self.wfile.write(proc())
       return
-    elif self.path == '/data':
+    elif self.path == '/fib':
       self.send_response(200)
       self.send_header('Content-type','text/html')
       self.end_headers()
-      self.wfile.write(data())
+      self.wfile.write(fib())
+      return
+    elif self.path == '/sine':
+      self.send_response(200)
+      self.send_header('Content-type','text/html')
+      self.end_headers()
+      self.wfile.write(sine())
       return
     else:
       #serve files, and directory listings by following self.path from

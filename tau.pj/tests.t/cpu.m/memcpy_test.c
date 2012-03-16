@@ -23,7 +23,15 @@ void *memcpy_arm(void *, const void *, size_t);
 #define CORRECTNESS_TESTS_COUNT 300000
 #define CORRECTNESS_TEST_BUFFER_SIZE 16384
 
-#define BUFFER_SIZE (4 * 1024 * 1024)
+enum {	FIT_L1_CACHE = 4096,		/* Small enough to fit in L1 Cache */
+	FIT_L2_CACHE = 64 * 1024,	/* Bigger than L1 but fit in L2 */
+	FIT_SDRAM = 8 * 1024 * 1024,	/* Bigger than biggest cache */
+	BUFFER_SIZE = 2 * FIT_SDRAM};
+
+#define FIT_CHECK(_x)	((_x) + (_x) / 2)	/* Run test again but 50%
+						 * bigger to make sure numbers
+						 * seem right.
+						 */
 
 uint8_t *testbuffer8_1w;
 uint8_t *testbuffer8_1r;
@@ -179,16 +187,16 @@ void run_performance_tests(void)
 	run_bench_for_for_size(31);
 
 	printf("\nL1 cached data:\n");
-	run_bench_for_for_size(4096);
-	run_bench_for_for_size(4096 + 2048);
+	run_bench_for_for_size(FIT_L1_CACHE);
+	run_bench_for_for_size(FIT_CHECK(FIT_L1_CACHE));
 
 	printf("\nL2 cached data:\n");
-	run_bench_for_for_size(65536);
-	run_bench_for_for_size(65536 + 32768);
+	run_bench_for_for_size(FIT_L2_CACHE);
+	run_bench_for_for_size(FIT_CHECK(FIT_L2_CACHE));
 
 	printf("\nSDRAM:\n");
-	run_bench_for_for_size(2 * 1024 * 1024);
-	run_bench_for_for_size(3 * 1024 * 1024);
+	run_bench_for_for_size(FIT_SDRAM);
+	run_bench_for_for_size(FIT_CHECK(FIT_SDRAM));
 
 	printf("\n(*) 1 %s = %s\n", meg.units, meg.legend);
 #if 0

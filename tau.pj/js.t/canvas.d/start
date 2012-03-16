@@ -1,1 +1,3 @@
-python -m SimpleHTTPServer &
+
+python -m SimpleHTTPServer >/tmp/web.out 2>&1
+#server.py >/tmp/web.out 2>&1 &
