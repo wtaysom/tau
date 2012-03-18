@@ -5,25 +5,25 @@
 package main
 
 import (
-	"file"
+//	"./file"
 	"flag"
 	"fmt"
 	"os"
 )
 
-func cat(f *file.File) {
+func cat(f *os.File) {
 	const NBUF = 512
 	var buf [NBUF]byte
 	for {
 		switch nr, er := f.Read(buf[:]); true {
 		case nr < 0:
-			fmt.Fprintf(os.Stderr, "cat: error reading from %s: %s\n", f.String(), er.String())
+			fmt.Fprintf(os.Stderr, "cat: reading error: %s\n", er.String())
 			os.Exit(1)
 		case nr == 0:  // EOF
 			return
 		case nr > 0:
-			if nw, ew := file.Stdout.Write(buf[0:nr]); nw != nr {
-				fmt.Fprintf(os.Stderr, "cat: error writing from %s: %s\n", f.String(), ew.String())
+			if nw, ew := os.Stdout.Write(buf[0:nr]); nw != nr {
+				fmt.Fprintf(os.Stderr, "cat: error writing: %s\n", ew.String())
 			}
 		}
 	}
@@ -32,10 +32,10 @@ func cat(f *file.File) {
 func main() {
 	flag.Parse()   // Scans the arg list and sets up flags
 	if flag.NArg() == 0 {
-		cat(file.Stdin)
+		cat(os.Stdin)
 	}
 	for i := 0; i < flag.NArg(); i++ {
-		f, err := file.Open(flag.Arg(i), 0, 0)
+		f, err := os.Open(flag.Arg(i))
 		if f == nil {
 			fmt.Fprintf(os.Stderr, "cat: can't open %s: error %s\n", flag.Arg(i), err)
 			os.Exit(1)
