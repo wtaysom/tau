@@ -15,7 +15,7 @@
 
 /*
  * Finds the first bit counting from the top or the highest bit set.
- * I number bits 0-31, ffs and fls number bits 1-32 so 0 is not bits set.
+ * I number bits 0-31, ffs and fls number bits 1-32 so 0 is no bits set.
  * This is the oposite of ffs in string.h
  *
  * ffs - finds the least significant bit set (find first bit set)
