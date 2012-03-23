@@ -106,7 +106,6 @@ void time_loop (int j, op_f f)
 	f(x, y, dx, dy, Option.iterations);
 	finish = nsecs();
 	t = (finish - start);
-PRd(t);
 	if (t <= Overhead) {
 		printf("Overhead(%llu) was greater than test(%llu)\n",
 			Overhead, t);
@@ -130,7 +129,7 @@ void test (char *test_name, op_f f)
 void RunTests (void)
 {
 	test("overhead", overhead);
-	time_overhead(divide64);
+	time_overhead(divide64);	// This call needed to fool optimizer
 	time_overhead(overhead);
 	test("divide64", divide64);
 	test("divide32", divide32);
