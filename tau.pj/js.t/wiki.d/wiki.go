@@ -1,7 +1,5 @@
-/*
- * Taken from http://golang.org/doc/codelab/wiki/
- * Creative Commons Attribution
- */
+ // Taken from http://golang.org/doc/codelab/wiki/
+ // Creative Commons Attribution by The Go Authors
 
 package main
 
