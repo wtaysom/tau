@@ -21,14 +21,14 @@
  * integer << exponent
  */
 
-enum {	EXPONENT = 5,
-	INTEGER = 8 - EXPONENT,
-	INTEGER_MASK = (1 << INTEGER) - 1 };
+enum {	INT_SHIFT = 3,
+	INT_MASK = (1 << INT_SHIFT) - 1,
+	INT_ADD = 1 << INT_SHIFT };
 
 typedef u8 f8;
 
-static inline unint integer (f8 x) { return x & INTEGER_MASK; }
-static inline unint exponent (f8 x) { return x >> INTEGER; }
+static inline unint integer (f8 x) { return x & INT_MASK; }
+static inline unint exponent (f8 x) { return x >> INT_SHIFT; }
 
 unint f8_to_unint (f8 x)
 {
@@ -37,7 +37,7 @@ unint f8_to_unint (f8 x)
 	unint	i = integer(x);
 
 	if (e) {
-		return (i + (1 << INTEGER)) << (e - 1);
+		return (i + INT_ADD) << (e - 1);
 	} else {
 		return i;
 	}
@@ -45,12 +45,13 @@ unint f8_to_unint (f8 x)
 
 f8 unint_to_f8 (unint x)
 {
-	if (x < (1 << (1 + INTEGER))) return x;
+	if (x < (INT_ADD << 1)) return x;
 	
-	unint	e = flsl(x) - INTEGER - 1;
-	unint	i = x >> e;
+	unint	b = flsl(x) - 1;
+	unint	i = x >> (b - INT_SHIFT) & INT_MASK;
+	unint	e = b - INT_SHIFT + 1;
 printf("e=%lu i=%lu ", e, i);
-	return (e << (INTEGER + 1)) | i;
+	return (e << INT_SHIFT) | i;
 }
 
 int main (int argc, char *argv[])
